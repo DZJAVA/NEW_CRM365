@@ -1,0 +1,3548 @@
+<%@ page language="java" import="java.util.*" pageEncoding="UTF-8"%>
+<%@ include file="/WEB-INF/views/common/header.jsp"%>
+<script type="text/javascript"><!--
+		Ext.onReady(function(){
+			Ext.QuickTips.init();// 浮动信息提示
+    		Ext.BLANK_IMAGE_URL = '<%=path%>/resources/images/default/s.gif';// 替换图片文件地址为本地
+		    var cid = '';	//客户资源	
+	        var tcid = '';//客户资源（淘汰的客户资源）
+	        var  _cpid = '${param.tid}';	//得到从首页传过来的客户资源ID
+	        var  _theCurrent = '${param.theCurrent}';//得到从首页最新客户页数
+	        var userid='${userSession.employee.id}';<%--登录人ID --%>
+	        var roleCode = '${userSession.role.roleCode}';
+	        var _rid = '';//首页传来的工作计划的id
+	        var flag = '${param.flag}';
+	   //---------------资源列表-----
+	    var masterStore = new Ext.data.JsonStore({
+	        url: '<%=path%>/client/loadClient.do',
+	        root: 'data',
+	        totalProperty: 'totalCount',
+	        idProperty: 'id',
+	        autoDestroy: true,
+	        baseParams: {
+	        	conditions:'',
+	        	_cpid:_cpid,
+	            _flag: flag
+	        },
+	        fields: [
+                 { name: 'id' },
+	             { name: 'clientName' },
+	             { name: 'contactTel' },
+	             { name: 'loanAmount' },
+	             { name: 'clientAdd' },
+	             { name: 'oppType' },
+	             { name: 'spareTel1' },
+	             { name: 'spareTel2' },
+	             { name: 'clientStatus' },
+	             { name: 'signPossible' },
+	             { name: 'assignDate' },
+	             { name: 'assignTime' },
+	             { name: 'remark' },
+	             { name: 'emp_name' },
+	             { name: 'userId'},
+	             { name: 'khxinx'},
+	             { name: 'clientSourse'},
+	             { name: 'clientSourseId'},
+	             { name: 'workPlanNewTime'},
+	             { name: 'eliTime'}
+	        ]
+	    });
+	    
+	     //---------------资源跟踪列表-----
+	    var _gridStore = new Ext.data.JsonStore({
+	        url: '<%=path%>/ResourcesTrack/findByTrackrecord.do',
+	        root: 'data',
+	        totalProperty: 'totalCount',
+	        idProperty: 'id',
+	        autoDestroy: true,
+	        baseParams: {
+	        	conditions:'',
+	        	_cpid:''
+	        },
+	        fields: [
+	            { name: 'rtid' },
+	            { name: 'resourcescontent' },
+	            { name: 'resourcestime' },
+	            { name: 'resourcespeople_id' },
+	            { name: 'resourcespeople_name' },
+	            { name: 'intoasinglerate' },
+	            { name: 'workplan' },
+	            { name: 'client_name_id' },
+	            { name: 'client_name_name' },
+	            { name: 'remark' },
+	            { name: 'status'},
+	            { name: 'plantime'},
+	            { name: 'calltime' },
+	            { name: 'types' },
+	            { name: 'planDate' }
+	        ]
+	    });
+	    
+        //---------------资源列表  淘汰资源 列表-----
+	    var _gridEliminate = new Ext.data.JsonStore({
+	        url: '<%=path%>/ResourcesTrack/loadEliminateClient.do',
+	        root: 'data',
+	        totalProperty: 'totalCount',
+	        idProperty: 'id',
+	        autoDestroy: true,
+	        baseParams: {
+	        	conditions:''
+	        },
+	        fields: [
+	             { name: 'id' },
+	             { name: 'clientName' },
+	             { name: 'contactTel' },
+	             { name: 'eliTime' },
+	             { name: 'clientAdd' },
+	             { name: 'spareTel1' },
+	             { name: 'spareTel2' },
+	             { name: 'clientStatus' },
+	             { name: 'signPossible' },
+	             { name: 'assignDate' },
+	             { name: 'assignTime' },
+	             { name: 'remark' },
+	             { name: 'clientSource' },
+	             { name: 'emp_id' },
+	             { name: 'emp_name' },
+	             { name: 'khxinx'}
+	        ]
+	    });
+	    
+	    
+	     //---------------资源跟踪列表-----
+	    var _gzgridStore = new Ext.data.JsonStore({
+	        url: '<%=path%>/ResourcesTrack/findTrackrecorAction.do',
+	        root: 'data',
+	        totalProperty: 'totalCount',
+	        idProperty: 'id',
+	        autoDestroy: true,
+	        baseParams: {
+	        	conditions:'',
+	        	tcid:tcid
+	        },
+	        fields: [
+	            { name: 'gzid' },
+	            { name: 'gzresourcescontent' },
+	            { name: 'gzresourcestime' },
+	            { name: 'gzplantime' },
+	            { name: 'gzworkplan' },
+	            { name: 'gzresourcespeople_id' },
+	            { name: 'gzresourcespeople_name' },
+	            { name: 'gzintoasinglerate' },
+	            { name: 'gztypes' },
+	            { name: 'gzcalltime' },
+	            { name: 'gzttzytime'},
+	            { name: 'gzeliminateremark'},
+	            { name: 'planDate'}
+	            
+	        ]
+	    });
+	    
+	      // --------------- grid actions -----------------
+	    var myGridNewAction = new Ext.Action({
+	        text: '新增客户',
+	        iconCls: 'vcard_add',
+	        scale: 'small',
+	        handler: function(){
+	            clientForm.getForm().reset();
+	            Ext.getCmp('contactTel').setDisabled(false);
+            	Ext.getCmp('spareTel1').setDisabled(false);
+            	Ext.getCmp('spareTel2').setDisabled(false);
+            	Ext.getCmp('clientSelComboBOx').setDisabled(false);
+	            Ext.getCmp('assignDate').setValue(new Date().format('Y-m-d'));
+	            formClientWindow.show();
+<!--					Ext.Ajax.request({-->
+<!--                        url: '<%=path%>/client/test.do',-->
+<!--                        success: function(aResponse, aOptions){-->
+<!--                            var result = Ext.decode(aResponse.responseText);-->
+<!--                    		Ext.MessageBox.alert('提示', result.msg);-->
+<!--                        },-->
+<!--                        failure: function(aResponse, aOptions){-->
+<!--                            var result = Ext.decode(aResponse.responseText);-->
+<!--	                    	Ext.MessageBox.alert('提示', result.msg);-->
+<!--                        }-->
+<!--                    });-->
+	        }
+	    });
+	     
+	       //----------淘汰资源列表
+	  	var myGridEliminateAction = new Ext.Action({
+	        text: '查看已淘汰资源',
+	        iconCls: 'vcard',
+	        scale: 'small',
+	        handler: function(){
+	        	myGridAddProposedresourcesAction.disable();
+             	myGridAddProposedresourcesActionUpdate.disable();
+         		trackrecordAction.disable();
+		        _gridEliminateLoadAction.execute();
+		        formWindowEliminate1.show();
+	        }
+	    });
+	    var onInformation = new Ext.Action({
+		      text:'上一个',
+		      iconCls:'lasts',
+		      scale: 'small',
+		      handler:function(){
+		      	var _id = masterStore.getAt(0).id;
+		      	var flags = _theCurrent.split(',');
+		      	if(flags[1] == 1){
+		      		masterStore.baseParams._flag = '0' + ',' + _id;
+		      	}else if(flags[1] == 4){
+		      		masterStore.baseParams._flag = '2' + ',' + _rid;
+		      	}else if(flags[1] == 2){
+		      		masterStore.baseParams._flag = '4' + ',' + _rid;
+		      	}else if(flags[1] == 5){
+		      		masterStore.baseParams._flag = '6' + ',' + _id + ',' + flags[2];
+		      	}
+		      	myGridLoadAction.execute();
+		      	
+		      }
+	    });
+	    var nextClientMsg = new Ext.Action({
+		      text:'下一个',
+		      iconCls:'nexts',
+		      scale: 'small',
+		      handler:function(){
+		      	var _id = masterStore.getAt(0).id;
+		      	var flags = _theCurrent.split(',');
+		      	if(flags[1] == 1){
+		      		masterStore.baseParams._flag = '1' + ',' + _id;
+		      	}else if(flags[1] == 4){
+		      		masterStore.baseParams._flag = '3' + ',' + _rid;
+		      	}else if(flags[1] == 2){
+		      		masterStore.baseParams._flag = '5' + ',' + _rid;
+		      	}else if(flags[1] == 5){
+		      		masterStore.baseParams._flag = '7' + ',' + _id + ',' + flags[2];
+		      	}
+		      	myGridLoadAction.execute();
+		      }
+	    });
+	     //----------淘汰资源按钮-------
+  	    var myGridFailureResourceAction = new Ext.Action({
+	        text: '淘汰资源',
+	        iconCls: 'btn_del',
+	        disabled: true,
+	        scale: 'small',
+	        handler: function(){
+		        if (myGrid.getSelectionModel().hasSelection()) {
+	            	var record = myGrid.getSelectionModel().getSelected();
+	            	var _s = record.get('clientStatus');
+            	 	if(_s =='已签单'){
+	            	 	Ext.MessageBox.alert('提示', "已签单成功资源不能进行淘汰！");
+            	 	}else{
+	            	  	eliForm.getForm().reset();
+	            		eliWindow.show();
+            		}
+           	 	}
+       	 	}
+    	});
+	    var exitAction = new Ext.Action({
+	        text: '退单',
+	        iconCls: 'drop-no',
+	        scale: 'small',
+	        disabled: true,
+	        handler: function(){
+	        if (myGrid.getSelectionModel().hasSelection()) {
+	            	 var record = myGrid.getSelectionModel().getSelected();
+	            	 if(record != null){
+               			formtuidWindow.show();
+	            	 }
+            	 }
+	        }
+	    });
+	    //-----------资源列表发送短信-------------
+	    var sendAction = new Ext.Action({
+	        text: '发送短信',
+	        iconCls: 'emailGo',
+	        scale: 'small',
+	        disabled: true,
+	        handler: function(){
+	        if (myGrid.getSelectionModel().hasSelection()) {
+	            	 var record = myGrid.getSelectionModel().getSelected();
+	            	 if(record != null){
+               			form7Window.show();
+	            	 }
+            	 }
+	        }
+	    });
+	    var addFlag = 0;
+        //----------淘汰资源列表 认领资源--------------
+	    var myGridAddProposedresourcesAction = new Ext.Action({
+	        text: '认领资源',
+	        iconCls: 'btn_add',
+	        scale: 'small',
+	        disabled: true,
+	        handler: function(){
+	        	addFlag = 1;
+	            addForm.getForm().reset();
+	            addWindow.show();
+	        }
+	    });
+        //----------首页双击进入对淘汰资源的直接认领--------------
+	    var renlingAction = new Ext.Action({
+	        text: '认领资源',
+	        iconCls: 'btn_add',
+	        handler: function(){
+	        	addFlag = 2;
+	        	rec = masterStore.getAt(0);
+	        	var val = rec.get('clientStatus');
+	        	if(val == '淘汰'){
+	        		addForm.getForm().reset();
+	            	addWindow.show();
+	        	}else{
+        			Ext.MessageBox.alert('提示', '只有淘汰资源能够认领！');     
+        		}
+	        }
+	    });
+        //----------淘汰资源列表  --修改资源-----查看客户详细信息
+        var myGridAddProposedresourcesActionUpdate = new Ext.Action({
+	        text: '查看客户详细信息',
+	        iconCls: 'vcard',
+	        scale: 'small',
+	        disabled: true,
+	       	handler: function(){
+	         var record = myGridEliminate.getSelectionModel().getSelected();
+	            if(record != null){
+	            	formup.getForm().reset();
+	                formWindow11up.show();
+	                formup.getForm().loadRecord(record);
+	            }
+	        }
+	    });
+	    function setAllowBlank(val){
+	    	if(val == '已签单'){
+       			Ext.getCmp('workplan').allowBlank = true;
+       			Ext.getCmp('plantime').allowBlank = true;
+       			Ext.getCmp('comboxStatecdl').allowBlank = true;
+       			Ext.getCmp('comboxType1').allowBlank = true;
+       		}else{
+       			Ext.getCmp('workplan').allowBlank = false;
+       			Ext.getCmp('plantime').allowBlank = false;
+       			Ext.getCmp('comboxStatecdl').allowBlank = false;
+       			Ext.getCmp('comboxType1').allowBlank = false;
+       		}
+	    }  
+	      //---------------新增跟踪记录------
+	    var _gridStoreNewAction = new Ext.Action({
+	        text: '新增跟踪记录',
+	        iconCls: 'book_add',
+	        scale: 'small',
+	        disabled: true,
+	        handler: function(){
+	        	var rec = myGrid.getSelectionModel().getSelected();
+	        	var val = '';
+	        	if(rec != null){
+	        		val = rec.get('clientStatus');
+	        		setAllowBlank(val);
+	        	}
+	        	if(_cpid != ''){
+	        		val = masterStore.getAt(0).get('clientStatus');
+	        		setAllowBlank(val);
+	        	}
+	            form1.getForm().reset();
+	            form1Window.show();
+	        }
+	    });
+	      
+	      //---------------编辑跟踪记录------
+	       var _gridStoreEditAction = new Ext.Action({
+		        text: '编辑跟踪记录',
+		        iconCls: 'book_edit',
+		        scale: 'small',
+		        disabled: true,
+		        handler: function(){
+		         var record = _grid.getSelectionModel().getSelected();
+		            if(record != null){
+		            	form1Window.show();
+		                form1.getForm().loadRecord(record);
+		            }
+		        }
+	    });
+	    
+<<<<<<< .mine
+   	 	//-------------已签单
+        var updateStatusAction = new Ext.Action({
+	        text: '签单',
+	        id: 'update',
+	        iconCls: 'btn_edit',
+	        scale: 'small',
+	        disabled: true,
+       		handler: function(){
+	        	var record = myGrid.getSelectionModel().getSelected();
+	            if(record != null){
+	            var s_status = record.get('clientStatus');
+		            if(s_status == '已签单'){
+		            	Ext.MessageBox.alert('提示', "该条记录状态为已签单！");
+		            }else{
+		            	Ext.getCmp('signRemark').setValue('');
+	           			us_window.show();
+        			}
+            	}
+	        }
+=======
+	    	//-------------已签单
+	       var updateStatusAction = new Ext.Action({
+		        text: '已签单',
+		        id: 'update',
+		        iconCls: 'drop-yes',
+		        scale: 'small',
+		        disabled: true,
+	       		handler: function(){
+		         var record = myGrid.getSelectionModel().getSelected();
+		            if(record != null){
+		            var s_status = record.get('clientStatus');
+			            if(s_status == '已签单'){
+			            	Ext.MessageBox.alert('提示', "该条记录状态为已签单！");
+			            }else{
+			            	Ext.getCmp('s_remark').setValue('');
+		           			us_window.show();
+	        			}
+	            	}
+		        }
+>>>>>>> .r120
+	    });
+	    if(_cpid != ''){
+	    	updateStatusAction.setDisabled(false);
+	    	_gridStoreNewAction.setDisabled(false);
+	    }
+	    
+	    var sureAction = new Ext.Action({
+	        text: '确定',
+	        iconCls: 'check',
+	        scale: 'small',
+	        handler: function(){
+	            if (myGrid.getSelectionModel().hasSelection()) {
+	            	 var record = myGrid.getSelectionModel().getSelected();
+	            	 	if(record != null){
+	                         var s_id = record.id;
+	               			 var s_remark = Ext.getCmp('signRemark').getValue();
+	                        Ext.Ajax.request({
+	                            url: '<%=path%>/ResourcesTrack/updateStatus.do',
+	                            params: {
+	                                s_id: s_id,
+	                                s_remark : s_remark
+	                            },
+	                            success: function(aResponse, aOptions){
+	                            	us_window.hide();
+								    masterStore.reload({callback: myGridUpdateAction1});
+	                                var result = Ext.decode(aResponse.responseText);
+				                    Ext.MessageBox.alert('提示', result.msg);
+	                            },
+	                            failure: function(aResponse, aOptions){
+	                                var result = Ext.decode(aResponse.responseText);
+				                    Ext.MessageBox.alert('提示', result.msg);
+	                            }
+	                        })
+                        }
+	            }
+	        }
+	    });
+	    
+	     //--------------部门下拉列表-----------------	  
+	    var departmentStore = new Ext.data.Store({
+	          proxy: new Ext.data.HttpProxy({
+	              url: '<%=path%>/client/loadDepartment.do'
+	          }),
+	          reader: new Ext.data.JsonReader({
+	                  root: 'data',
+	                  id: 'departId'
+	              }, 
+	            ['departId', 'departName']
+	          )
+		});
+		
+		var departSelComboBox = new Ext.form.ComboBox({
+		      id: 'departSelComboBox',
+			  allowBlank: true,
+		      emptyText : '请选择部门...',
+		      width: 120,
+		      typeAhead: true,
+		      editable: false,
+		      triggerAction: 'all',
+		      lazyRender: true,
+			  mode: 'remote',
+		      store: departmentStore,
+		      valueField: 'departId',
+		      displayField: 'departName',
+		      listeners:{
+		      	select:function(){
+		      		employeeSelComboBOx.reset();
+		      		employeeSelData.proxy = new Ext.data.HttpProxy({
+		      			url: '<%=path%>/client/loadEmployees.do?eid=' + departSelComboBox.getValue()
+		      		});
+		      		employeeSelData.load();
+		      	}
+		      }
+		  });
+			 //--------员工下拉列表 
+		var employeeData = new Ext.data.Store({
+     		proxy: new Ext.data.HttpProxy({
+		          url: '<%=path%>/client/loadEmployee.do'
+		    }),
+		    reader: new Ext.data.JsonReader({
+		           root: 'data',
+		           id: 'eId'
+		    	}, 
+	          ['eId', 'eName']
+		    )
+		 });
+		 var employeeSelComboBOx = new Ext.form.ComboBox({
+	     	   id: 'employeeSelComboBOx',
+		       allowBlank: true,
+		       width: 120,
+	           typeAhead: true,
+		       editable: false,
+		       triggerAction: 'all',
+		       lazyRender: true,
+			   mode: 'remote',
+		       store: employeeData,
+		       emptyText : '请选择员工...',
+		       valueField: 'eId',
+		       displayField: 'eName',
+		       listeners: {
+		       	'expand': function(){
+		       		var _dept = Ext.getCmp('departSelComboBox').getValue();
+		       		if(_dept == '' | _dept == null){
+		       			employeeSelComboBOx.reset();
+			      		employeeSelData.proxy = new Ext.data.HttpProxy({
+			      			url: '<%=path%>/client/loadEmployee.do'
+			      		});
+			      		employeeSelData.load();
+		       		}
+		       	}
+		       }
+		});
+		
+		var clientSelData = new Ext.data.Store({
+     		proxy: new Ext.data.HttpProxy({
+		          url: '<%=path%>/clientsource/loadclients.do'
+		    }),
+		    reader: new Ext.data.JsonReader({
+		           root: 'data',
+		           id: 'client_id'
+		    	}, 
+	          ['client_id', 'client_name']
+		    )
+		 });
+		 
+		 var clientSelComboBOx = new Ext.form.ComboBox({
+	   			  id: 'clientSelComboBOx',
+			      hiddenName: 'clientSourseId',
+			      fieldLabel: '*客户来源',
+			      typeAhead: true,
+			      allowBlank: false,
+			      editable: false,
+			      triggerAction: 'all',
+			      lazyRender: true,
+				  mode: 'remote',
+			      store:clientSelData,
+			      valueField: 'client_id',
+			      displayField: 'client_name'
+		});
+		
+		var clientSelData1 = new Ext.data.Store({
+     		proxy: new Ext.data.HttpProxy({
+		          url: '<%=path%>/clientsource/loadclients.do'
+		    }),
+		    reader: new Ext.data.JsonReader({
+		           root: 'data',
+		           id: 'client_id'
+		    	}, 
+	          ['client_id', 'client_name']
+		    )
+		 });
+		 var clientSelComboBOx1 = new Ext.form.ComboBox({
+		 	   fieldLabel : '客户来源',
+	     	   id: 'clientSelComboBOx1',
+		       allowBlank: true,
+		       width: 120,
+	           typeAhead: true,
+		       editable: false,
+		       triggerAction: 'all',
+		       lazyRender: true,
+			   mode: 'remote',
+		       store: clientSelData1,
+		       emptyText : '请选择客户来源...',
+		       valueField: 'client_id',
+		       displayField: 'client_name'
+		});
+	       
+	        //--------查询商机类型下拉列表-------------------
+	    var oppTypeData = new Ext.data.SimpleStore({
+		      fields:['key', 'value'],
+		      data:[
+	      		[ '1', '房贷'],
+			    [ '2', '信贷'],
+			    [ '3', '短借'],
+			    [ '4', '企贷']
+		      ]
+		});
+		var oppTypeSelCombox = new Ext.form.ComboBox({
+		      fieldLabel : '*商机类型',
+		      id : 'oppTypeSelCombox',
+		      store : oppTypeData,
+		      width: 90,
+		      editable: false,
+		      allowBlank: true,
+		      displayField : 'value', 
+		      valueField : 'key', 
+		      mode : 'local', 
+		      triggerAction : 'all', 
+		      emptyText : '请选择...', // 默认值   selectOnFocus : true,
+		      hiddenName : 'oppType'  
+	    });
+	    
+	    //---------------查询签单可能性下拉列表--------------------------
+	    var signPossibleData = new Ext.data.SimpleStore({
+		      fields:['key', 'value'],
+		      data:[
+	      		[ '1', '100%'],
+			    [ '2', '80%'],
+			    [ '3', '50%'],
+			    [ '4', '10%'],
+			    [ '5', '0%']
+		      ]
+		});
+		var signPossibleSelCombox = new Ext.form.ComboBox({
+		      fieldLabel : '*签单可能性',
+		      id : 'signPossibleSelCombox',
+		      store : signPossibleData,
+		      width: 90,
+		      editable: false,
+		      allowBlank: true,
+		      displayField : 'value', 
+		      valueField : 'key', 
+		      mode : 'local', 
+		      triggerAction : 'all', 
+		      emptyText : '请选择...', // 默认值   selectOnFocus : true,
+		      hiddenName : 'signPossible'  
+	    });
+	    
+	    //---------分配状态查询下拉列表
+	    var signStatusData1 = new Ext.data.SimpleStore({
+		      fields:['key', 'value'],
+		      data:[
+	      		[ '1', '已签单'],
+			    [ '2', '未签单'],
+			    [ '3', '淘汰'],
+			    [ '4', '退单']
+		      ]
+		});
+		var signStatusCombox1 = new Ext.form.ComboBox({
+		      id : 'signStatusCombox1',
+		      store : signStatusData1,
+		      width: 70,
+		      editable: false,
+		      allowBlank: true,
+		      displayField : 'value', 
+		      valueField : 'key', 
+		      mode : 'local', 
+		      triggerAction : 'all', 
+		      emptyText : '请选择...'// 默认值   selectOnFocus : true,
+	    });
+		 
+		  //---------------创建日期下拉列表--------------------------
+	    var createDateData = new Ext.data.SimpleStore({
+		      fields:['key', 'value'],
+		      data:[
+	      		[ '1', '今天'],
+			    [ '2', '本周'],
+			    [ '3', '本月'],
+			    [ '4', '本年']
+		      ]
+		});
+		var createDateCombox = new Ext.form.ComboBox({
+		      id : 'createDateCombox',
+		      store : createDateData,
+		      width: 80,
+		      editable: false,
+		      allowBlank: true,
+		      displayField : 'value', 
+		      valueField : 'key', 
+		      mode : 'local', 
+		      triggerAction : 'all', 
+		      emptyText : '请选择...',// 默认值   selectOnFocus : true,
+		      listeners:{
+		      	'select': function(){
+		      		Ext.getCmp('createStart').setDisabled(true);
+		      		Ext.getCmp('createEnd').setDisabled(true);
+		      	}
+		      }
+	    });
+	    
+	    //---------编辑客户信息
+      	var clientEditAction = new Ext.Action({
+	        text: '编辑客户',
+	        iconCls: 'vcard_edit',
+	        scale: 'small',
+	        disabled: true,
+	        handler: function(){
+	            var record = myGrid.getSelectionModel().getSelected(); 
+	            if(record != null){
+	            	if(record.get('contactTel') != ''){
+	            		Ext.getCmp('contactTel').setDisabled(true);
+	            	}else{
+	            		Ext.getCmp('contactTel').setDisabled(false);
+	            	}
+	            	if(record.get('spareTel2') != ''){
+	            		Ext.getCmp('spareTel2').setDisabled(true);
+	            	}else{
+	            		Ext.getCmp('spareTel2').setDisabled(false);
+	            	}
+	            	if(record.get('spareTel1') != ''){
+	            		Ext.getCmp('spareTel1').setDisabled(true);
+	            	}else{
+	            		Ext.getCmp('spareTel1').setDisabled(false);
+	            	}
+            		formClientWindow.show();
+                	clientForm.getForm().loadRecord(record);
+            		clientSelComboBOx.setValue(record.get('clientSourseId'));
+	                clientSelComboBOx.setRawValue(record.get('clientSourse'));
+	                if(record.get('clientSourse') != ''){
+	                	Ext.getCmp('clientSelComboBOx').setDisabled(true);
+	                }else{
+	                	Ext.getCmp('clientSelComboBOx').setDisabled(false);
+	                }
+	            }
+	        }
+	    });
+	      //----------淘汰资源查看跟踪记录
+	    var trackrecordAction = new Ext.Action({
+		    text:'查看跟踪记录',
+			iconCls: 'check',
+		 	disabled: true,
+		   	handler: function(){
+			    if (myGridEliminate.getSelectionModel().hasSelection()) {
+	            	 var record = myGridEliminate.getSelectionModel().getSelected();
+	            	 if(record != null){
+                	   	formWindowTrackrecor.show();
+                	   	_gridEliminatetrackrecordAction.execute();
+	            	 }
+            	 }
+	        }
+	    });
+	       //-------------成单率------
+      	var comboxStatecdl = new Ext.form.ComboBox({
+	        id: 'comboxStatecdl',
+        	hiddenName: 'intoasinglerate',
+	        fieldLabel: '*成单率',
+	        triggerAction: 'all',
+	        allowBlank: false,
+	        editable: false,
+	        mode: 'local',
+	        store: signPossibleData,
+	 		valueField: 'key',
+	        displayField: 'value'
+	    });
+   	     //-------------签单 已签单必须填写备注------
+        var notAssign = new Ext.data.SimpleStore({
+		      fields:['key', 'value'],
+		      data:[
+		      		[ '1', '已分配'],
+	                [ '2', '未分配']
+		           ]
+		     });
+		     
+		   // 下拉列表框控件
+	   var notAssignCom = new Ext.form.ComboBox({
+		      id : 'notAssignCom',
+		      width:80,
+		      store : notAssign,
+		      editable:false,
+		      displayField : 'value', 
+		      valueField : 'key', 
+		      mode : 'local', 
+		      triggerAction : 'all', 
+		      allowBlank: true,
+		      emptyText : '是否分配...'
+	     });
+	       //-------------客户签约------
+	     var comboxType1 = new Ext.form.ComboBox({
+		        id: 'comboxType1',
+		        name: 'types',
+	        	hiddenName: 'types',
+		        fieldLabel: '*上门状态',
+		        typeAhead: true,
+		        editable: false,
+		        allowBlank: false,
+		        triggerAction: 'all',
+		        lazyRender: true,
+		        mode: 'local',
+		        store: new Ext.data.ArrayStore({
+		            id: 'key',
+		            fields: [ 'key', 'value'],
+		            data: [
+						[ '1', '已上门'],
+                		[ '2', '未上门']
+		            ]
+		        }),
+		 		valueField: 'key',
+		        displayField: 'value',
+		        listeners:{
+			      select:function(){
+			      var a = Ext.getCmp('comboxType1').getValue();
+					if(a==2){
+					   Ext.getCmp('calltime').allowBlank = true;
+					}else{
+					   Ext.getCmp('calltime').allowBlank = false;
+					}
+				  }
+				 }
+		    }); 
+	     	        //--------删除客户信息
+	  	    var clientDeleteAction = new Ext.Action({
+		        text: '删除客户信息',
+		        iconCls: 'vcard_delete',
+		        scale: 'small',
+		        disabled: true,
+		        handler: function(){
+		            if (myGrid.getSelectionModel().hasSelection()) {
+		                Ext.Msg.confirm('删除确认', '是否删除选择的记录?', function(aButton){
+		                    if (aButton == 'yes'){
+		                        var id = '';
+		                        var flag = 0;
+		                        var records = myGrid.getSelectionModel().getSelections();
+		                        for(var i = 0, len = records.length; i < len; i ++) {
+		                          id = id + records[i].id + ',';
+		                        }
+	                        	Ext.Ajax.request({
+		                            url: '<%=path%>/client/deleteclientAction.do',
+		                            params: {
+		                                id: id
+		                            },
+		                            success: function(aResponse, aOptions){
+		                            	_gridStore.setBaseParam('_cpid', '');
+	                            	    _gridloanLoadAction.execute();
+		                            	masterStore.reload({callback: myGridUpdateAction1});
+		                                var result = Ext.decode(aResponse.responseText);
+					                    Ext.MessageBox.alert('提示', result.msg);
+		                            },
+		                            failure: function(aResponse, aOptions){
+		                                var result = Ext.decode(aOptions.response.responseText);
+		                                Ext.MessageBox.alert('提示', result.msg);
+		                            }
+		                        });
+		                    }
+		                });
+		            }
+		        }
+	    	});
+	     //------------自动分配客户信息--------------
+	    var autoAssignAction = new Ext.Action({
+	        text: '自动分配',
+	        scale: 'small',
+	        iconCls: 'zidong',
+	        handler: function(){
+	        	Ext.Msg.confirm('分配确认', '确认自动分配？', function(aButton){
+	        		if(aButton == 'yes'){
+	        			var _store = myGrid.getStore();
+			        	var id = '';
+			        	var follower = '';
+			        	for(var i = 0; i < _store.data.length; i++){//----获取没被分配的客户信息id集合----------
+			        		if(_store.getAt(i).get('assignTime') == null | _store.getAt(i).get('assignTime') == ''){
+			        			id = id + _store.getAt(i).id + ',';
+			        			follower = follower + _store.get(i).get('userId') + ',';
+			        		}
+			        	}
+			        	if(id == ''){
+			        		Ext.MessageBox.alert('提示', '没有可以分配的客户信息了!');
+			        	}else{
+			        		Ext.Ajax.request({
+		                        url: '<%=path%>/client/autoAssignClient.do',
+		                        params: {
+		                            id: id,
+		                            follower: follower
+		                        },
+		                        success: function(aResponse, aOptions){
+		                        	masterStore.reload({callback: myGridUpdateAction1});
+		                            var result = Ext.decode(aResponse.responseText);
+		                   			Ext.MessageBox.alert('提示', result.msg);
+		                        },
+		                        failure: function(aResponse, aOptions){
+		                            var result = Ext.decode(aOptions.response.responseText);
+		                            Ext.MessageBox.alert('提示', result.msg);
+		                        }
+			                })
+			        	}
+			        }
+	        	});
+	        }
+	    });
+	    //------------手动分配客户信息--------------
+	    var assignAction = new Ext.Action({
+	        text: '手动分配',
+	        scale: 'small', 
+	        iconCls: 'shoudong',
+	        disabled: true,
+	        handler: function(){
+	        	employeeComboBOx.reset();
+	        	departComboBox.reset();
+	        	employeeData.load();
+	            assignWindow.show();
+	        }
+	    });
+	     //-----刷新 资源列表---------------
+	    var myGridLoadAction = new Ext.Action({
+	        handler: function(aMasterId){
+	        	if(_theCurrent == '' & _cpid == ''){
+	        		if(flag != '' && flag != null){
+	        			returnToIndex.show();
+	        			clientBar2.hide();
+	        			clientBar3.hide();
+        				departSelComboBox1.hide();
+		    			employeeSelComboBOx1.hide();
+	        		}else{
+	        			clientBar2.show();
+	        			clientBar3.show();
+	        		}
+			    	onInformation.hide();
+			    	nextClientMsg.hide();
+			    	renlingAction.hide();
+			    }else{
+			    	if(_theCurrent.split(',')[1] == 3){
+			    		onInformation.hide();
+			    		nextClientMsg.hide();
+			    	}
+			    	returnToIndex.show();
+			    	clientBar2.hide();
+			    	clientBar3.hide();
+			    	importAction.hide();
+			    	downloadImportAction.hide();
+			    	exportWrongAction.hide();
+			    	autoAssignAction.hide();
+		    		exportData.show();
+		    		departSelComboBox1.hide();
+		    		employeeSelComboBOx1.hide();
+			    }
+				if(roleCode == '201202'){
+					assignAction.show();
+					departSelComboBox1.hide();
+					clientDeleteAction.hide();
+					exportData.hide();
+					autoAssignAction.hide();
+				}
+				if(roleCode == '201203'){
+				    clientDeleteAction.hide();
+					departSelComboBox1.hide();
+					employeeSelComboBOx1.hide();
+					autoAssignAction.hide();
+		    		assignAction.hide();
+		    		importAction.hide();
+		    		exportData.hide();
+			    	downloadImportAction.hide();
+			    	exportWrongAction.hide();
+				}
+	            masterStore.load({
+	                params:{
+	                    start:0,
+	                    limit:20
+	                },
+	                callback: function(records, options, success){
+	                	var receive = masterStore.reader.jsonData.nextId;
+	                	if(receive == 'timeout'){
+	                		Ext.MessageBox.alert('提示', '页面停留时间过长，需重新登录！');
+	                	}else{
+	                		if(_theCurrent != ''){
+		                		var record = masterStore.getAt(0);
+		                		if(record != null){
+		                			if(record.get('clientStatus') == '淘汰'){
+		                				_gridStoreNewAction.setDisabled(true);
+		                				updateStatusAction.setDisabled(true);
+		                			}
+		                		}
+		                		if(_theCurrent.split(',')[1] == 2){
+		                			_rid = receive;
+		                		}
+		                		if(_theCurrent.split(',')[1] == 4){
+		                			_rid = receive;
+		                		}
+		                		if(records.length == 0){
+		                			_gridStore.baseParams._cpid = '';
+		                		}else{
+		                			_gridStore.baseParams._cpid = records[0].id;
+		                		}
+		                		_gridloanLoadAction.execute();
+		                	}
+	                	}
+	                }
+	            });
+	        }
+	    }); 
+	      //-----刷新 资源列表--资料跟踪-------------
+        var _gridloanLoadAction = new Ext.Action({
+	        handler: function(){
+	            _gridStore.load({
+	                params:{
+	                    start:0, 
+	                    limit:20
+	                }
+	            });
+	        }
+	    });   
+	    	 
+	      //-----刷新 淘汰资源列表---------------
+      var _gridEliminateLoadAction = new Ext.Action({
+	         handler: function(){
+	            _gridEliminate.load({
+	                params:{
+	                    start:0, 
+	                    limit:20
+	                }
+	            });
+	        }
+      });   
+      //----------------------刷新 淘汰资源列表的点击查看跟踪记录
+	  var  _gridEliminatetrackrecordAction= new Ext.Action({
+	        handler: function(){
+	            _gzgridStore.setBaseParam('tcid', tcid);
+	            _gzgridStore.load({
+	                params:{
+	                    start:0, 
+	                    limit:20
+	                }
+	            });
+	        }
+	    });  
+	    
+     //---------------资源列表  -----
+      	function myGridUpdateAction1 (){
+            var record = myGrid.getSelectionModel().getSelected(); 
+            if(record != null){
+	            if(record.get('clientStatus') == 1 || record.get('clientStatus') == '已签单'){
+	 		    	exitAction.enable();
+	       	    }else{
+		            exitAction.disable();
+	       	    }
+	      	    if( record.get('clientStatus') == 3 || record.get('clientStatus') == '淘汰'){
+	           	    clientEditAction.disable();
+	           	    myGridFailureResourceAction.disable();
+	           	    sendAction.disable();
+	           	    _gridStoreNewAction.disable();
+	           	    updateStatusAction.disable();
+	           	    renlingAction.enable();
+	       	    }else{
+	            	clientEditAction.enable();
+	           	    myGridFailureResourceAction.enable();
+	           	    sendAction.enable();
+	           	    _gridStoreNewAction.enable();
+	           	    updateStatusAction.enable();
+	           	    renlingAction.disable();
+	   	     	}
+            	clientDeleteAction.enable();
+            	assignAction.enable();
+            	autoAssignAction.enable();
+           		cid = record.get('id');
+           		_gridStore.setBaseParam('_cpid', record.get('id'));
+               	_gridloanLoadAction.execute();
+            }else{
+               	clientEditAction.disable();
+               	assignAction.disable();
+               	clientDeleteAction.disable();
+           		updateStatusAction.disable();
+           		_gridStoreNewAction.disable();
+               	myGridFailureResourceAction.disable();
+               	sendAction.disable();
+            }
+  	  	};  
+  	    //---------------资源跟踪-----
+      	function myGridUpdateAction2 (){
+            if(_grid.getSelectionModel().hasSelection()){
+	            var record = myGrid.getSelectionModel().getSelected(); 
+	            if(record != null){
+		           	if( record.get('clientStatus') == 3 || record.get('clientStatus') == '淘汰'){
+	            	  _gridStoreEditAction.disable();
+		           	}else{
+		              _gridStoreEditAction.enable();
+	                }
+	            }else if(_cpid != ''){
+	            	record = masterStore.getAt(0).get('clientStatus');
+	            	if(record == '淘汰'){
+	            		_gridStoreEditAction.disable();
+	            	}else{
+	            		_gridStoreEditAction.enable();
+	            	}
+	            }
+            }
+
+  	  	}; 
+	
+		//-----------------提出资源
+		  function myGridUpdatemyProposedresources(){
+	            var record = myGridEliminate.getSelectionModel().getSelected(); 
+	            if(record != null){
+	            	 myGridAddProposedresourcesAction.enable();
+	            	 myGridAddProposedresourcesActionUpdate.enable();
+	            	 trackrecordAction.enable();
+	                 tcid = record.get('id');//----选中淘汰资源的ID
+	                 taotuid= record.get('emp_id');
+	            }else{
+	               	 myGridAddProposedresourcesAction.disable();
+	               	 myGridAddProposedresourcesActionUpdate.disable();
+              	 	 trackrecordAction.disable();
+                }
+	  	  }; 
+		//--------------部门下拉列表-----------------	  
+		var departComboBox = new Ext.form.ComboBox({
+		      id: 'departComboBox',
+			  allowBlank: true,
+		      fieldLabel: '部门',
+		      emptyText : '请选择部门...',
+		      typeAhead: true,
+		      editable: false,
+		      triggerAction: 'all',
+		      lazyRender: true,
+			  mode: 'remote',
+		      store:departmentStore,
+		      valueField: 'departId',
+		      displayField: 'departName',
+		      listeners:{
+		      	select:function(){
+		      		employeeComboBOx.reset();
+		      		employeeData.proxy = new Ext.data.HttpProxy({
+		      			url: '<%=path%>/client/loadEmployees.do?eid=' + departComboBox.getValue()
+		      		});
+		      		employeeData.load();
+		      	}
+		      }
+		  });
+			  
+		 var employeeComboBOx = new Ext.form.ComboBox({
+	     	   id: 'employeeComboBOx',
+		       allowBlank: true,
+		       fieldLabel: '*操作员工',
+	           typeAhead: true,
+		       editable: false,
+		       triggerAction: 'all',
+		       lazyRender: true,
+			   mode: 'remote',
+		       store: employeeData,
+		       emptyText : '请选择员工...',
+		       valueField: 'eId',
+		       displayField: 'eName',
+		       listeners: {
+		       	'expand': function(){
+		       		var _dept = Ext.getCmp('departComboBox').getValue();
+		       		if(_dept == '' | _dept == null){
+		       			employeeComboBOx.reset();
+			      		employeeData.proxy = new Ext.data.HttpProxy({
+			      			url: '<%=path%>/client/loadEmployee.do?flag='+0
+			      		});
+			      		employeeData.load();
+		       		}
+		       	}
+		      }
+		  });
+	    //--------手动分配的返回按钮--------------
+	    var assignReturnAction = new Ext.Action({
+	        text: '返回',
+	        iconCls:'returns',
+	        handler: function(){
+	            assignWindow.hide();
+	        }
+	    });
+	    //------手动分配的保存按钮-----------
+	    var assignSaveAction = new Ext.Action({
+	        text: '分配',
+	        iconCls:'saves',
+	        handler: function(){
+	        	var _emp = Ext.getCmp('employeeComboBOx').getValue();
+	        	if (myGrid.getSelectionModel().hasSelection()) {
+	        		if(_emp == '' | _emp == null){
+	        			Ext.MessageBox.alert('提示', '必须选择员工!');
+	        		}else{
+	        			Ext.Msg.confirm('分配确认', '是否分配选择的记录?', function(aButton){
+		                    if (aButton == 'yes'){
+		                        var id = '';
+		                        var records = myGrid.getSelectionModel().getSelections();
+		                        for(var i = 0, len = records.length; i < len; i ++) {
+		                            id = id + records[i].id + ',';
+		                        }
+	                        	Ext.Ajax.request({
+		                            url: '<%=path%>/client/assignClient.do',
+		                            params: {
+		                                id: id,
+		                                _emp: _emp
+		                            },
+		                            success: function(aResponse, aOptions){
+		                            	assignWindow.hide();
+		                            	masterStore.reload({callback: myGridUpdateAction1});
+		                                var result = Ext.decode(aResponse.responseText);
+					                    Ext.MessageBox.alert('提示', result.msg);
+		                            },
+		                            failure: function(aResponse, aOptions){
+		                            	assignWindow.hide();
+		                                Ext.MessageBox.alert('提示', result.msg);
+		                            }
+		                        })
+		                    }
+	                	});
+	        		}
+	            }
+	        }
+	    });
+	    
+	    //------------------------导入Excel文件--------------------
+	    var importAction = new Ext.Action({
+	        text: '导入Excel',
+	        iconCls: 'export',
+	        scale: 'small',
+	        handler: function(){
+	        	importForm.getForm().reset();
+	        	importWindow.show();
+	        }
+	    });
+	    
+	    var downloadImportAction = new Ext.Action({
+	        text: '下载导入Excel模板',
+	        iconCls: 'xzfj',
+	        scale: 'small',
+	        handler: function(){
+	        	location.href='<%=path%>/client/downloadTemplet.do';
+	        }
+	    });
+	    var exportWrongAction = new Ext.Action({
+	        text: '下载导入错误的客户资源',
+	        iconCls: 'export',
+	        scale: 'small',
+	        handler: function(){
+	        	location.href='<%=path%>/client/exportWrong.do';
+	        }
+	    });
+	       //----------返回到首页
+		  var returnToIndex = new Ext.Action({
+		        text: '返回首页',
+		        hidden :true,
+		        iconCls: 'returns', 
+		        handler: function(){
+		        	if(masterStore.getCount() == 0){
+		        		document.location.href ='<%=path%>/to_welcome.do?_theCurrent='+_theCurrent;
+		        	}else{
+		        		var record = masterStore.getAt(0);
+		        		document.location.href ='<%=path%>/to_welcome.do?_theCurrent='+_theCurrent+'&_cpid='+record.id;
+		        	}
+		        }
+		    });
+		    
+		        //---------------商机类型下拉列表--------------------------
+		var oppTypeCombox = new Ext.form.ComboBox({
+		      fieldLabel : '商机类型',
+		      id : 'oppTypeCombox',
+		      store : oppTypeData,
+		      editable:false,
+		      allowBlank: true,
+		      displayField : 'value', 
+		      valueField : 'key', 
+		      mode : 'local', 
+		      triggerAction : 'all', 
+		      emptyText : '请选择...', // 默认值   selectOnFocus : true,
+		      hiddenName : 'oppType'  
+	    });
+	    
+	      //---------------签单可能性下拉列表--------------------------
+		var signPossibleCombox = new Ext.form.ComboBox({
+		      fieldLabel : '*成单率',
+		      id : 'signPossibleCombox',
+		      store : signPossibleData,
+		      editable:false,
+		      allowBlank: false,
+		      displayField : 'value', 
+		      valueField : 'key', 
+		      mode : 'local', 
+		      triggerAction : 'all', 
+		      emptyText : '请选择...', // 默认值   selectOnFocus : true,
+		      hiddenName : 'signPossible'  
+	    });
+	    
+	     //--------------部门下拉列表-----------------	  
+		var departSelComboBox1 = new Ext.form.ComboBox({
+		      id: 'departSelComboBox1',
+			  allowBlank: true,
+		      emptyText : '请选择部门...',
+		      width: 90,
+		      typeAhead: true,
+		      editable: false,
+		      triggerAction: 'all',
+		      lazyRender: true,
+			  mode: 'remote',
+		      store: departmentStore,
+		      valueField: 'departId',
+		      displayField: 'departName',
+		      listeners:{
+		      	select:function(){
+		      		employeeSelComboBOx1.reset();
+		      		employeeSelData1.proxy = new Ext.data.HttpProxy({
+		      			url: '<%=path%>/client/loadEmployees.do?eid=' + departSelComboBox1.getValue()
+		      		});
+		      		employeeSelData1.load();
+		      	}
+		      }
+		  });
+			  
+		 var employeeSelComboBOx1 = new Ext.form.ComboBox({
+	     	   id: 'employeeSelComboBOx1',
+		       allowBlank: true,
+		       width: 90,
+	           typeAhead: true,
+		       editable: false,
+		       triggerAction: 'all',
+		       lazyRender: true,
+			   mode: 'remote',
+		       store: employeeData,
+		       emptyText : '请选择员工...',
+		       valueField: 'eId',
+		       displayField: 'eName',
+		       listeners: {
+		       	'expand': function(){
+		       		var _dept = Ext.getCmp('departSelComboBox1').getValue();
+		       		if(_dept == '' | _dept == null){
+		       			employeeSelComboBOx1.reset();
+			      		employeeSelData1.proxy = new Ext.data.HttpProxy({
+			      			url: '<%=path%>/client/loadEmployee.do'
+			      		});
+			      		employeeSelData1.load();
+		       		}
+		       	}
+		       }
+		});
+		
+		var createDateCombox1 = new Ext.form.ComboBox({
+		      id : 'createDateCombox1',
+		      store : createDateData,
+		      width: 70,
+		      editable: false,
+		      allowBlank: true,
+		      displayField : 'value', 
+		      valueField : 'key', 
+		      mode : 'local', 
+		      triggerAction : 'all', 
+		      emptyText : '请选择...',// 默认值   selectOnFocus : true,
+		      listeners:{
+		      	'select': function(){
+		      		Ext.getCmp('createStart1').setDisabled(true);
+		      		Ext.getCmp('createEnd1').setDisabled(true);
+		      	}
+		      }
+	    });
+	    
+	     //--------查询商机类型下拉列表-------------------
+		var oppTypeSelCombox1 = new Ext.form.ComboBox({
+		      fieldLabel : '*商机类型',
+		      id : 'oppTypeSelCombox1',
+		      store : oppTypeData,
+		      width: 70,
+		      editable: false,
+		      allowBlank: true,
+		      displayField : 'value', 
+		      valueField : 'key', 
+		      mode : 'local', 
+		      triggerAction : 'all', 
+		      emptyText : '请选择...'
+	    });
+	    
+	     //---------------查询签单可能性下拉列表--------------------------
+		var signPossibleSelCombox1 = new Ext.form.ComboBox({
+		      id : 'signPossibleSelCombox1',
+		      store : signPossibleData,
+		      width: 70,
+		      editable: false,
+		      allowBlank: true,
+		      displayField : 'value', 
+		      valueField : 'key', 
+		      mode : 'local', 
+		      triggerAction : 'all', 
+		      emptyText : '请选择...'  
+	    });
+	    
+	    function transferDate(date){
+	    	date = date.getValue();
+	    	if(date != ''){
+	    		date = date.format('Y-m-d');
+	    	}
+	    	return date;
+	    }
+	    function judgeTime(start, end){
+	    	if(start.getValue() != '' & end.getValue() != ''){
+	    		start = start.getValue().format('Ymd');
+	    		end = end.getValue().format('Ymd');
+	    		if(end > start | end == start){
+	    			return true;
+	    		}else{
+	    			return false;
+	    		}
+	    	}else{
+	    		return true;
+	    	}
+	    }
+	     var searchButton1 = {
+		    	xtype:'button',
+				iconCls: 'check',
+				text:'查询',
+				handler:function(){
+					Ext.getCmp('createStart1').setDisabled(false);
+			      	Ext.getCmp('createEnd1').setDisabled(false);
+			      	Ext.getCmp('signStart').setDisabled(false);
+			      	Ext.getCmp('signEnd').setDisabled(false);
+					var _createStart = Ext.getCmp('createStart1');
+					var _createEnd = Ext.getCmp('createEnd1');
+					_createStart = transferDate(_createStart);
+					_createEnd = transferDate(_createEnd);
+					var createFlag = judgeTime(Ext.getCmp('createStart1'), Ext.getCmp('createEnd1'));
+					var _createDate = Ext.getCmp('createDateCombox1').getValue();
+					var _oppType=Ext.getCmp('oppTypeSelCombox1').getValue();
+					var _assignStatus = Ext.getCmp('signStatusCombox1').getValue();
+					var _signPos=Ext.getCmp('signPossibleSelCombox1').getValue();
+					var _startLoan = Ext.getCmp('startLoan1').getValue();
+					var _endLoan = Ext.getCmp('endLoan1').getValue();
+					var _dept = Ext.getCmp('departSelComboBox1').getValue();
+					var _emp = Ext.getCmp('employeeSelComboBOx1').getValue();
+					var _notAssignCom = Ext.getCmp('notAssignCom').getValue();
+					var _clientsel = Ext.getCmp('clientSelComboBOx1').getValue();
+					var _assignTime = Ext.getCmp('signTimeSelComboBOx');
+					_assignTime = transferDate(_assignTime);
+					var signTime = Ext.getCmp('signTimeCombo').getValue();
+					var signStart = transferDate(Ext.getCmp('signStart'));
+					var signEnd = transferDate(Ext.getCmp('signEnd'));
+					if(createFlag){
+						if((_startLoan != '' & _endLoan == '') | (_endLoan != '' & _startLoan == '')){
+							Ext.MessageBox.alert('提示', '贷款金额条件不完整!');
+						}else{
+							if(_startLoan > _endLoan){
+								Ext.MessageBox.alert('提示', '结束金额必须大于开始金额!');
+							}else{
+								Ext.apply(masterStore.baseParams,{
+									conditions:'{_createStart:"'+_createStart+'",_createEnd:"'+_createEnd+'",_createDate:"'+_createDate+'",_dept:"'+_dept+'",_emp:"'+_emp+'",_oppType:"'+_oppType+'",'
+										+'_signPos:"'+_signPos+'",_startLoan:"'+_startLoan+'",_endLoan:"'+_endLoan+'",_assignStatus:"'+_assignStatus+'",_notAssignCom:"'+_notAssignCom+'",'
+											+'_clientsel:"'+_clientsel+'",_assignTime:"'+_assignTime+'",signTime:"'+signTime+'",signStart:"'+signStart+'",signEnd:"'+signEnd+'"}'
+								});
+								masterStore.load({
+						            params:{
+						                start:0, 
+						                limit:20
+						            }
+							    });
+							}
+						}
+					}else{
+						Ext.MessageBox.alert('提示', '结束时间必须大于开始时间!');
+					}
+					Ext.getCmp('oppTypeSelCombox1').setValue('');
+					Ext.getCmp('signPossibleSelCombox1').setValue('');
+					Ext.getCmp('startLoan1').setValue('');
+					Ext.getCmp('endLoan1').setValue('');
+					Ext.getCmp('signStatusCombox1').setValue('');
+					Ext.getCmp('createStart1').setValue('');
+					Ext.getCmp('createEnd1').setValue('');
+					Ext.getCmp('createDateCombox1').setValue('');
+					Ext.getCmp('departSelComboBox1').setValue('');
+					Ext.getCmp('notAssignCom').setValue('');
+					Ext.getCmp('employeeSelComboBOx1').setValue('');
+					Ext.getCmp('clientSelComboBOx1').setValue('');
+					Ext.getCmp('signTimeSelComboBOx').setValue('');
+					Ext.getCmp('signTimeCombo').setValue('');
+					Ext.getCmp('signStart').setValue('');
+					Ext.getCmp('signEnd').setValue('');
+				}
+	    }
+	    
+	    var clientBar2 = new Ext.Toolbar({
+	    	items:[
+	    		notAssignCom,
+		     	'商机类型：',
+				oppTypeSelCombox1,
+		     	'成单率：',
+				signPossibleSelCombox1,
+				'签单状态：',
+				signStatusCombox1,
+				'贷款金额(万)：',
+				{
+					xtype: 'textfield',
+					width: 70,
+					id: 'startLoan1',
+					regex:/^[0-9].*$/
+				},
+				'至',
+				{
+					xtype: 'textfield',
+					width: 70,
+					id: 'endLoan1',
+					regex:/^[0-9].*$/
+				},
+				'创建日期：',
+				createDateCombox1,
+				'创建起止日期：',
+				 {
+		     	 	xtype:'datefield',
+		     	 	width:90,
+		     	 	format:'Y-m-d',
+		     	 	editable: false,
+		     	 	id:'createStart1'
+		     	 },
+		     	 '至',
+		     	 {
+		     	 	xtype:'datefield',
+		     	 	width:90,
+		     	 	format:'Y-m-d',
+		     	 	editable: false,
+		     	 	id:'createEnd1'
+		     	 }
+	    	]
+	    });
+	    
+	     var exportData = new Ext.Action({
+			        text: '导出数据',
+			        iconCls: 'export',
+			        scale: 'small',
+			        id:'exportData',
+			        xtype:'button',
+					handler: function(){
+						Ext.getCmp('createStart1').setDisabled(false);
+				      	Ext.getCmp('createEnd1').setDisabled(false);
+						var _createStart = Ext.getCmp('createStart1');
+						var _createEnd = Ext.getCmp('createEnd1');
+						_createStart = transferDate(_createStart);
+						_createEnd = transferDate(_createEnd);
+						var createFlag = judgeTime(Ext.getCmp('createStart1'), Ext.getCmp('createEnd1'));
+						var _createDate = Ext.getCmp('createDateCombox1').getValue();
+						var _oppType=Ext.getCmp('oppTypeSelCombox1').getValue();
+						var _assignStatus = Ext.getCmp('signStatusCombox1').getValue();
+						var _signPos=Ext.getCmp('signPossibleSelCombox1').getValue();
+						var _startLoan = Ext.getCmp('startLoan1').getValue();
+						var _endLoan = Ext.getCmp('endLoan1').getValue();
+						var _dept = Ext.getCmp('departSelComboBox1').getValue();
+						var _emp = Ext.getCmp('employeeSelComboBOx1').getValue();
+						var _notAssignCom = Ext.getCmp('notAssignCom').getValue();
+						var _clientsel = Ext.getCmp('clientSelComboBOx1').getValue();
+						var _assignTime = Ext.getCmp('signTimeSelComboBOx');
+						_assignTime = transferDate(_assignTime);	
+						var thisForm = document.createElement('form');
+						thisForm.method = 'post';
+						thisForm.action = '<%=path%>/client/exportDate.do'
+						
+						var assignEle = document.createElement('input');
+						assignEle.type = 'hidden';
+						assignEle.name = '_assignTime';
+						assignEle.value = _assignTime;
+						
+						var a = document.createElement('input');
+						a.type = 'hidden';
+						a.name = '_createStart';
+						a.value = _createStart;
+						
+						var b = document.createElement('input');
+						b.type = 'hidden';
+						b.name = '_createEnd';
+						b.value = _createEnd;
+						
+						var c = document.createElement('input');
+						c.type = 'hidden';
+						c.name = '_createDate';
+						c.value = _createDate;
+						
+						var d = document.createElement('input');
+						d.type = 'hidden';
+						d.name = '_dept';
+						d.value = _dept;
+						
+						var e = document.createElement('input');
+						e.type = 'hidden';
+						e.name = '_emp';
+						e.value = _emp;
+						
+						var f = document.createElement('input');
+						f.type = 'hidden';
+						f.name = '_oppType';
+						f.value = _oppType;
+						
+						var g = document.createElement('input');
+						g.type = 'hidden';
+						g.name = '_signPos';
+						g.value = _signPos;
+						
+						var h = document.createElement('input');
+						h.type = 'hidden';
+						h.name = '_startLoan';
+						h.value = _startLoan;
+						
+						var i = document.createElement('input');
+						i.type = 'hidden';
+						i.name = '_endLoan';
+						i.value = _endLoan;
+						
+						var j = document.createElement('input');
+						j.type = 'hidden';
+						j.name = '_assignStatus';
+						j.value = _assignStatus;
+						
+						var k = document.createElement('input');
+						k.type = 'hidden';
+						k.name = '_notAssignCom';
+						k.value = _notAssignCom;
+						
+						var l = document.createElement('input');
+						l.type = 'hidden';
+						l.name = '_clientsel';
+						l.value = _clientsel;
+						
+						thisForm.appendChild(a);
+						thisForm.appendChild(b);
+						thisForm.appendChild(c);
+						thisForm.appendChild(d);
+						thisForm.appendChild(e);
+						thisForm.appendChild(f);
+						thisForm.appendChild(g);
+						thisForm.appendChild(h);
+						thisForm.appendChild(i);
+						thisForm.appendChild(j);
+						thisForm.appendChild(k);
+						thisForm.appendChild(l);
+						thisForm.appendChild(assignEle);
+						
+						document.body.appendChild(thisForm);
+						thisForm.submit();
+						
+						Ext.getCmp('oppTypeSelCombox1').setValue('');
+						Ext.getCmp('signPossibleSelCombox1').setValue('');
+						Ext.getCmp('startLoan1').setValue('');
+						Ext.getCmp('endLoan1').setValue('');
+						Ext.getCmp('signStatusCombox1').setValue('');
+						Ext.getCmp('createStart1').setValue('');
+						Ext.getCmp('createEnd1').setValue('');
+						Ext.getCmp('createDateCombox1').setValue('');
+						Ext.getCmp('departSelComboBox1').setValue('');
+						Ext.getCmp('notAssignCom').setValue('');
+						Ext.getCmp('employeeSelComboBOx1').setValue('');
+						Ext.getCmp('clientSelComboBOx1').setValue('');
+						Ext.getCmp('signTimeSelComboBOx').setValue('');
+					}
+			    });
+	    
+	    var clientBar3 = new Ext.Toolbar({
+	    	items:[
+	    		 '客户来源信息：',
+	    		 clientSelComboBOx1,
+	    		 '分配日期：',
+				 {
+		     	 	xtype:'datefield',
+		     	 	width:90,
+		     	 	format:'Y-m-d',
+		     	 	editable: false,
+		     	 	id:'signTimeSelComboBOx'
+		     	 },
+		     	 '签单时间:',
+		     	 {
+		     	 	xtype: 'combo',
+		     	 	id : 'signTimeCombo',
+			      	store : createDateData,
+			      	width: 70,
+			      	editable: false,
+			      	displayField : 'value', 
+			      	valueField : 'key', 
+			      	mode : 'local', 
+			      	triggerAction : 'all', 
+			      	emptyText : '请选择...',// 默认值   selectOnFocus : true,
+			      	listeners:{
+			      		'select': function(){
+			      			Ext.getCmp('signStart').setValue('');
+			      			Ext.getCmp('signEnd').setValue('');
+			      			Ext.getCmp('signStart').setDisabled(true);
+			      			Ext.getCmp('signEnd').setDisabled(true);
+			      		}
+			      	}
+		     	 },
+		     	 '签单起止日期:',
+		     	 {
+		     	 	xtype:'datefield',
+		     	 	width:90,
+		     	 	format:'Y-m-d',
+		     	 	editable: false,
+		     	 	id:'signStart'
+		     	 },
+		     	 '至',
+		     	 {
+		     	 	xtype:'datefield',
+		     	 	width:90,
+		     	 	format:'Y-m-d',
+		     	 	editable: false,
+		     	 	id:'signEnd'
+		     	 },
+		     	 searchButton1,
+		     	 exportData
+	    	]
+	    });
+		   // --------------- grid  资料列表 --------------------
+	    var myGrid = new Ext.grid.GridPanel({
+	        id: 'myGrid',
+	        store: masterStore,
+	        sm: new Ext.grid.RowSelectionModel(),
+	        region: 'north',
+	        height: 200,
+	        frame:true,
+	        trackMouseOver: false,
+	        disableSelection: false,
+	        loadMask: true,
+	        columns: [
+	            {
+	            	header: '客户信息',
+	            	width:150,
+	                sortable: true,
+	                dataIndex: 'khxinx'
+	            },
+	            {
+	            	header: '客户名字',
+	            	width:90,
+	            	hidden:true,
+	                sortable: true,
+	                dataIndex: 'clientName'
+	            },
+	            {
+	            	header: '商机类型',
+	            	hidden:true,
+	            	width:80,
+	                sortable: true,
+	                dataIndex: 'oppType'
+	            },
+	            {
+	            	header: '贷款金额(万)',
+	            	hidden:true,
+	            	width:80,
+	                sortable: true,
+	                dataIndex: 'loanAmount'
+	            },
+	            {
+	            	header: '客户联系方式',
+	            	width:100,
+	                sortable: true,
+	                dataIndex: 'contactTel'
+	            },
+	            {
+	            	header: '备用电话1',
+	            	width:100,
+	                sortable: true,
+	                dataIndex: 'spareTel1'
+	            },
+	            {
+	            	header: '客户状态',
+	            	width:80,
+	                sortable: true,
+	                dataIndex: 'clientStatus'
+	            },
+	            {
+	            	header: '成单率',
+	            	width:80,
+	                sortable: true,
+	                dataIndex: 'signPossible'
+	            },
+	            {
+	            	header: '管理人',
+	            	width:80,
+	            	sortable: true,
+	            	dataIndex: 'emp_name'
+	            },
+	            {
+	            	header: '创建日期',
+	            	width:80,
+	                sortable: true,
+	                dataIndex: 'assignDate'
+	            },
+	            {
+	            	header: '最新工作计划时间',
+	            	sortable: true,
+	            	width: 120,
+	            	dataIndex: 'workPlanNewTime'
+	            },
+	            {
+	            	header: '客户来源',
+	            	width:100,
+	                sortable: true,
+	                dataIndex: 'clientSourse'
+	            },
+	            {
+	            	header: '签单可能性',
+	            	width:80,
+	                    sortable: true,
+	                dataIndex: 'signPossible'
+	              },
+	            {
+	            	header: '备注',
+	                sortable: true,
+	                width:120,
+	                dataIndex: 'remark',
+	                renderer: function(value, metadata, record, rowIndex, columnIndex, store){
+	                	metadata.attr = 'ext:qtip="' + value +'"';  
+	                	return value;
+	                }
+	            }
+	        ],
+	        tbar: [
+	     	 	returnToIndex,
+	     	 	onInformation,
+		        nextClientMsg,
+		        myGridNewAction,
+		        clientEditAction,
+		        clientDeleteAction,
+		        sendAction,
+		        myGridEliminateAction,
+			    myGridFailureResourceAction,
+			    renlingAction,
+			    importAction,
+	    		downloadImportAction,
+	    		exportWrongAction,
+	    		autoAssignAction,
+	    		assignAction,
+	    		departSelComboBox1,
+	    		employeeSelComboBOx1
+	        ],
+	         listeners : {
+				 'render' : function(e){
+					 clientBar2.render(this.tbar);
+					 clientBar3.render(this.tbar);
+				 },
+			  	 'rowdblclick' : function(){
+				  	var record = myGrid.getSelectionModel().getSelected();
+		        		if(record != null){
+		        			Ext.getCmp('remarkMsg').setValue(record.get('remark'));
+		        		}
+		        		_window.show();
+		         }
+			},
+	        bbar: new Ext.PagingToolbar({
+	            pageSize: 20,
+	            store: masterStore,
+	            displayInfo: true,
+	            plugins: new Ext.ux.ProgressBarPager(),
+	            displayMsg: '显示: {0} - {1} / 总数: {2}',
+	            emptyMsg: '没有记录'
+	        })
+	    });
+	    
+	    //-----------------资料追踪-----------------
+	      var _grid = new Ext.grid.GridPanel({
+	        id: '_grid',
+	        store:_gridStore,
+	        region: 'center',
+	        sm: new Ext.grid.RowSelectionModel(),
+	        frame:true,
+	        trackMouseOver: false,
+	        disableSelection: false,
+	        loadMask: true,
+	        columns: [
+	            {
+	                hidden:true,
+	            	header: 'ID',
+	                sortable: false,
+	                dataIndex: 'rtid'
+	            },
+	            {
+	            	header: '跟踪内容',
+	            	width:400,
+	                sortable: true,
+	                dataIndex: 'resourcescontent',
+	                renderer:function(value, metadata, record, rowIndex, columnIndex, store){
+	                	metadata.attr = 'ext:qtip="' + value +'"';  
+	                	return value;
+	                }
+	            },
+	            {
+	            	header: '管理人',
+	            	width:80,
+	                sortable: true,
+	                   dataIndex: 'resourcespeople_name'
+	            },
+	            {
+	            	header: '跟单时间',
+	            	width:150,
+	                sortable: true,
+	                   dataIndex: 'resourcestime'
+	              },
+	            {
+	            	header: '工作计划',
+	            	width:300,
+	                sortable: true,
+	                dataIndex: 'workplan',
+	                renderer:function(value, metadata, record, rowIndex, columnIndex, store){
+	                	metadata.attr = 'ext:qtip="' + value +'"';  
+	                	return '<font style="color:red;">'+value+'</font>'
+	                }
+	            },
+	            {
+	            	header:'计划时间',
+	            	sortable:true,
+	            	width:130,
+	            	dataIndex:'plantime'
+	            }
+	            
+	        ],
+	        tbar: [
+		        _gridStoreNewAction,
+		        _gridStoreEditAction,
+		        updateStatusAction,
+		        exitAction
+	        ],
+	        bbar: new Ext.PagingToolbar({
+	            pageSize: 20,
+	            store:_gridStore,
+	            displayInfo: true,
+	            plugins: new Ext.ux.ProgressBarPager(),
+	            displayMsg: '显示: {0} - {1} / 总数: {2}',
+	            emptyMsg: '没有记录'
+	        })
+	    });
+	    
+	    //-------------------客户签约----------------------
+	    var _grid1 = new Ext.grid.GridPanel({
+	        id: '_grid1',
+	        store: _gridStore,
+	        region: 'south',
+	        height: 250,
+	        sm: new Ext.grid.RowSelectionModel(),
+	        frame:true,
+	        trackMouseOver: false,
+	        disableSelection: false,
+	        loadMask: true,
+	        columns: [
+	            {
+	               header: '上门状态',
+	                sortable: true,
+	                dataIndex: 'types'
+	            },
+	            {
+	            	header: '上门时间',
+	                sortable: true,
+	                dataIndex: 'calltime'
+	            }
+	        ],
+	        bbar: new Ext.PagingToolbar({
+	            pageSize: 20,
+	            store:_gridStore,
+	            displayInfo: true,
+	            plugins: new Ext.ux.ProgressBarPager(),
+	            displayMsg: '显示: {0} - {1} / 总数: {2}',
+	            emptyMsg: '没有记录'
+	        })
+	    });
+	    
+	  var searchButton = {
+	    	xtype:'button',
+			iconCls: 'check',
+			text:'查 询',
+			handler:function(){
+				Ext.getCmp('createStart').setDisabled(false);
+		      	Ext.getCmp('createEnd').setDisabled(false);
+				var _createStart = Ext.getCmp('createStart');
+				var _createEnd = Ext.getCmp('createEnd');
+				var _lastTimeStart = Ext.getCmp('lastTimeStart');
+				var _lastTimeEnd = Ext.getCmp('lastTimeEnd');
+				_createStart = transferDate(_createStart);
+				_createEnd = transferDate(_createEnd);
+				var createFlag = judgeTime(Ext.getCmp('createStart'), Ext.getCmp('createEnd'));
+				var _createDate = Ext.getCmp('createDateCombox').getValue();
+				var _oppType=Ext.getCmp('oppTypeSelCombox').getValue();
+				var _signPos=Ext.getCmp('signPossibleSelCombox').getValue();
+				var _startLoan = Ext.getCmp('startLoan').getValue();
+				var _endLoan = Ext.getCmp('endLoan').getValue();
+				var _dept = Ext.getCmp('departSelComboBox').getValue();
+				var _emp = Ext.getCmp('employeeSelComboBOx').getValue();
+				var _createStartttzytime = Ext.getCmp('createStartttzytime').getValue();
+				var _createEndttzytime = Ext.getCmp('createEndttzytime').getValue();
+				var nameOrNum = Ext.getCmp('nameOrNum').getValue();
+				if(_createStartttzytime!=""){
+					_createStartttzytime = Ext.getCmp('createStartttzytime').getValue().format('Y-m-d');
+				}
+				if(_createEndttzytime!=""){
+					_createEndttzytime = Ext.getCmp('createEndttzytime').getValue().format('Y-m-d');
+				}
+				if(createFlag){
+					if((_startLoan != '' & _endLoan == '') | (_endLoan != '' & _startLoan == '')){
+						Ext.MessageBox.alert('提示', '贷款金额条件不完整!');
+					}else{
+						if(_startLoan > _endLoan){
+							Ext.MessageBox.alert('提示', '结束金额必须大于开始金额!');
+						}else{
+							Ext.apply(_gridEliminate.baseParams,{
+								conditions:'{_createStart:"'+_createStart+'",_createEnd:"'+_createEnd+'",_createDate:"'+_createDate+'",_dept:"'+
+									_dept+'",_emp:"'+_emp+'",_oppType:"'+_oppType+'",_signPos:"'+_signPos+'",_startLoan:"'+_startLoan+'",_endLoan:"'+
+										_endLoan+'",_createStartttzytime:"'+_createStartttzytime+'",_createEndttzytime:"'+_createEndttzytime+'",nameOrNum:"'+nameOrNum+'"}'
+							});
+							_gridEliminate.load({
+					            params:{
+					                start:0, 
+					                limit:20
+					            },
+					            waitTitle:'提示',waitMsg: '数据加载请稍后...',
+					            failure: function() {
+					                Ext.Msg.alert('提示', '读取数据失败！');                             
+					            }
+						    });
+						}
+					}
+				}else{
+					Ext.MessageBox.alert('提示', '结束时间必须大于开始时间!');
+				}
+				Ext.getCmp('oppTypeSelCombox').setValue('');
+				Ext.getCmp('signPossibleSelCombox').setValue('');
+				Ext.getCmp('startLoan').setValue('');
+				Ext.getCmp('endLoan').setValue('');
+				Ext.getCmp('createStart').setValue('');
+				Ext.getCmp('createEnd').setValue('');
+				Ext.getCmp('createDateCombox').setValue('');
+				Ext.getCmp('departSelComboBox').setValue('');
+				Ext.getCmp('employeeSelComboBOx').setValue('');
+				Ext.getCmp('createStartttzytime').setValue('');
+				Ext.getCmp('createEndttzytime').setValue('');
+				Ext.getCmp('nameOrNum').setValue('');
+			}
+	    }
+	    
+	       var ones=new Ext.Toolbar({
+	    	id:'ones',
+			items:[
+				'创建日期：',
+				createDateCombox,
+				'创建起止日期：',
+				 {
+		     	 	xtype:'datefield',
+		     	 	width:90,
+		     	 	format:'Y-m-d',
+		     	 	editable: false,
+		     	 	id:'createStart'
+		     	 },
+		     	 '至',
+		     	 {
+		     	 	xtype:'datefield',
+		     	 	width:90,
+		     	 	format:'Y-m-d',
+		     	 	editable: false,
+		     	 	id:'createEnd'
+		     	 },
+		     	 '淘汰起止日期：',
+				 {
+		     	 	xtype:'datefield',
+		     	 	width:90,
+		     	 	format:'Y-m-d',
+		     	 	editable: false,
+		     	 	id:'createStartttzytime'
+		     	 },
+		     	 '至',
+		     	 {
+		     	 	xtype:'datefield',
+		     	 	width:90,
+		     	 	format:'Y-m-d',
+		     	 	editable: false,
+		     	 	id:'createEndttzytime'
+		     	 },
+		     	 searchButton	     	 
+			] 
+		}); 
+	    var oneTbar=new Ext.Toolbar({
+	    	id:'two',
+			items:[
+				'客户名字：',
+				{
+					xtype: 'textfield',
+					width: 100,
+					id: 'nameOrNum'
+				},
+				'&nbsp;&nbsp;部门：',
+				departSelComboBox,
+				'管理人：',
+				employeeSelComboBOx,
+		     	'商机类型：',
+				oppTypeSelCombox,
+		     	'签单可能性：',
+				signPossibleSelCombox,
+				'贷款金额：',
+				{
+					xtype: 'textfield',
+					width: 80,
+					id: 'startLoan',
+					regex:/^[0-9].*$/
+				},
+				'至',
+				{
+					xtype: 'textfield',
+					width: 80,
+					id: 'endLoan',
+					regex:/^[0-9].*$/
+				}
+			] 
+		}); 
+	    //------------------淘汰资源列表----------
+	    var myGridEliminate = new Ext.grid.GridPanel({
+	        id: 'myGridEliminate',
+	        store: _gridEliminate,
+	        sm: new Ext.grid.RowSelectionModel(),
+	        frame:true,
+	        trackMouseOver: false,
+	        disableSelection: false,
+	        loadMask: true,
+<!--	        viewConfig: {-->
+<!--			    forceFit: true-->
+<!--			},-->
+	        columns: [
+	            {
+	                hidden:true,
+	            	header: '编号',
+	                sortable: false,
+	                dataIndex: 'id'
+	            },
+	            {
+	            	header: '客户信息',
+	            	width:150,
+	                sortable: true,
+	                dataIndex: 'khxinx'
+	            },
+	            {
+	            	header: '客户名字',
+	            	hidden:true,
+	                sortable: true,
+	                dataIndex: 'clientName'
+	            },
+	            {
+	            	header: '客户联系方式',
+	                sortable: true,
+	                width: 90,
+	                dataIndex: 'contactTel'
+	              },
+	               {
+	            	header: '备用电话1',
+	            	width: 90,
+	                sortable: true,
+	                dataIndex: 'spareTel1'
+	              },
+	              {
+	            	header: '客户状态',
+                  	sortable: true,
+                  	width: 70,
+	                dataIndex: 'clientStatus',
+	                renderer:function(v){
+	                	if(v == '1'){
+	                		return '已签单';
+	                	}
+	                	if(v == '2'){
+	                		return '未签单';
+	                	}
+	                	if(v == '3'){
+	                		return '淘汰';
+	                	}
+	                	if(v == '4'){
+	                		return '退单';
+	                	}
+	                }
+	              },
+	              {
+	            	header: '客户地址',
+	                sortable: true,
+	                dataIndex: 'clientAdd'
+	              },
+	              {
+	            	header: '管理人',
+	                sortable: true,
+	                dataIndex: 'emp_name'
+	              }
+	              ,
+	              {
+	            	header: '淘汰日期',
+	            	width: 120,
+	                sortable: true,
+	                dataIndex: 'eliTime'
+	              },
+            	  {
+	            	header: '客户来源',
+	            	width: 70,
+	                sortable: true,
+	                dataIndex: 'clientSource'
+	            	},
+	              {
+	            	header: '签单可能性',
+                    sortable: true,
+                    width: 70,
+	                dataIndex: 'signPossible'
+	              },
+	              {
+	            	header: '备注',
+	                sortable: true,
+	                dataIndex: 'remark',
+	                renderer:function(value, metadata, record, rowIndex, columnIndex, store){
+	                	metadata.attr = 'ext:qtip="' + value +'"';  
+	                	return value;
+	                }
+	              }
+	             
+	        ],
+	        tbar: [
+		       myGridAddProposedresourcesAction,
+		       myGridAddProposedresourcesActionUpdate,
+		       trackrecordAction
+	        ],
+	         listeners : {
+			 'render': function(){
+	        		oneTbar.render(this.tbar);
+	        		ones.render(this.tbar);
+	        	}  
+			},
+	        bbar: new Ext.PagingToolbar({
+	            pageSize: 20,
+	            store: _gridEliminate,
+	            displayInfo: true,
+	            plugins: new Ext.ux.ProgressBarPager(),
+	            displayMsg: '显示: {0} - {1} / 总数: {2}',
+	            emptyMsg: '没有记录'
+	        })
+	    });
+		//-------------淘汰资源列表 返回
+	  	var formEliminate = new Ext.Action({
+	        text: '返回',
+	        iconCls: 'returns', 
+	        handler: function(){
+	           formWindowEliminate1.hide();
+	        }
+	    });
+	    //---------------淘汰资源列表  弹出 层
+		var formWindowEliminate1 = new Ext.Window({
+	        width: 1100,
+	        height: 430,
+	        modal: true,
+			title:'查看淘汰资源信息',
+	        layout: 'fit',
+	        plain: true,
+	        bodyStyle: 'padding:5px;',
+	        buttonAlign: 'right',
+	        items: myGridEliminate,
+	        closeAction: 'hide',
+	        buttons: [
+                formEliminate
+            ]
+	    });
+     	// bind event
+	    myGrid.getSelectionModel().addListener(
+	        'selectionchange', 
+	        myGridUpdateAction1
+	    );
+      	// bind event
+	    _grid.getSelectionModel().addListener(
+	        'selectionchange', 
+	        myGridUpdateAction2
+	    );
+        // bind event
+	    myGridEliminate.getSelectionModel().addListener(
+	        'selectionchange', 
+	        myGridUpdatemyProposedresources
+	    );
+	    
+	    // ------------------ form   新增跟踪记录 form -------------------------    
+	    var form1 = new Ext.form.FormPanel({
+	        id: 'form1',
+	        bodyStyle: 'padding:5px',
+	        frame: true,
+	         items: [{
+	            layout: 'column',
+	            items: [
+	                {
+	                    columnWidth: .5,
+	                    layout: 'form',
+	                    labelWidth: 90,
+	                    defaultType: 'textfield',
+	                    defaults: {
+	                        anchor: '90%',
+	                        msgTarget: 'side'
+	                    },
+	                    items: [
+	                        {
+								inputType: 'hidden',
+	                            fieldLabel: '*编号',
+	                            id: 'rtid'
+	                        },
+	                        {
+	                            fieldLabel: '*跟踪内容',
+	                            allowBlank: false,
+	                            xtype:'textarea',
+	                            id: 'resourcescontent'
+	                        },
+	                        {
+	                        	xtype: 'datetimefield',
+	                        	format: 'Y-m-d H:i',
+	                            fieldLabel: '*计划时间',
+	                            allowBlank: false,
+	                            editable: false,
+	                            id: 'plantime'
+	                        },
+	                        {
+	                            fieldLabel: '*工作计划',
+	                            allowBlank: false,
+	                            xtype:'textarea',
+	                            id: 'workplan'
+	                        }
+	                       
+	                    ]
+	                },
+	                {
+	                    columnWidth: .5,
+	                    layout: 'form',
+	                    labelWidth: 80,
+	                    defaultType: 'textfield',
+	                    defaults: {
+	                        anchor: '90%',
+	                        msgTarget: 'side'
+	                    },
+	                    items: [
+	                    	comboxStatecdl,
+	                        comboxType1,
+	                        {
+	                        	xtype: 'datefield',
+	                        	format: 'Y-m-d',
+	                            fieldLabel: '*上门时间',
+	                            allowBlank: true,
+	                            editable: false,
+	                            id: 'calltime'
+	                        },
+	                        {
+	                            fieldLabel: '*备注',
+	                            xtype:'textarea',
+	                            allowBlank: true,
+	                            id: 'remark'
+	                        }
+	                    ]
+	                }
+	            ]
+	        }]
+	    });
+	    
+	     var form1SaveAction = new Ext.Action({
+	        text: '保存',
+	        iconCls: 'saves',
+	        handler: function(){
+	            if(form1.getForm().isValid()){
+		            var gen = Ext.getCmp('comboxType1').getValue();
+		            var _cs = Ext.getCmp('comboxStatecdl').getValue();
+		            if(_cpid != ''){
+		            	cid = masterStore.getAt(0).id;
+		            }
+	                form1.getForm().submit({
+	                    url: '<%=path%>/ResourcesTrack/saveOrUpdateResourcesTrack.do',
+	                    params: {
+		                    _cpid: cid,
+		                    gen:gen,
+		                    _cs:_cs
+	                    },
+	                    success: function(aForm, aAction){
+	                          form1Window.hide();
+							  _gridStore.reload({callback: myGridUpdateAction2});
+							  masterStore.reload({callback: myGridUpdateAction1});
+	                          var result = Ext.decode(aAction.response.responseText);
+	               			  Ext.MessageBox.alert('提示', result.msg); 
+	                    },
+	                    failure: function(aForm, aAction) {
+				    		var result = Ext.decode(aAction.response.responseText);
+							 Ext.MessageBox.alert('提示', result.msg);                            
+					    }
+	                });
+	            }
+	        }
+	    });
+	    
+      	var form1ReturnAction = new Ext.Action({
+	        text: '返回',
+	        iconCls: 'returns',
+	        handler: function(){
+	           form1Window.hide();
+	        }
+	    });
+	    
+	    var form1Window = new Ext.Window({
+	        width: 720,
+	        height: 300,
+	        title:'跟踪记录',
+	        modal: true,
+	        layout: 'fit',
+	        plain: true,
+	        bodyStyle: 'padding:5px;',
+	        buttonAlign: 'center',
+	        items: form1,
+	        closeAction: 'hide',
+	        buttons: [
+                form1SaveAction,
+                form1ReturnAction
+            ]
+	    });
+	    
+	//-----------淘汰资源按钮 -- 弹出 层 填写淘汰备注信息
+	  	var eliForm = new Ext.form.FormPanel({
+	        id: 'eliForm',
+	        bodyStyle: 'padding:5px',
+	        frame: true,
+	        layout: 'form',
+	        labelWidth: 70,
+            items: [
+	           {
+	               fieldLabel: '淘汰备注',
+	               xtype:'textarea',
+	               anchor: '95%',
+	               id: 'eliRemark'
+	           }
+            ]
+	    });
+	    
+     	var eliSaveAction = new Ext.Action({
+	        text: '确定',
+	        iconCls: 'saves',
+	        handler: function(){
+	        	var eliRemark = Ext.getCmp('eliRemark');
+	            Ext.Ajax.request({
+	                url: '<%=path%>/ResourcesTrack/saveFailureResource.do',
+	                params: {
+	                	cid: cid,
+	                	eli: eliRemark
+	                },
+                    success: function(aResponse, aOptions){
+                   		eliWindow.hide();
+                        masterStore.reload({callback: myGridUpdateAction1});
+                        _gridStore.baseParams._cpid = '';
+						_gridloanLoadAction.execute();
+						nextClientMsg.disable();
+						onInformation.disable();
+                        var result = Ext.decode(aResponse.responseText);
+               			Ext.MessageBox.alert('提示', result.msg);
+                    },
+                    failure: function(aResponse, aOptions){
+                    	var result = Ext.decode(aResponse.responseText);
+						Ext.MessageBox.alert('提示', result.msg);     
+                    }
+                })
+	        }
+	    });
+      	var eliReturnAction = new Ext.Action({
+	        text: '返回',
+	        iconCls: 'returns',
+	        handler: function(){
+	           eliWindow.hide();
+	        }
+	    });
+	    var eliWindow = new Ext.Window({
+	        width: 400,
+	        height: 160,
+	        title:'淘汰资源',
+	        modal: true,
+	        layout: 'fit',
+	        plain: true,
+	        bodyStyle: 'padding:5px;',
+	        buttonAlign: 'center',
+	        items: eliForm,
+	        closeAction: 'hide',
+	        buttons: [
+                eliSaveAction,
+                eliReturnAction
+            ]
+	    });
+	
+	//-----------认领资源按钮 -- 弹出 层 填写添加备注信息
+	  var addForm = new Ext.form.FormPanel({
+	        id: 'addForm',
+	        bodyStyle: 'padding:5px',
+	        frame: true,
+	        labelWidth: 70,
+	        layout: 'form',
+	        items:[
+				{
+                	fieldLabel: '添加备注',
+                  	xtype:'textarea',
+                  	anchor: '95%',
+                  	id:'addRemark'
+	            }	        
+	        ]
+	    });
+	    
+	    var addSaveAction = new Ext.Action({
+	        text: '确定',
+	        iconCls: 'saves',
+	        handler: function(){
+	        	var rec = null;
+	        	if(addFlag == 1){
+	        		rec = myGridEliminate.getSelectionModel().getSelected();
+	        	}
+	        	if(addFlag == 2){
+	        		rec = masterStore.getAt(0);
+	        	}
+	        	var addRemark = Ext.getCmp('addRemark').getValue();
+	        	if(rec != null){
+	        		var id = rec.id;
+	        		var eliTime = rec.get('eliTime');
+		            Ext.Ajax.request({
+		                url: '<%=path%>/ResourcesTrack/saveAddResource.do',
+		                params: {
+		                	id: id,
+		                	eli: eliTime,
+		                	add: addRemark
+		                },
+	                    success: function(aResponse, aOptions){
+	                   		addWindow.hide();
+	                   		_gridEliminate.reload({callback: myGridUpdatemyProposedresources});
+	                        masterStore.reload({callback: myGridUpdateAction1});
+	                        var result = Ext.decode(aResponse.responseText);
+	               			Ext.MessageBox.alert('提示', result.msg); 
+	                    },
+	                    failure: function(aResponse, aOptions){
+	                    	var result = Ext.decode(aResponse.responseText);
+							Ext.MessageBox.alert('提示', result.msg);     
+	                    }
+	                })
+	        	}
+	        }
+	    });
+	    
+      	var addReturnAction = new Ext.Action({
+	        text: '返回',
+	        iconCls: 'returns',
+	        handler: function(){
+	           addWindow.hide();
+	        }
+	    });
+	    
+	    var addWindow = new Ext.Window({
+	        width: 420,
+	        height: 180,
+	        title:'添加资源',
+	        modal: true,
+	        layout: 'fit',
+	        plain: true,
+	        bodyStyle: 'padding:5px;',
+	        buttonAlign: 'center',
+	        items: addForm,
+	        closeAction: 'hide',
+	        buttons: [
+                addSaveAction,
+                addReturnAction
+            ]
+	    });
+		//---------发送短信 弹出 层。填写发送短信内容
+	    var sendForm = new Ext.form.FormPanel({
+	        id: 'sendForm',
+	        bodyStyle: 'padding:5px',
+	        frame: true,
+	        items: [{
+	            layout: 'column',
+	            items: [
+	                {
+	                    columnWidth: .8,
+	                    layout: 'form',
+	                    labelWidth: 60,
+	                    defaults: {
+	                        width: 220,
+	                        msgTarget: 'side'
+	                    },
+	                    items: [
+	                      
+	                        {
+	                            fieldLabel: '内容',
+	                             xtype:'textarea',
+	                             allowBlank: false,
+	                             id: 'sendContent'
+	                        }
+	                    ]
+	                }
+	            ]
+	        }]
+	    });
+	
+	
+		var sendSure = new Ext.Action({
+	        text: '确定',
+	        iconCls: 'check',
+	        scale: 'small',
+	        handler: function(){
+	            if (myGrid.getSelectionModel().hasSelection()) {
+	            	 var record = myGrid.getSelectionModel().getSelected();
+	            	 <%--发送短信，选择的客户ID ，短信内容，客户姓名，电话号码--%>
+	                        var _tempId=''
+			                _tempId = record.get('id');
+			                var _contents = Ext.getCmp('sendContent').getValue();
+			                var _clieName = record.get('clientName');
+			                var _numbers = record.get('contactTel');
+	              
+	                        Ext.Ajax.request({
+	                           url: '<%=path%>/sendMassage/sendMessages.do',
+	                            params: {
+	                                _tempId: _tempId,
+	                                _contents:_contents,
+	                                _clieName:_clieName,
+	                                _numbers:_numbers
+	                            },
+	                            success: function(aResponse, aOptions){
+	                            	form7Window.hide();
+	                                var result = Ext.decode(aResponse.responseText);
+				                    Ext.MessageBox.alert('提示', result.msg);
+	                            },
+	                            failure: function(aResponse, aOptions){
+	                                var result = Ext.decode(aResponse.responseText);
+				                    Ext.MessageBox.alert('提示', result.msg);
+	                            }
+	                        })
+	            }
+	        }
+	    });
+	    
+	     var form7ReturnAction = new Ext.Action({
+	        text: '返回',
+	        iconCls:'returns',
+	        handler: function(){
+	           form7Window.hide();
+	        }
+	    });
+	    
+      	var form7Window = new Ext.Window({
+	    	title: '发送短信',
+	        width: 420,
+	        height: 180,
+	        modal: true,
+	        layout: 'fit',
+	        plain: true,
+	        bodyStyle: 'padding:5px;',
+	        buttonAlign: 'center',
+	        items: sendForm,
+	        closable: true,
+	        closeAction: 'hide',
+	        buttons: [
+	        		sendSure,
+	                form7ReturnAction
+	            ]
+	    });
+	    
+	    //---------------手动分配form---------------
+		var assignForm = new Ext.form.FormPanel({
+			id: 'assignForm',
+	        bodyStyle: 'padding:5px',
+	        frame: true,
+	        items:[
+	        	{
+	        		layout: 'column',
+	        		items:[
+	        			{
+	        				columnWidth: .5,
+	        				layout: 'form',
+	        				labelWidth: 50,
+	        				defaults: {
+	        					anchor: '95%',
+		                        msgTarget: 'side'
+	        				},
+	        				items:[
+	        					departComboBox
+	        				]
+	        			},
+	        			{
+	        				columnWidth: .5,
+	        				layout: 'form',
+	        				labelWidth: 75,
+	        				defaults: {
+	        					anchor: '95%',
+	        					msgTarget: 'side'
+	        				},
+	        				items:[
+	        					employeeComboBOx
+	        				]
+	        			}
+	        		]
+	        	}
+	        ]
+		});
+	
+	  //-------------成单率------
+      	var comboxStatecd111up = new Ext.form.ComboBox({
+	        id: 'comboxStatecd111up',
+        	hiddenName: 'signPossible',
+	        fieldLabel: '成单率',
+	        triggerAction: 'all',
+	        allowBlank: false,
+	        editable: false,
+	         disabled: true,
+	        mode: 'local',
+	        store: signPossibleData,
+	 		valueField: 'key',
+	        displayField: 'value'
+	    });
+	  
+  	    var comboxState111up = new Ext.form.ComboBox({
+	        id: 'comboxState111up',
+        	hiddenName: 'oppType',
+	        fieldLabel: '商机类型',
+	        triggerAction: 'all',
+	        allowBlank: false,
+	        editable: false,
+	        disabled: true,
+	        mode: 'local',
+	        store: oppTypeData,
+	 		valueField: 'key',
+	        displayField: 'value'
+	    });
+	 
+	
+	  var formup = new Ext.form.FormPanel({
+        id: 'formup',
+        bodyStyle: 'padding:5px',
+	        labelAlign: 'right',
+	        labelWidth: 80,
+	        frame: true,
+	        items: [{
+	            layout: 'column',
+	            items: [
+	                {
+	                    columnWidth: .5,
+	                    layout: 'form',
+	                    labelWidth: 80,
+	                    defaultType: 'textfield',
+	                    defaults: {
+	                        anchor: '95%'
+	                    },
+	                    items: [
+	                          {
+                            inputType: 'hidden',
+                            fieldLabel: '编号',
+                           	disabled: true,
+                            id: 'idup',
+                            name:'id'
+                            },
+	                        {
+	                        	xtype: 'datefield',
+	                        	format: 'Y-m-d',
+	                            fieldLabel: '创建日期',
+	                            allowBlank: false,
+	                            disabled: true,
+	                            id: 'assignDateup',
+	                            name:'assignDate'
+	                        },
+	                        comboxState111up,
+	                        {
+	                            fieldLabel: '客户联系方式',
+	                            allowBlank: false,
+	                            id: 'contactTelup',
+	                            name: 'contactTel',
+	                            disabled: true
+	                        },
+	                        {
+	                            fieldLabel: '备用电话1',
+	                            allowBlank: false,
+	                            disabled: true,
+	                            id: 'spareTel1up',
+	                            name: 'spareTel1'
+	                        },
+	                        comboxStatecd111up
+	                    ]
+	                },
+	                {
+	                    columnWidth: .5,
+	                    layout: 'form',
+	                    labelWidth: 80,
+	                    defaultType: 'textfield',
+	                    defaults: {
+	                        anchor: '95%'
+	                    },
+	                    items: [
+	                    	{
+	                            fieldLabel: '客户名称',
+	                            allowBlank: false,
+	                            disabled: true,
+	                            id: 'clientNameup',
+	                            name: 'clientName'
+	                        },
+	                        {
+	                            fieldLabel: '贷款金额(万)',
+	                            allowBlank: false,
+	                            disabled: true,
+	                            id: 'loanAmountup',
+	                            name: 'loanAmount'
+	                        },
+	                        {
+	                            fieldLabel: '客户地址',
+	                            allowBlank: false,
+	                            disabled: true,
+	                            id: 'clientAddup',
+	                            name: 'clientAdd'
+	                        },
+	                        {
+	                            fieldLabel: '备用电话2',
+	                            allowBlank: false,
+	                             disabled: true,
+	                            id: 'spareTel2up',
+	                            name: 'spareTel2'
+	                        }
+	                    ]
+	                }
+	            ]
+	        },
+            {
+            	xtype: 'textarea',
+                fieldLabel: '备注',
+                anchor: '98%',
+                allowBlank: false,
+                disabled: true,
+                id: 'remarkup',
+                name: 'remark'
+            }]
+	    });
+	    
+	      //-------------------导入form-------------
+	    var importForm = new Ext.form.FormPanel({
+			id: 'importForm',
+	        bodyStyle: 'padding:5px',
+	        labelWidth: 60,
+	        frame: true,
+	        layout: 'fit',
+	        fileUpload: true,
+	        items:[
+	        	{
+                    xtype: 'fileuploadfield',
+		            name:'uploadFilePath',
+		            id: 'uploadFilePath',
+		            bodyStyle:'padding:0 0 4px 0',
+		            width:250,
+		            height: 18,
+		            emptyText: '请选择要导入的Excel',
+		            buttonText: '选择'
+                }
+	        ]
+		});
+		//-------------导入的返回按钮-----------
+		var importReturnAction = new Ext.Action({
+	        text: '返回',
+	        iconCls:'returns',
+	        handler: function(){
+	        	importWindow.hide();
+	        }
+	    });
+	    
+      	var formReturnAction11up = new Ext.Action({
+	        text: '返回',
+	        iconCls: 'returns', 
+	        handler: function(){
+	            formWindow11up.hide();
+	        }
+	    });
+			    
+		var formWindow11up = new Ext.Window({
+	        width: 650,
+            height: 320,
+	        modal: true,
+			title: '详细客户信息',
+	        layout: 'fit',
+	        plain: true,
+	        bodyStyle: 'padding:5px;',
+	        buttonAlign: 'right',
+	        items: formup,
+	        closeAction: 'hide',
+	        buttons: [
+	                formReturnAction11up
+	            ]
+	    });
+   	    // ------------------ clientForm -------------------------    
+	    var clientForm = new Ext.form.FormPanel({
+	        id: 'clientForm',
+	        bodyStyle: 'padding:5px',
+	        labelAlign: 'right',
+	        labelWidth: 90,
+	        frame: true,
+	        items: [{
+	            layout: 'column',
+	            items: [
+	                {
+	                    columnWidth: .5,
+	                    layout: 'form',
+	                    labelWidth: 90,
+	                    defaultType: 'textfield',
+	                    defaults: {
+	                        anchor: '95%'
+	                    },
+	                    items: [
+	                        {
+								inputType: 'hidden',
+	                            fieldLabel: '*编号',
+	                            id: 'id'
+	                        },
+	                        {
+	                        	xtype: 'datefield',
+	                        	format: 'Y-m-d',
+	                            fieldLabel: '创建日期',
+	                            allowBlank: true,
+	                            editable: false,
+	                            id: 'assignDate'
+	                        },
+	                        oppTypeCombox,
+	                        {
+	                            fieldLabel: '*客户联系方式',
+	                            allowBlank: false,
+	                            id: 'contactTel',
+	                            regex:/^[0-9]*[1-9][0-9]*$/,
+	                            enableKeyEvents: true,
+	                            listeners: {
+	                            	'keyup': function(){
+	                            		var _con = Ext.getCmp('contactTel');
+	                            		var _value = _con.getValue();
+	                            		if(_value != ''){
+	                            			_value = _value.substring(0,1);
+	                            			if(_value == 1){
+	                            				_con.regex = /^\d{11}$/;
+	                            			}else{
+	                            				_con.regex = /^[0-9]*[1-9][0-9]*$/;
+	                            			}
+	                            		}
+	                            		
+	                            	}
+	                            }
+	                        },
+	                        {
+	                            fieldLabel: '备用电话1',
+	                            allowBlank: true,
+	                            id: 'spareTel1',
+	                            enableKeyEvents: true,
+	                            regex:/^[0-9]*[1-9][0-9]*$/,
+	                            listeners: {
+	                            	'keyup': function(){
+	                            		var _con = Ext.getCmp('spareTel1');
+	                            		var _value = _con.getValue();
+	                            		if(_value != ''){
+	                            			_value = _value.substring(0,1);
+	                            			if(_value == 1){
+	                            				_con.regex = /^\d{11}$/;
+	                            			}else{
+	                            				_con.regex = /^[0-9]*[1-9][0-9]*$/;
+	                            			}
+	                            		}
+	                            		
+	                            	}
+	                            }
+	                        },
+	                        signPossibleCombox
+	                    ]
+	                },
+	                {
+	                    columnWidth: .5,
+	                    layout: 'form',
+	                    labelWidth: 80,
+	                    defaultType: 'textfield',
+	                    defaults: {
+	                        anchor: '95%'
+	                    },
+	                    items: [
+	                    	{
+	                            fieldLabel: '客户名称',
+	                            allowBlank: true,
+	                            id: 'clientName'
+	                        },
+	                        {
+	                            fieldLabel: '贷款金额(万)',
+	                            allowBlank: true,
+	                            id: 'loanAmount',
+	                            regex:/^[0-9].*$/
+	                        },
+	                        {
+	                            fieldLabel: '客户地址',
+	                            allowBlank: true,
+	                            id: 'clientAdd'
+	                        },
+	                        {
+	                            fieldLabel: '备用电话2',
+	                            allowBlank: true,
+	                            id: 'spareTel2',
+	                            enableKeyEvents: true,
+	                            regex:/^[0-9]*[1-9][0-9]*$/,
+	                            listeners: {
+	                            	'keyup': function(){
+	                            		var _con = Ext.getCmp('spareTel2');
+	                            		var _value = _con.getValue();
+	                            		if(_value != ''){
+	                            			_value = _value.substring(0,1);
+	                            			if(_value == 1){
+	                            				_con.regex = /^\d{11}$/;
+	                            			}else{
+	                            				_con.regex = /^[0-9]*[1-9][0-9]*$/;
+	                            			}
+	                            		}
+	                            	}
+	                            }
+	                        },
+	                        clientSelComboBOx
+	                    ]
+	                }
+	            ]
+	        },
+            {
+            	xtype: 'textarea',
+                fieldLabel: '备注',
+                anchor: '98%',
+                allowBlank: true,
+                id: 'remarkcs',
+                name:'remark'
+            }]
+	    });
+	    
+	    //----------客户信息保存----------
+	    var formClientSaveAction = new Ext.Action({
+	        text: '保存',
+	        iconCls:'saves',
+	        handler: function(){
+	        	Ext.getCmp('contactTel').setDisabled(false);
+            	Ext.getCmp('spareTel1').setDisabled(false);
+            	Ext.getCmp('spareTel2').setDisabled(false);
+            	Ext.getCmp('clientSelComboBOx').setDisabled(false);
+	        	var _opp = Ext.getCmp('oppTypeCombox').getValue(); 
+	        	var _sign = Ext.getCmp('signPossibleCombox').getValue();
+	        	var _client = Ext.getCmp('clientSelComboBOx').getValue();
+	        	var _spare1 = Ext.getCmp('spareTel1').getValue();
+	        	var _spare2 = Ext.getCmp('spareTel2').getValue();
+	        	var _contact = Ext.getCmp('contactTel').getValue();
+	            if(clientForm.getForm().isValid()){
+	            	if(_spare1 == '' && _spare2 == '' && _contact == ''){
+	            		Ext.MessageBox.alert('提示', '必须填写一个联系电话！');
+	            	}else if((_spare1 == _spare2 && _spare1 != '' && _spare2 != '') | (_spare1 == _contact && _spare1 != '' && _contact != '') | (_spare2 == _contact && _spare2 != '' && _contact != '')){
+	            		Ext.MessageBox.alert('提示', '联系电话不能相同！');
+	            	}else{
+	            		clientForm.getForm().submit({
+		                    url: '<%=path%>/client/saveOrUpdateClient.do',
+		                    params: {
+		                        _opp: _opp,
+		                        _sign: _sign,
+		                        _client: _client
+		                    },
+		                    waitTitle: '请等待',
+		                    waitMsg: '正在处理数据...',
+		                    timeout: 10,
+		                    success: function(aForm, aAction){
+		                    	formClientWindow.hide();
+		                    	Ext.MessageBox.alert('提示', aAction.result.msg); 
+		                        masterStore.reload({callback: myGridUpdateAction1});
+		                    },
+		                    failure: function(aForm, aAction) {
+		                    	masterStore.reload({callback: myGridUpdateAction1});
+		                        Ext.MessageBox.alert('提示', aAction.result.msg);                           
+		                    }
+	                	});
+	            	}
+	            }
+	        }
+	    });
+	    
+	      //------------------------查看淘汰客户的跟踪信息
+	    var formTrackrecors = new Ext.grid.GridPanel({
+	        id: 'formTrackrecors',
+	        store: _gzgridStore ,
+	        sm: new Ext.grid.RowSelectionModel(),
+	        frame:true,
+	        trackMouseOver: false,
+	        disableSelection: false,
+	        loadMask: true,
+	        columns: [
+	            {
+	                hidden:true,
+	            	header: 'ID',
+	                sortable: false,
+	                dataIndex: 'gzid'
+	            },
+	            {
+	            	header: '跟踪内容',
+	                sortable: true,
+	                width:600,
+	                dataIndex: 'gzresourcescontent'
+	            },
+	             {
+	            	header: '跟踪时间',
+	            	width:120,
+	                sortable: true,
+	                dataIndex: 'gzresourcestime'
+	            },
+	            {
+	            	header: '管理人',
+	            	width:80,
+	                sortable: true,
+	                   dataIndex: 'gzresourcespeople_name'
+	            },
+	             {
+	            	header: '客户预约',
+	                sortable: true,
+	                width:80,
+	                   dataIndex: 'gztypes'
+	            },
+	            {
+	            	header: '上门时间',
+	                sortable: true,
+	                width:100,
+	                   dataIndex: 'gzcalltime'
+	            }
+	        ],
+	        bbar: new Ext.PagingToolbar({
+	            pageSize: 20,
+	            store: _gzgridStore ,
+	            displayInfo: true,
+	            plugins: new Ext.ux.ProgressBarPager(),
+	            displayMsg: '显示: {0} - {1} / 总数: {2}',
+	            emptyMsg: '没有记录'
+	        })
+	    });
+	    
+      	var formReturnActionTrackrecor = new Ext.Action({
+	        text: '返回',
+	        iconCls: 'returns', 
+	        handler: function(){
+	           formWindowTrackrecor.hide();
+	        }
+	    });
+	    
+      	var formWindowTrackrecor = new Ext.Window({
+	        width: 950,
+	        height: 420,
+	        modal: true,
+	        layout: 'fit',
+	        plain: true,
+	        title:'客户跟踪详细信息',
+	        bodyStyle: 'padding:5px;',
+	        buttonAlign: 'right',
+	        items: formTrackrecors,
+	        closeAction: 'hide',
+	        buttons: [
+	                formReturnActionTrackrecor
+	            ]
+	    });
+	    
+	    //---------客户信息新增返回
+	    var formClientReturnAction = new Ext.Action({
+		        text: '返回',
+		        iconCls:'returns',
+		        handler: function(){
+		           formClientWindow.hide();
+		        }
+		    });
+	    
+      var formClientWindow = new Ext.Window({
+	    	title: '新增客户信息',
+	        width: 650,
+	        height: 350,
+	        modal: true,
+	        layout: 'fit',
+	        plain: true,
+	        bodyStyle: 'padding:5px;',
+	        buttonAlign: 'center',
+	        items: clientForm,
+	        closable: true,
+	        closeAction: 'hide',
+	        buttons: [
+	                formClientSaveAction,
+	                formClientReturnAction
+	            ]
+	    });
+	    
+	     //-------------手动分配客户信息window----------
+	    var assignWindow = new Ext.Window({
+	    	title: '手动分配客户信息',
+	        width: 500,
+	        height: 130,
+	        modal: true,
+	        layout: 'fit',
+	        plain: true,
+	        bodyStyle: 'padding:5px;',
+	        buttonAlign: 'center',
+	        items: assignForm,
+	        closable: false,
+	        closeAction: 'hide',
+	        buttons: [
+	        	assignSaveAction,
+	            assignReturnAction
+	        ]
+	    });
+	    
+	      //---------------导入的分配按钮------------
+	    var importSaveAction = new Ext.Action({
+	        text: '导入',
+	        iconCls:'saves',
+	        handler: function(){
+	        	var _value = Ext.getCmp('uploadFilePath').getValue();
+	        	if(_value == '' | _value == null){
+	        		Ext.MessageBox.alert('提示', '请选择需要导入的Excel文件!');
+	        	}else{
+	        		var _values = _value.split('\.');
+	        		if(_values[_values.length - 1].substring(0, 2) == 'xl'){
+	        			importForm.getForm().submit({
+		                    url: '<%=path%>/client/importClient.do',
+		                    params: {
+		                    },
+		                    waitTitle: '请等待',
+		                    waitMsg: '正在处理数据...',
+		                    timeout: 10,
+		                   	success: function(aForm, aAction){
+		                        masterStore.reload({callback: myGridUpdateAction1});
+                            	importWindow.hide();
+                                Ext.MessageBox.alert('提示', aAction.result.msg); 
+		                    },
+		                    failure: function(aForm, aAction) {
+		                        var result = Ext.decode(aAction.response.responseText);
+                                Ext.MessageBox.alert('提示', result.msg);
+		                    }
+		                });
+	        		}else{
+	        			Ext.MessageBox.alert('提示', '只能导入Excel文件, 请重新选择!');
+	        		}
+	        	}
+	        }
+	    });
+	    //-------------导入客户信息window----------
+	    var importWindow = new Ext.Window({
+	    	title: '导入客户信息',
+	        width: 350,
+	        height: 130,
+	        modal: true,
+	        layout: 'fit',
+	        plain: true,
+	        bodyStyle: 'padding:5px;',
+	        buttonAlign: 'center',
+	        items: importForm,
+	        closable: false,
+	        closeAction: 'hide',
+	        buttons: [
+	        	importSaveAction,
+	            importReturnAction
+	        ]
+	    });
+	    
+	    var remarkReturnAction = new Ext.Action({
+	    	text: '返回',
+	        iconCls:'returns',
+	        handler: function(){
+	           _window.hide();
+	        }
+	    });
+	    
+	    var remark1ReturnAction = new Ext.Action({
+	    	text: '返回',
+	        iconCls:'returns',
+	        handler: function(){
+	           us_window.hide();
+	        }
+	    });
+	    
+	    var _window = new Ext.Window({
+	    	title: '备注信息',
+	        width: 380,
+	        height: 180,
+	        modal: true,
+	        layout: 'fit',
+	        plain: true,
+	        bodyStyle: 'padding:5px;',
+	        buttonAlign: 'center',
+	        items: [
+	        	{
+	        		xtype: 'textarea',
+	        		id: 'remarkMsg',
+	        		name:'remark'
+	        	}
+	        ],
+	        closable: true,
+	        closeAction: 'hide',
+	        buttons: [
+	        	remarkReturnAction
+	        ]
+	    });
+	    
+	    //-----------已签单备注信息
+	    var us_window = new Ext.Window({
+	    	title: '签单备注',
+	        width: 380,
+	        height: 180,
+	        modal: true,
+	        layout: 'fit',
+	        plain: true,
+	        bodyStyle: 'padding:5px;',
+	        buttonAlign: 'center',
+	        items: [
+	        	{
+	        		xtype: 'textarea',
+	        		id: 'signRemark'
+	        	}
+	        ],
+	        closable: true,
+	        closeAction: 'hide',
+	        buttons: [
+	        	sureAction,
+	        	remark1ReturnAction
+	        ]
+	    });
+	    
+	    
+	    //---------------退单
+      	var exitForm = new Ext.form.FormPanel({
+	        id: 'exitForm',
+	        bodyStyle: 'padding:5px',
+	        frame: true,
+	        items: [{
+	            layout: 'column',
+	            items: [
+	                {
+	                    columnWidth: .8,
+	                    layout: 'form',
+	                    labelWidth: 80,
+	                    defaults: {
+	                        width: 180,
+	                        msgTarget: 'side'
+	                    },
+	                    items: [
+	                        {
+	                            fieldLabel: '*备注',
+	                            xtype:'textarea',
+	                            id: 'eremark'
+	                        }
+	                    ]
+	                }
+	            ]
+	        }]
+	    });
+	    
+	    
+	    var exitSure = new Ext.Action({
+	        text: '退单',
+	        iconCls: 'check',
+	        scale: 'small',
+	        handler: function(){
+	            if (myGrid.getSelectionModel().hasSelection()) {
+	            	 var record = myGrid.getSelectionModel().getSelected();
+	            	    var tuid_id = record.id;
+	                        var eremark = Ext.getCmp('eremark').getValue();
+	                        Ext.Ajax.request({
+	                            url: '<%=path%>/loan/exitSure.do',
+	                            params: {
+	                                tuid_id: tuid_id,
+	                                eremark:eremark
+	                            },
+	                            success: function(aResponse, aOptions){
+	                            	formtuidWindow.hide();
+								    masterStore.reload({callback: myGridUpdateAction1});
+	                                var result = Ext.decode(aResponse.responseText);
+				                    Ext.MessageBox.alert('提示', result.msg);
+	                            },
+	                            failure: function(aResponse, aOptions){
+	                                var result = Ext.decode(aResponse.responseText);
+				                    Ext.MessageBox.alert('提示', result.msg);
+	                            }
+	                        })
+	            }
+	        }
+	    });
+      	var formtuidReturnAction = new Ext.Action({
+	        text: '返回',
+	        iconCls:'returns',
+	        handler: function(){
+	           formtuidWindow.hide();
+	        }
+	    });
+	    
+     	var formtuidWindow = new Ext.Window({
+	    	title: '退单',
+	        width: 400,
+	        height: 180,
+	        modal: true,
+	        layout: 'fit',
+	        plain: true,
+	        bodyStyle: 'padding:5px;',
+	        buttonAlign: 'center',
+	        items: exitForm,
+	        closable: true,
+	        closeAction: 'hide',
+	        buttons: [
+        		exitSure,
+                formtuidReturnAction
+            ]
+	    });
+	    
+	    if(roleCode == '201206' | roleCode == '201208'){
+	    	clientEditAction.hide();
+	    	clientDeleteAction.hide();
+	    	sendAction.hide();
+	    	myGridEliminateAction.hide();
+	    	departSelComboBox1.hide();
+	    	employeeSelComboBOx1.hide();
+	    	myGridFailureResourceAction.hide();
+	    	exportData.hide();
+	    	if(roleCode == '201208'){
+	    		myGrid.getTopToolbar().hide();
+	    		exportData.show();
+	    	}
+		    var viewport = new Ext.Viewport({
+			      layout:'fit',
+			      border: false,
+			      items:[
+			     	   myGrid
+			      ]
+		    });
+	    }else if(_theCurrent == '' & _cpid == ''){
+	    	if(flag != '' && flag != null){
+		    	myGrid.addListener('bodyresize', function(){
+		    		Ext.getCmp('myGrid').setHeight(305); 
+		    	});
+	    	}
+	    	var mainPanel = new Ext.Panel({
+		        autoScroll:true,
+		        layout:'form',
+		        monitorResize: true, 
+		        items:[
+                	{
+	                    title: '资料列表',
+						height: 300,
+	                    layout:'fit',
+	                    autoScroll:true,
+	                    items: myGrid
+                	},
+                	{
+	                    title: '资源跟踪记录',
+	                    height: 250,
+	                    layout:'fit',
+	                    autoScroll:true,
+	                    items:_grid
+	                },
+	                {
+	                    title: '客户预约',
+	                    height: 200,
+	                    layout:'fit',
+	                    autoScroll:true,
+	                    items:_grid1
+	                }
+		        ]
+		     });
+		     var viewport = new Ext.Viewport({
+			       layout:'fit',
+			       border: false,
+			       autoScroll:true,
+			       items:[
+			       	   mainPanel
+			       ]
+		     });
+	    }else{
+	    	myGrid.addListener('bodyresize', function(){
+	    		Ext.getCmp('myGrid').setHeight(document.body.offsetHeight); 
+	    	});
+	    	var mainPanel = new Ext.Panel({
+		        autoScroll:true,
+		        layout:'form',
+		        monitorResize: true, 
+		        items:[
+                	{
+	                    title: '资料列表',
+						height: 130,
+	                    layout:'fit',
+	                    items: myGrid
+                	},
+                	{
+	                    title: '资源跟踪记录',
+	                    height: 250,
+	                    layout:'fit',
+	                    autoScroll:true,
+	                    items:_grid
+	                },
+	                {
+	                    title: '客户预约',
+	                    height: 200,
+	                    layout:'fit',
+	                    autoScroll:true,
+	                    items:_grid1
+	                }
+		        ]
+		     });
+		     var viewport = new Ext.Viewport({
+			       layout:'fit',
+			       border: false,
+			       autoScroll:true,
+			       items:[
+			       	   mainPanel
+			       ]
+		     });
+	    }
+	    var grid1LoadAction = new Ext.Action({
+	        handler : function() {
+          		Ext.Ajax.request({
+		          	url: '<%=path%>/user/processexaminerecords.do',
+		           	waitMsg : '数据处理中...',
+		            success: function(aResponse, aOptions){
+	                 	var result = Ext.decode(aResponse.responseText);
+	                 	var msg=result.message;   
+						if(msg == '1'){
+							new Ext.ux.ToastWindow({ 
+						  		title: '温馨提示', 
+						  		html: '</br></br></br><div align="center"><span>有新的客户分配给你了！</span></div>' +
+						  			'<div align="center"><a class="title_a" href="<%=path%>/index/findWarnClient.do?flag=have">点击查看详情</a></div>'
+							}).show(document);
+						}
+					}
+		          });
+		    }
+		});
+
+		var task = {
+		  run: function(){
+		   grid1LoadAction.execute();
+		  },
+		  interval: 200000 //1 second
+		}
+		var runner = new Ext.util.TaskRunner();
+	    // --------------- load data -------------------
+   		myGridLoadAction.execute();
+   		if(flag == '' || flag == null){
+	   		runner.start(task);
+   		}
+	});
+	 	Ext.namespace("Ext.ux");  
+		Ext.ux.ToastWindowMgr = {  
+		    positions: []   
+		};  
+  
+		Ext.ux.ToastWindow = Ext.extend(Ext.Window, {  
+	    initComponent: function(){  
+	          Ext.apply(this, {  
+	            iconCls: this.iconCls || 'information',  
+	            width: 250,  
+	            height: 150,  
+	            autoScroll: true,  
+	            autoDestroy: true,  
+	            plain: false,  
+	            shadow:false  
+	          });  
+	        this.task = new Ext.util.DelayedTask(this.hide, this);  
+	        Ext.ux.ToastWindow.superclass.initComponent.call(this);  
+	    },  
+	    setMessage: function(msg){  
+	        this.body.update(msg);  
+	    },  
+	    setTitle: function(title, iconCls){  
+	        Ext.ux.ToastWindow.superclass.setTitle.call(this, title, iconCls||this.iconCls);  
+	    },  
+	    onRender:function(ct, position) {  
+	        Ext.ux.ToastWindow.superclass.onRender.call(this, ct, position);  
+	    },  
+	    onDestroy: function(){  
+	        Ext.ux.ToastWindowMgr.positions.remove(this.pos);  
+	        Ext.ux.ToastWindow.superclass.onDestroy.call(this);  
+	    },  
+	    afterShow: function(){  
+	        Ext.ux.ToastWindow.superclass.afterShow.call(this);  
+	        this.on('move', function(){  
+	               Ext.ux.ToastWindowMgr.positions.remove(this.pos);  
+	            this.task.cancel();}  
+	        , this);  
+	        this.task.delay(5000);  
+	    },  
+	    animShow: function(){  
+	        this.pos = 0;  
+	        while(Ext.ux.ToastWindowMgr.positions.indexOf(this.pos)>-1)  
+	            this.pos++;  
+	        Ext.ux.ToastWindowMgr.positions.push(this.pos);  
+	        this.setSize(250,180);  
+	        this.el.alignTo(document, "br-br", [ -20, -((this.getSize().height+10)*this.pos) ]);  
+	        this.el.slideIn('b', {  
+	            duration: 2,  
+	            callback: this.afterShow,  
+	            scope: this  
+	        });      
+	    },  
+	    animHide: function(){  
+	           Ext.ux.ToastWindowMgr.positions.remove(this.pos);  
+	        this.el.ghost("b", {  
+	            duration: 5,  
+	            remove: true,  
+	         scope: this,  
+	         callback: this.destroy  
+	        });      
+	    } 
+	});
+		</script>
+<%@ include file="/WEB-INF/views/common/footer.jsp"%>

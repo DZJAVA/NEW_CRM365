@@ -1,0 +1,61 @@
+
+Ext.namespace('Com.kingviker.dynamicgrid');
+
+/**
+ * 动态列实例
+ *
+ * @class Com.kingviker.dynamicgrid.DynamicWindow
+ * @extends Ext.grid.GridPanel
+ * @constructor
+ *
+ * @param {Object} config The configuration options
+ */
+Com.kingviker.dynamicgrid.DynamicWindow = function(config){
+
+    this.dynamicFormPanel = new Com.kingviker.dynamicgrid.DynamicFormPanel({
+        id: 'dynamicFormPanel'
+    })
+	this.dynamicFormPanel.renderComBox();
+    this.dynamicGridPanel = new Com.kingviker.dynamicgrid.DynamicGridPanel({
+        id: 'dynamicGridPanel'
+    })
+	this.dynamicGridPanel.on('afterlayout',function(){
+	 		Ext.getCmp('dynamicWindow').doLayout()
+	 })
+    // 初始化Window
+    Com.kingviker.dynamicgrid.DynamicWindow.superclass.constructor.call(this, Ext.applyIf(config, {
+        iconCls: 'icon-monitorwarnning',
+        resizable: false,
+        width: 470,
+        height: 500,
+        plain: true,
+        layout: 'border',
+        bodyStyle: 'padding:5px;',
+        closeAction: 'hide',
+        modal: true,
+        defaults: {
+            baseCls: 'x-plain'
+        },
+        items: [{
+            region: "north",
+            border: false,
+            layout: 'fit',
+			height:40,
+            items: [this.dynamicFormPanel]
+        },{
+            region: "center",
+            border: false,
+            layout: 'fit',
+            items: [this.dynamicGridPanel]
+        }],
+        buttons: [{
+            text: '关闭',
+            scope: this,
+            handler: function(){
+                this.hide();
+            }
+        }]
+    }));
+}
+
+Ext.extend(Com.kingviker.dynamicgrid.DynamicWindow, Ext.Window, {});

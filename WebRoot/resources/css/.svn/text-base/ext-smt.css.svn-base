@@ -1,0 +1,262 @@
+.stm_add {
+    background-image: url( ../images/default/smt/smt-add.jpg ) !important;
+}
+.stm-edit {
+	background-image: url( ../images/default/smt/smt-edit.jpg ) !important;
+}
+.stm-delete {
+	background-image: url( ../images/default/smt/smt-delete.jpg ) !important;
+}
+.stm-inquires {
+	background-image: url( ../images/default/smt/smt-inquires.jpg ) !important;
+}
+.smt-systemMenu {
+	background-image: url( ../images/default/smt/smt-systemMenu.jpg ) !important;
+}
+/**
+  * ��̨���Ͻǹ���Աͼ��
+  */
+.smt-administrator {
+	background-image: url( ../images/default/smt/smt-administrator.jpg ) !important;
+}
+/**
+  * �˳�ͼ��
+  */
+.smt-exit {
+	background-image: url( ../images/default/smt/smt-exit.jpg ) !important;
+}
+/**
+  * ʱ��
+  */
+.smt-systemTime {
+	background-image: url( ../images/default/smt/smt-systemTime.jpg ) !important;
+}
+/*
+ * ��ѯ
+ */
+.smt-userInquires {
+	background-image: url( ../images/default/smt/smt-userInquires.jpg ) !important;
+}
+/*
+ *  ��ӭ����
+ */
+.smt-welcome {
+	background-image: url( ../images/default/smt/smt-welcome.jpg ) !important;
+}
+/*
+ * �˵��û�����
+ */
+.smt-systemUser {
+	background-image: url( ../images/default/smt/smt-systemUser.jpg ) !important;
+}
+/*
+ * �û���������
+ */
+.smt-userAdd {
+	background-image: url( ../images/default/smt/smt-userAdd.jpg ) !important;
+}
+/*
+ * �û�����༭
+ */
+.smt-userEdit {
+	background-image: url( ../images/default/smt/smt-userEdit.jpg ) !important;
+}
+/*
+ * �û�����ɾ��
+ */
+.smt-userDelete {
+	background-image: url( ../images/default/smt/smt-userDelete.jpg ) !important;
+}
+/**
+ * �û��������ý�ɫ
+ */
+.smt_configurationRole{
+	background-image: url( ../images/default/smt/smt_configurationRole.jpg ) !important;
+}
+/**
+*�ͻ���Ϣ����
+*/
+.smt_user_suit{
+	background-image: url( ../images/default/smt/user_suit.png ) !important;
+}
+/*
+ * �˵���Դ����
+ */
+.smt-systemResources {
+	background-image: url( ../images/default/smt/smt-systemResources.jpg ) !important;
+}
+/*
+ * ��Դ��������
+ */
+.smt-resourcesAdd {
+	background-image: url( ../images/default/smt/smt-resourcesAdd.jpg ) !important;
+}
+/*
+ * ��Դ����༭
+ */
+.smt-resourcesEdit {
+	background-image: url( ../images/default/smt/smt-resourcesEdit.jpg ) !important;
+}
+/*
+ * ��Դ����ɾ��
+ */
+.smt-resourcesDelete {
+	background-image: url( ../images/default/smt/smt-resourcesDelete.jpg ) !important;
+}
+/*
+ * ϵͳ���Ź���
+ */
+.smt-systemDeparment{
+	background-image: url( ../images/default/smt/smt-systemDeparment.jpg ) !important;
+}
+/*
+ * ���Ź�������
+ */
+.smt-deparmentAdd{
+	background-image: url( ../images/default/smt/smt-deparmentAdd.jpg ) !important;
+}
+/*
+ * ���Ź���༭
+ */
+.smt-deparmentEdit{
+	background-image: url( ../images/default/smt/smt-deparmentEdit.jpg ) !important;
+}
+/*
+ * ���Ź���ɾ��
+ */
+.smt-deparmentDelete{
+	background-image: url( ../images/default/smt/smt-deparmentDelete.jpg ) !important;
+}
+/*
+ * ϵͳ��־����
+ */
+.smt-systemLog{
+	background-image: url( ../images/default/smt/group.png) !important;
+}
+/*
+ * ��־��������
+ */
+.smt-logAdd{
+	background-image: url( ../images/default/smt/smt-logAdd.jpg ) !important;
+}
+/*
+ * ��־����༭
+ */
+.smt-logEdit{
+	background-image: url( ../images/default/smt/smt-logEdit.jpg ) !important;
+}
+/*
+ * ��־����ɾ��
+ */
+.smt-logDelete{
+	background-image: url( ../images/default/smt/smt-logDelete.jpg ) !important;
+}
+/*
+ * ϵͳ��ɫ����
+ */
+.smt-systemRole{
+	background-image: url( ../images/default/smt/smt-systemRole.jpg ) !important;
+}
+/*
+ * ��ɫ��������
+ */
+.smt-roleAdd{
+	background-image: url( ../images/default/smt/smt-roleAdd.jpg ) !important;
+}
+/*
+ * ��ɫ����༭
+ */
+.smt-roleEdit{
+	background-image: url( ../images/default/smt/smt-roleEdit.jpg ) !important;
+}
+/*
+ * ��ɫ����ɾ��
+ */
+.smt-roleDelete{
+	background-image: url( ../images/default/smt/smt-roleDelete.jpg ) !important;
+}
+/*
+ * Ա������
+ */
+.smt-user_gray{
+	background-image: url( ../images/default/smt/smt-user_gray.png ) !important;
+}
+/*
+ * Ա����Ϣ����
+ */
+.smt-user_edit{
+	background-image: url( ../images/default/smt/smt-user_edit.png ) !important;
+}
+/*
+ * Ա��ְλ����
+ */
+.smt-user_suit{
+	background-image: url( ../images/default/smt/smt-user_suit.png ) !important;
+}
+/*
+ * Ʒ���ƹ�
+ */
+.smt-book_go{
+	background-image: url( ../images/default/smt/smt-book_go.png ) !important;
+}
+/*
+ * Ʒ�ƴ���
+ */
+.smt-computer_go{
+	background-image: url( ../images/default/smt/smt-computer_go.png ) !important;
+}
+/*
+ * ���Ͽ�
+ */
+.smt-disk{
+	background-image: url( ../images/default/smt/smt-disk.png ) !important;
+}
+/*
+ * �������
+ */
+.smt-drive_user{
+	background-image: url( ../images/default/smt/smt-drive_user.png ) !important;
+}
+/*
+ * ����?
+ */
+.smt-application_cascade{
+	background-image: url( ../images/default/smt/smt-application_cascade.png ) !important;
+}
+/*
+ * ��������
+ */
+.smt-house_go{
+	background-image: url( ../images/default/smt/smt-house_go.png ) !important;
+}
+/*
+ * ��������
+ */
+.smt-folder_table{
+	background-image: url( ../images/default/smt/smt-folder_table.png ) !important;
+}
+/*
+ * �Ӳ˵�
+ */
+.smt-flag_green{
+	background-image: url( ../images/default/smt/smt-shape_flip.png ) !important;
+}
+
+.smt-email_open{
+	background-image: url( ../images/default/smt/email_open.png ) !important;
+}
+.smt-email{
+	background-image: url( ../images/default/smt/email.png ) !important;
+}
+.smt-chart{
+	background-image: url( ../images/default/smt/chart_bar.png ) !important;
+}
+.smt-department{
+	background-image: url( ../images/default/smt/application_home.png) !important;
+}
+.smt-emailEdit{
+	background-image: url( ../images/default/smt/email_edit.png) !important;
+}
+.smt-emailGo{
+	background-image: url( ../images/default/smt/email_go.png) !important;
+}

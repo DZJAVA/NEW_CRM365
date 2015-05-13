@@ -1,0 +1,1683 @@
+package cn.dgg.CRM365.web.resource;
+
+import java.io.InputStream;
+import java.text.SimpleDateFormat;
+import java.util.ArrayList;
+import java.util.Date;
+import java.util.HashMap;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
+import javax.servlet.http.HttpSession;
+
+import net.sf.json.JSONArray;
+import net.sf.json.JSONObject;
+
+import org.hibernate.cache.ReadWriteCache.Item;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.stereotype.Controller;
+import org.springframework.web.bind.annotation.Mapping;
+import org.springframework.web.bind.annotation.ModelAttribute;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.multipart.MultipartFile;
+import org.springframework.web.servlet.ModelAndView;
+
+import cn.dgg.CRM365.domain.authority.Department;
+import cn.dgg.CRM365.domain.authority.Role;
+import cn.dgg.CRM365.domain.authority.User;
+import cn.dgg.CRM365.domain.authority.UserRole;
+import cn.dgg.CRM365.domain.owners.Employee;
+import cn.dgg.CRM365.domain.replyment.LoanDetail;
+import cn.dgg.CRM365.domain.replyment.Rcount;
+import cn.dgg.CRM365.domain.resourcesManage.Client;
+import cn.dgg.CRM365.domain.resourcesManage.ClientDifRecord;
+import cn.dgg.CRM365.domain.resourcesManage.ClientSource;
+import cn.dgg.CRM365.domain.resourcesManage.ClientUser;
+import cn.dgg.CRM365.domain.resourcesManage.WrongClient;
+import cn.dgg.CRM365.util.commonUtil.ExportExcelUtil;
+import cn.dgg.CRM365.util.commonUtil.ImportExcelUtil;
+import cn.dgg.CRM365.util.commonUtil.StaticValues;
+import cn.dgg.CRM365.util.commonUtil.UploadFile;
+import cn.dgg.CRM365.util.mvc.MvcUtil;
+import cn.dgg.CRM365.util.mvc.view.AbstractMimeView;
+import cn.dgg.CRM365.util.mvc.view.MimeBytesView;
+import cn.dgg.CRM365.util.orm.ICommonDAO;
+import cn.dgg.CRM365.util.orm.IDaoAction;
+import cn.dgg.CRM365.util.orm.PageHibernateTemplate;
+import cn.dgg.CRM365.util.orm.SqlBuilder;
+import cn.dgg.CRM365.util.page.GridLoadParams;
+import cn.dgg.CRM365.util.page.Pagination;
+import cn.dgg.CRM365.web.resources.ResourcesTrackController;
+
+
+/**
+ * 客户管理控制器
+  * <功能简述>
+  * <功能详细描述>
+  * 
+  * @author  黄剑锋
+  * @version  [版本号, Dec 17, 2012]
+  * @see  [相关类/方法]
+  * @since  [产品/模块版本]
+ */
+@SuppressWarnings("all")
+@RequestMapping("/client")
+@Controller
+public class ClientController {
+	
+	ICommonDAO<Client> dao;
+	
+	public ICommonDAO<Client> getDao() {
+		return dao;
+	}
+	@Autowired
+	public void setDao(@Qualifier("commonDAOProxy")ICommonDAO<Client> dao) {
+		this.dao = dao;
+	}
+	
+	@Autowired
+	@Qualifier("commonDAOProxy")
+	ICommonDAO<Department> ddao;
+	
+	@Autowired
+	@Qualifier("commonDAOProxy")
+	ICommonDAO<User> udao;
+	
+	@Autowired
+	@Qualifier("commonDAOProxy")
+	ICommonDAO<ClientDifRecord> cdao;
+	
+	@Autowired
+	@Qualifier("commonDAOProxy")
+	ICommonDAO<UserRole> urdao;
+	
+	@Autowired
+	@Qualifier("commonDAOProxy")
+	ICommonDAO<Object> odao;
+	
+	@Autowired
+	@Qualifier("commonDAOProxy")
+	ICommonDAO<Object[]> objDao;
+	
+	@Autowired
+	@Qualifier("commonDAOProxy")
+	ICommonDAO<WrongClient> wdao;
+	
+	@Autowired
+	@Qualifier("commonDAOProxy")
+	ICommonDAO<Rcount> rdao;
+	
+	@Autowired
+	@Qualifier("commonDAOProxy")
+	ICommonDAO<LoanDetail> lddao;
+	
+	@Autowired
+	@Qualifier("commonDAOProxy")
+	ICommonDAO<Employee> edao;
+	
+	@Autowired
+	@Qualifier("commonDAOProxy")
+	ICommonDAO<ClientSource> csdao;
+	
+	@Autowired
+	@Qualifier("commonDAOProxy")
+	ICommonDAO<ClientUser> cudao;
+	private static Client c = null;//客户信息实体
+	private static User u = null;//用户实体
+	private static ClientUser cu = null;//客户和用户的中间实体
+	private static SqlBuilder sb = null;;//更新实体
+	
+	@RequestMapping("/jumpPage.do")
+	public ModelAndView jumpPage(){
+		return new ModelAndView("resource/client");
+	}
+	
+	/**
+	 * 查询所有员工
+	  *<功能简述>
+	  *<功能详细描述>
+	  * @return [参数说明]
+	  * 
+	  * @return ModelAndView [返回类型说明]
+	  * @exception throws [异常类型] [异常说明]
+	  * @see [类、类#方法、类#成员]
+	 */
+	@RequestMapping("findAllEmployee")
+	public ModelAndView findAllEmployee(){
+		JSONObject jsonObject = new JSONObject();
+		String hql = "from Employee e";
+		List<Employee> employees = edao.findAll(hql);
+		JSONArray array = new JSONArray();
+		if(employees.size() > 0){
+			for(Employee employee:employees){
+				JSONObject item = new JSONObject();
+				item.element("emp_id", employee.getId());
+				item.element("emp_name", employee.getName());
+				array.add(item);
+			}
+			jsonObject.element("data", array);
+		}
+		return MvcUtil.jsonObjectModelAndView(jsonObject);
+	}
+	public List<Client> MsgCondition(StringBuffer sb, String[] flags, String max, String min) throws Exception{
+		List<Client> list = new ArrayList<Client>();
+		String nowTime = StaticValues.sdf.format(new Date());//当前时间
+		if("0".equals(flags[0])){
+			sb.append(" and (c.assignTime like '"+nowTime+"%' or c.assignDate = '"+nowTime+"') ").append(" and c.id < ").append(Long.parseLong(flags[1])).append(")");
+			list = dao.findAll(max+sb);
+		}else if("1".equals(flags[0])){
+			sb.append(" and (c.assignTime like '"+nowTime+"%' or c.assignDate = '"+nowTime+"') ").append(" and c.id > ").append(Long.parseLong(flags[1])).append(")");
+			list = dao.findAll(min+sb);
+		}else if("6".equals(flags[0])){
+			String[] conditions = flags[2].split(":");
+			StatementsController.judgeBasicConditions(sb, conditions[6], conditions[3], conditions[4], conditions[2], conditions[0], conditions[1], conditions[5]);
+			sb.append(" and c.id < ").append(Long.parseLong(flags[1])).append(")");
+			list = dao.findAll(max+sb);
+		}else if("7".equals(flags[0])){
+			String[] conditions = flags[2].split(":");
+			StatementsController.judgeBasicConditions(sb, conditions[6], conditions[3], conditions[4], conditions[2], conditions[0], conditions[1], conditions[5]);
+			sb.append(" and c.id > ").append(Long.parseLong(flags[1])).append(")");
+			list = dao.findAll(min+sb);
+		}
+		return list;
+	}
+	/**
+	 * 根据角色权限来判断条件
+	  *<功能简述>
+	  *<功能详细描述>
+	  * @param roleCode
+	  * @param sb
+	  * @param uid
+	  * @param did
+	  * @return [参数说明]
+	  * 
+	  * @return StringBuffer [返回类型说明]
+	  * @exception throws [异常类型] [异常说明]
+	  * @see [类、类#方法、类#成员]
+	 */
+	public void roleCondition(String roleCode, StringBuffer sb, String userHql, String deptHql, User user){
+		if("201203".equals(roleCode)){//员工只能看分配给自己的资源
+			sb.append(userHql).append(user.getId()).append(" and c.clientStatus <> '3'");
+		}else if("201202".equals(roleCode)){//部门经理能够看他所在的部门的所有资源
+			sb.append(deptHql).append(user.getEmployee().getDepartment().getId()).append(" and c.clientStatus <> '3'");
+		}
+	}
+	/**
+	 * 处理上一个下一个
+	  *<功能简述>
+	  *<功能详细描述>
+	  * @param _flag
+	  * @param user
+	  * @param jsonObject
+	  * @param sb
+	  * @param dataList
+	  * @return
+	  * @throws Exception [参数说明]
+	  * 
+	  * @return List<Client> [返回类型说明]
+	  * @exception throws [异常类型] [异常说明]
+	  * @see [类、类#方法、类#成员]
+	 */
+	public List<Client> lastNext(String _flag, User user, JSONObject jsonObject, StringBuffer sb, List<Client> dataList) throws Exception{
+		String nowTime = StaticValues.sdf.format(new Date());//当前时间
+		Role role = user.getRole();
+		String[] _flags = _flag.split(",");
+		String maxHql = "from Client ci where ci.id =(select MAX(c.id) from Client c ";
+		String minHql = "from Client ci where ci.id =(select MIN(c.id) from Client c ";
+		if("4".equals(_flags[0])){//工作计划对应的上一个客户
+			StringBuffer sBuffer = new StringBuffer();
+			String rhql = "select rt.rtid, rt.plantime from ResourcesTrack rt , Client c where c.id = rt.client_name and rt.plantime like '"+nowTime+"%' and rt.plantime <= '" + _flags[2] + "'";
+			roleCondition(role.getRoleCode(), sBuffer, " and c.follower.id = ", " and c.follower.employee.department.id = ", 
+					user);
+			sBuffer.append(" order by rt.plantime, rt.rtid");
+			List<Object[]> list = objDao.findAll(rhql + sBuffer);
+			if(list.size() > 0){
+				for(int i = list.size() - 1; i >= 0; i--){
+					Object[] obj = list.get(i);
+					if(_flags[2].equals(list.get(i)[1])){
+						if(Long.parseLong(obj[0].toString()) < Long.parseLong(_flags[1])){
+							jsonObject.element("nextId", obj[0] + "," + obj[1]);
+							dataList = dao.findAll("select rt.client_name from ResourcesTrack rt where rt.rtid = " + Long.parseLong(obj[0].toString()));
+							break;
+						}
+					}else{
+						jsonObject.element("nextId", obj[0] + "," + obj[1]);
+						dataList = dao.findAll("select rt.client_name from ResourcesTrack rt where rt.rtid = " + Long.parseLong(obj[0].toString()));
+						break;
+					}
+				}
+				if(dataList.size() == 0){
+					jsonObject.element("nextId", _flags[1] + "," + _flags[2]);
+					dataList = dao.findAll("select rt.client_name from ResourcesTrack rt where rt.rtid = " + Long.parseLong(_flags[1]));
+				}
+			}else{//没上一个资源时
+				jsonObject.element("nextId", _flags[1] + "," + _flags[2]);
+				dataList = dao.findAll("select rt.client_name from ResourcesTrack rt where rt.rtid = " + Long.parseLong(_flags[1]));
+			}
+		}else if("5".equals(_flags[0])){//工作计划对应的下一个客户
+			StringBuffer buffer = new StringBuffer();
+			String rhql = "select rt.rtid, rt.plantime from ResourcesTrack rt, Client c where c.id = rt.client_name and rt.plantime like '"+nowTime+"%' and rt.plantime >= '" + _flags[2] + "'";
+			roleCondition(role.getRoleCode(), buffer, " and c.follower.id = ", " and c.follower.employee.department.id = ", 
+					user);
+			buffer.append(" order by rt.plantime, rt.rtid");
+			List<Object[]> list = objDao.findAll(rhql + buffer);
+			if(list.size() > 0){
+				for(Object[] obj : list){
+					if(_flags[2].equals(obj[1])){
+						if(Long.parseLong(obj[0].toString()) > Long.parseLong(_flags[1])){
+							jsonObject.element("nextId", obj[0] + "," + obj[1]);
+							dataList = dao.findAll("select rt.client_name from ResourcesTrack rt where rt.rtid = " + Long.parseLong(obj[0].toString()));
+							break;
+						}
+					}else{
+						jsonObject.element("nextId", obj[0] + "," + obj[1]);
+						dataList = dao.findAll("select rt.client_name from ResourcesTrack rt where rt.rtid = " + Long.parseLong(obj[0].toString()));
+						break;
+					}
+				}
+				if(dataList.size() == 0){
+					jsonObject.element("nextId", _flags[1] + "," + _flags[2]);
+					dataList = dao.findAll("select rt.client_name from ResourcesTrack rt where rt.rtid = " + Long.parseLong(_flags[1]));
+				}
+			}else{//没下一个资源时
+				jsonObject.element("nextId", _flags[1] + "," + _flags[2]);
+				dataList = dao.findAll("select rt.client_name from ResourcesTrack rt where rt.rtid = " + Long.parseLong(_flags[1]));
+			}
+		}else if("2".equals(_flags[0])){//签单商机对应的上一个
+			StringBuffer sBuffer = new StringBuffer();
+			String shql = "select c.id, rt.signingtime from ResourcesTrack rt, Client c where c.id = rt.client_name and " +
+					"c.clientStatus = '1' and rt.signingtime > '" + _flags[2] + "'";
+			roleCondition(role.getRoleCode(), sBuffer, " and c.follower.id = ", " and c.follower.employee.department.id = ", 
+					user);
+			sBuffer.append(" order by rt.signingtime desc");
+			List<Object[]> list = objDao.findAll(shql + sBuffer);
+			if(list.size() > 0){
+				jsonObject.element("nextId", list.get(list.size() - 1)[0] + "," + list.get(list.size() - 1)[1]);
+				dataList = dao.findAll("from Client c where c.id = "+Long.parseLong(list.get(list.size() - 1)[0].toString()));
+			}else{//没有上一个
+				jsonObject.element("nextId", _flags[1] + "," + _flags[2]);
+				dataList = dao.findAll("from Client c where c.id = "+Long.parseLong(_flags[1]));
+			}
+		}else if("3".equals(_flags[0])){//签单商机对应的下一个
+			StringBuffer sBuffer = new StringBuffer();
+			String shql = "select c.id, rt.signingtime from ResourcesTrack rt, Client c where c.id = rt.client_name and " +
+					"c.clientStatus = '1' and rt.signingtime < '" + _flags[2] + "'";
+			roleCondition(role.getRoleCode(), sBuffer, " and c.follower.id = ", " and c.follower.employee.department.id = ", 
+					user);
+			sBuffer.append(" order by rt.signingtime desc LIMIT 0,1");
+			List<Object[]> list = objDao.findAll(shql + sBuffer);
+			if(list.size() > 0){
+				jsonObject.element("nextId", list.get(0)[0] + "," + list.get(0)[1]);
+				dataList = dao.findAll("from Client c where c.id = "+Long.parseLong(list.get(0)[0].toString()));
+			}else{//没有上一个
+				jsonObject.element("nextId", _flags[1] + "," + _flags[2]);
+				dataList = dao.findAll("from Client c where c.id = "+Long.parseLong(_flags[1]));
+			}
+		}else{
+			roleCondition(role.getRoleCode(), sb, " and c.follower.id = ", " and c.follower.employee.department.id = ", 
+					user);
+			dataList = MsgCondition(sb, _flags, maxHql, minHql);
+			if(dataList.size() == 0){//没上一个或下一个资源时
+				dataList = dao.findAll("from Client c where c.id = "+Long.parseLong(_flags[1]));
+			}
+		}
+		return dataList;
+	}
+	/**
+	 * 处理从首页传过来的ids
+	  *<功能简述>
+	  *<功能详细描述>
+	  * @param _pid
+	  * @param user
+	  * @param jsonObject
+	  * @param sb
+	  * @param dataList
+	  * @param hql
+	  * @return
+	  * @throws Exception [参数说明]
+	  * 
+	  * @return List<Client> [返回类型说明]
+	  * @exception throws [异常类型] [异常说明]
+	  * @see [类、类#方法、类#成员]
+	 */
+	public List<Client> passClient(String _pid, User user, JSONObject jsonObject, StringBuffer sb, List<Client> dataList, String hql) throws Exception{
+		Role role = user.getRole();
+		String[] pids = _pid.split(",");//判断是否为百度搜索传过来的id
+		if(role != null){
+			if(pids.length == 1){//今日新增商机传来的id
+				roleCondition(role.getRoleCode(), sb, " and c.follower.id = ", " and c.follower.employee.department.id = ",
+						user);
+				sb.append(" and c.id = ").append(Long.parseLong(_pid));
+			}else if(pids.length == 2){
+				if(pids[1].equals("0")){//百度搜索传来的id
+					sb.append(" and c.id = ").append(Long.parseLong(pids[0]));
+				}else{//签单商机传来的id
+					roleCondition(role.getRoleCode(), sb, " and c.follower.id = ", " and c.follower.employee.department.id = ",
+							user);
+					sb.append(" and c.id = ").append(Long.parseLong(pids[0]));
+					jsonObject.element("nextId", pids[0] + "," + pids[1]);
+				}
+			}else{//今日工作计划传来的id
+				roleCondition(role.getRoleCode(), sb, " and c.follower.id = ", " and c.follower.employee.department.id = ",
+						user);
+				sb.append(" and c.id = ").append(Long.parseLong(pids[0]));
+				jsonObject.element("nextId", pids[1] + "," + pids[2]);
+			}
+			dataList = dao.findAll(hql + sb);
+		}
+		return dataList;
+	};
+	/**
+	 * 查找所有客户信息
+	 * @param gridLoadParams
+	 * @param request
+	 * @param _condition 查询条件
+	 * @return
+	 * 黄剑锋
+	 * 2012-12-17 16:53第一次新建
+	 */
+	@RequestMapping("/loadClient.do")
+	public ModelAndView loadClient(@ModelAttribute("params") GridLoadParams gridLoadParams, @RequestParam("_flag") String _flag,
+			HttpServletRequest request, @RequestParam("conditions") String _condition,@RequestParam("_cpid") String _pid){
+		JSONObject jsonObject = new JSONObject();
+		Pagination pagination = new Pagination();
+		pagination.set(gridLoadParams.getStart(), gridLoadParams.getLimit());
+		String hql = "from Client c";
+		StringBuffer sb = new StringBuffer(" where 1=1");
+		Role role = null;//角色
+		User user = null;
+		String nowTime = StaticValues.sdf.format(new Date());//当前时间
+		List<Client> dataList = new ArrayList<Client>();
+		try {
+			HttpSession session = request.getSession();
+			if(session != null){
+				user = (User)session.getAttribute(StaticValues.USER_SESSION);//获取登录用户
+				role = user.getRole();
+				if(!"".equals(_flag) && _flag != null){//上一个下一个客户资源
+					if("have".equals(_flag)){
+						sb.append(" and c.assignPerson.role.remind='1' and c.editTime is null and c.follower.id = ").append(user.getId()).append(" and c.assignTime like'"+nowTime+"%'");
+						dataList = dao.findByHql(hql + sb,null,pagination);
+					}else{
+						dataList = lastNext(_flag, user, jsonObject, sb, dataList);
+					}
+				}else if(!_pid.equals("")){
+					dataList = passClient(_pid, user, jsonObject, sb, dataList, hql);
+				}else{
+					roleCondition(role.getRoleCode(), sb, " and c.follower.id = ", " and c.follower.employee.department.id = ",
+							user);
+					if("201206".equals(role.getRoleCode())){
+						sb.append(" and c.follower.id = ").append(user.getId());
+						sb.append(" and c.importTime = '").append(nowTime).append("'");
+						sb.append(" and c.assignTime is null");
+					}
+					if("201208".equals(role.getRoleCode())){
+						sb.append(" and c.assignDate = '").append(nowTime).append("'");
+					}
+					if(_condition != null && !"".equals(_condition)){//查询条件
+						JSONObject json = JSONObject.fromObject(_condition);
+						String _createDate = String.valueOf(json.get("_createDate"));//创建时间类型（1为今天、2为本周、3为本月、4为本年）
+						String _createStart = String.valueOf(json.get("_createStart"));//创建开始日期
+						String _createEnd = String.valueOf(json.get("_createEnd"));//创建结束日期
+						String _dept = String.valueOf(json.get("_dept"));//跟单部门
+						String _emp = String.valueOf(json.get("_emp"));//跟单人
+						String _opp = String.valueOf(json.get("_oppType"));//商机类型
+						String _signPos = String.valueOf(json.get("_signPos"));//签单可能性
+						String _startLoan = String.valueOf(json.get("_startLoan"));//贷款开始金额
+						String _endLoan = String.valueOf(json.get("_endLoan")	);//贷款结束金额
+						String _assignStatus = String.valueOf(json.get("_assignStatus"));//签单状态
+						String _notAssignCom = String.valueOf(json.get("_notAssignCom"));//是否已分配
+						String _clients = String.valueOf(json.get("_clientsel"));
+						String _assignTime = json.getString("_assignTime");
+						String signTime = json.getString("signTime");//签单时间
+						String signStart = json.getString("signStart");//签单开始时间
+						String signEnd = json.getString("signEnd");//签单结束时间
+						String[] dates = nowTime.split("-");
+						if(!"".equals(_assignTime) && _assignTime != null){
+							sb.append(" and c.assignTime like '").append(_assignTime).append("%'");
+						}
+						if(_clients != null && !"".equals(_clients)){
+							sb.append(" and c.clientSourse.id = ").append(Long.parseLong(_clients));
+						}
+						if(_assignStatus != null && !"".equals(_assignStatus)){
+							sb.append(" and c.clientStatus = ").append(_assignStatus);
+						}
+						if(_createDate == null || "".equals(_createDate)){
+							if(!"".equals(_createStart) && !"".equals(_createEnd)){
+								sb.append(" and c.assignDate between '").append(_createStart).append("' and '").append(_createEnd).append("'");
+							}
+							if(!"".equals(_createEnd) && _createEnd != null && (_createStart == null || "".equals(_createStart))){
+								sb.append(" and c.assignDate = '").append(_createEnd).append("'");
+							}
+							if(!"".equals(_createStart) && _createStart != null && (_createEnd == null || "".equals(_createEnd))){
+								sb.append(" and c.assignDate = '").append(_createStart).append("'");
+							}
+						}else{
+							if("1".equals(_createDate)){//今天
+								sb.append(" and c.assignDate like '").append(nowTime).append("%'");
+							}else if("2".equals(_createDate)){//本周
+								String monday = StatementsController.getWeekTime(nowTime);//获取本周一时间
+								sb.append(" and c.assignDate between '").append(monday).append("' and '").append(nowTime).append("'");
+							}else if("3".equals(_createDate)){//本月
+								sb.append(" and c.assignDate like '").append(dates[0] + "-" + dates[1]).append("%'");
+							}else{//本年
+								sb.append(" and c.assignDate like '").append(dates[0]).append("%'");
+							}
+						}
+						if(signTime == null || "".equals(signTime)){
+							if(!"".equals(signStart) && !"".equals(signEnd)){
+								sb.append(" and c.signTime between '").append(signStart).append(" 00:00:00' and '").append(signEnd).append(" 23:59:59'");
+							}
+							if(!"".equals(signEnd) && signEnd != null && (signStart == null || "".equals(signStart))){
+								sb.append(" and c.signTime like '").append(signEnd).append("%'");
+							}
+							if(!"".equals(signStart) && signStart != null && (signEnd == null || "".equals(signEnd))){
+								sb.append(" and c.signTime like '").append(signStart).append("%'");
+							}
+						}else{
+							if("1".equals(signTime)){//今天
+								sb.append(" and c.signTime like '").append(nowTime).append("%'");
+							}else if("2".equals(signTime)){//本周
+								String monday = StatementsController.getWeekTime(nowTime);//获取本周一时间
+								sb.append(" and c.signTime between '").append(monday).append(" 00:00:00' and '").append(nowTime).append(" 23:59:59'");
+							}else if("3".equals(signTime)){//本月
+								sb.append(" and c.signTime like '").append(dates[0] + "-" + dates[1]).append("%'");
+							}else{//本年
+								sb.append(" and c.signTime like '").append(dates[0]).append("%'");
+							}
+						}
+						if(_opp != null && !"".equals(_opp)){
+							sb.append(" and c.oppType = ").append(_opp);
+						}
+						if(_signPos != null && !"".equals(_signPos)){
+							sb.append(" and c.signPossible = ").append(_signPos);
+						}
+						if(_endLoan != null && !"".equals(_endLoan) && _startLoan != null && !"".equals(_startLoan)){
+							sb.append(" and c.loanAmount between ").append(_startLoan).append(" and ").append(_endLoan);
+						}
+						if(_dept != null && !"".equals(_dept)){
+							sb.append(" and c.follower.employee.department.id = ").append(Long.parseLong(_dept));
+						}
+						if(_emp != null && !"".equals(_emp)){
+							sb.append(" and c.follower.employee.id = ").append(Long.parseLong(_emp));
+						}
+						if(_notAssignCom != null && !"".equals(_notAssignCom)){
+							if(_notAssignCom.equals("1")){
+								sb.append(" and c.assignTime != ''");
+							}else if(_notAssignCom.equals("2")){
+								sb.append(" and c.assignTime is null");
+							}
+						}
+					}
+					sb.append(" order by workPlanNewTime desc");
+					dataList = dao.findByHql(hql + sb,null,pagination);
+				}
+				jsonObject.element("totalCount", pagination.getTotalResults());
+				// 有无数据都要产生data节点
+				JSONArray data = new JSONArray();
+				if (dataList.size() > 0) {
+					for (Object d : dataList) {
+						JSONObject item = new JSONObject();
+						Client field = (Client) d;
+						item.element("id", MvcUtil.toJsonString(field.getId()));
+						item.element("clientName", MvcUtil.toJsonString(field.getClientName()));//客户名称
+						if("3".equals(field.getClientStatus())){
+							item = ResourcesTrackController.hideNum(role.getRoleCode(), "contactTel", field.getContactTel(), item);
+							item = ResourcesTrackController.hideNum(role.getRoleCode(), "spareTel1", field.getSpareTel1(), item);
+							item = ResourcesTrackController.hideNum(role.getRoleCode(), "spareTel2", field.getSpareTel2(), item);
+						}else{
+							item.element("contactTel", MvcUtil.toJsonString(field.getContactTel()));//客户联系方式
+							item.element("spareTel1", MvcUtil.toJsonString(field.getSpareTel1()));//备用电话1
+							item.element("spareTel2", MvcUtil.toJsonString(field.getSpareTel2()));//备用电话2
+						}
+						item.element("loanAmount", MvcUtil.toJsonString(field.getLoanAmount()));//贷款金额
+						item.element("clientAdd", MvcUtil.toJsonString(field.getClientAdd()));//客户地址
+						if("1".equals(field.getOppType())){//商机类型(1为房贷、2为信贷、3为短借、4为企贷)
+							item.element("oppType", MvcUtil.toJsonString("房贷"));
+						}else if("2".equals(field.getOppType())){
+							item.element("oppType", MvcUtil.toJsonString("信贷"));
+						}else if("3".equals(field.getOppType())){
+							item.element("oppType", MvcUtil.toJsonString("短借"));
+						}else if("4".equals(field.getOppType())){	
+							item.element("oppType", MvcUtil.toJsonString("企贷"));
+						}
+						if("1".equals(field.getClientStatus())){
+							item.element("clientStatus", MvcUtil.toJsonString("已签单"));
+						}else if("2".equals(field.getClientStatus())){
+							item.element("clientStatus", MvcUtil.toJsonString("未签单"));
+						}else if("3".equals(field.getClientStatus())){
+							item.element("clientStatus", MvcUtil.toJsonString("淘汰"));
+						}else if("4".equals(field.getClientStatus())){
+							item.element("clientStatus", MvcUtil.toJsonString("已退单"));
+						}
+						if("1".equals(field.getSignPossible())){//签单可能性(1为100%、2为80%、3为50%、4为0%)
+							item.element("signPossible", MvcUtil.toJsonString("100%"));
+						}else if("2".equals(field.getSignPossible())){
+							item.element("signPossible", MvcUtil.toJsonString("80%"));
+						}else if("3".equals(field.getSignPossible())){
+							item.element("signPossible", MvcUtil.toJsonString("50%"));
+						}else if("4".equals(field.getSignPossible())){
+							item.element("signPossible", MvcUtil.toJsonString("10%"));
+						}else if("5".equals(field.getSignPossible())){
+							item.element("signPossible", MvcUtil.toJsonString("0%"));
+						}
+						item.element("assignDate", MvcUtil.toJsonString(field.getAssignDate()));//分配日期
+						item.element("assignTime", MvcUtil.toJsonString(field.getAssignTime()));//分配时间
+						if(!"".equals(field.getFollower()) && field.getFollower() != null){
+							if(field.getFollower().getEmployee() != null){
+								item.element("emp_name", MvcUtil.toJsonString(field.getFollower().getEmployee().getName()));
+							}else{
+								item.element("emp_name", MvcUtil.toJsonString(user.getUserName()));
+							}
+						}
+						item.element("remark", MvcUtil.toJsonString(field.getRemark()));//备注
+						String oppTypes = "";//贷款类型
+						String dkje = "";//贷款金额
+						String khmz ="";//客户名字
+						if("1".equals(field.getOppType())){//商机类型(1为房贷、2为信贷、3为短借、4为企贷)
+							oppTypes="房贷";
+						}else if("2".equals(field.getOppType())){
+							oppTypes="信贷";
+						}else if("3".equals(field.getOppType())){
+							oppTypes="短借";
+						}else if("4".equals(field.getOppType())){	
+							oppTypes="企贷";
+						}
+						if("".equals(field.getLoanAmount()) || field.getLoanAmount()==null)
+						{
+							dkje=" ";
+						}else{
+							dkje=field.getLoanAmount() + "万";
+						}
+						if("".equals(field.getClientName()) || field.getClientName()==null)
+						{
+							khmz=" ";
+						}else{
+							khmz=field.getClientName();
+						}
+						item.element("khxinx", MvcUtil.toJsonString(khmz+oppTypes+dkje));//客户信息
+						if(field.getClientSourse() != null){
+							item.element("clientSourse", MvcUtil.toJsonString(field.getClientSourse().getName()));
+							item.element("clientSourseId", MvcUtil.toJsonString(field.getClientSourse().getId()));
+						}
+						item.element("workPlanNewTime", MvcUtil.toJsonString(field.getWorkPlanNewTime()));
+						data.add(item);
+					}
+				}
+				jsonObject.element("data", data);
+			}else{
+				jsonObject.element("nextId", "timeout");
+			}
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+		return MvcUtil.jsonObjectModelAndView(jsonObject);
+	}
+	
+	/**
+	 * 导出客户管理信息
+	  *<功能简述>
+	  *<功能详细描述>
+	  * @return [参数说明]
+	  * 
+	  * @return ModelAndView [返回类型说明]
+	  * @exception throws [异常类型] [异常说明]
+	  * @see [类、类#方法、类#成员]
+	 */
+	@RequestMapping("/exportDate.do")
+	public ModelAndView exportDate(HttpServletRequest request){
+		Role role = null;//角色
+		User user = null;
+		String hql = "from Client c";
+		ExportExcelUtil util = new ExportExcelUtil();
+		StringBuffer sb = new StringBuffer(" where 1=1");
+		HttpSession session = request.getSession();
+		if(session != null){
+			user = (User)session.getAttribute(StaticValues.USER_SESSION);//获取登录用户
+			role = user.getRole();
+			String nowTime = StaticValues.sdf.format(new Date());//当前时间
+			String _createDate = request.getParameter("_createDate");//创建时间类型（1为今天、2为本周、3为本月、4为本年）
+			String _createStart = request.getParameter("_createStart");//创建开始日期
+			String _createEnd = request.getParameter("_createEnd");//创建结束日期
+			String _dept = request.getParameter("_dept");//跟单部门
+			String _emp = request.getParameter("_emp");//跟单人
+			String _opp = request.getParameter("_oppType");//商机类型
+			String _signPos = request.getParameter("_signPos");//签单可能性
+			String _startLoan = request.getParameter("_startLoan");//贷款开始金额
+			String _endLoan = request.getParameter("_endLoan");//贷款结束金额
+			String _assignStatus = request.getParameter("_assignStatus");//签单状态
+			String _notAssignCom = request.getParameter("_notAssignCom");//是否已分配
+			String _clients = request.getParameter("_clientsel");
+			String _assignTime = request.getParameter("_assignTime");//分配时间
+			String[] dates = nowTime.split("-");
+				if(role != null){
+					roleCondition(role.getRoleCode(), sb, " and c.follower.id = ", " and c.follower.employee.department.id = ",
+							user);
+				}
+				if(!"".equals(_assignTime) && _assignTime != null){
+					sb.append(" and c.assignTime like '").append(_assignTime).append("%'");
+				}
+				if(_clients != null && !"".equals(_clients)){
+					sb.append(" and c.clientSourse.id = ").append(Long.parseLong(_clients));
+				}
+				if(_assignStatus != null && !"".equals(_assignStatus)){
+					sb.append(" and c.clientStatus = ").append(_assignStatus);
+				}
+				if(_createDate == null || "".equals(_createDate)){
+					if(!"".equals(_createStart) && !"".equals(_createEnd)){
+						sb.append(" and c.assignDate between '").append(_createStart).append("' and '").append(_createEnd).append("'");
+					}
+					if(!"".equals(_createEnd) && _createEnd != null && (_createStart == null || "".equals(_createStart))){
+						sb.append(" and c.assignDate = '").append(_createEnd).append("'");
+					}
+					if(!"".equals(_createStart) && _createStart != null && (_createEnd == null || "".equals(_createEnd))){
+						sb.append(" and c.assignDate = '").append(_createStart).append("'");
+					}
+				}else{
+					if("1".equals(_createDate)){//今天
+						sb.append(" and c.assignDate = '").append(nowTime).append("'");
+					}else if("2".equals(_createDate)){//本周
+						String monday = StatementsController.getWeekTime(nowTime);//获取本周一时间
+						sb.append(" and c.assignDate between '").append(monday).append("' and '").append(nowTime).append("'");
+					}else if("3".equals(_createDate)){//本月
+						sb.append(" and c.assignDate like '").append(dates[0] + "-" + dates[1]).append("%'");
+					}else{//本年
+						sb.append(" and c.assignDate like '").append(dates[0]).append("%'");
+					}
+				}
+				if(_opp != null && !"".equals(_opp)){
+					sb.append(" and c.oppType = ").append(_opp);
+				}
+				if(_signPos != null && !"".equals(_signPos)){
+					sb.append(" and c.signPossible = ").append(_signPos);
+				}
+				if(_endLoan != null && !"".equals(_endLoan) && _startLoan != null && !"".equals(_startLoan)){
+					sb.append(" and c.loanAmount between ").append(_startLoan).append(" and ").append(_endLoan);
+				}
+				if(_dept != null && !"".equals(_dept)){
+					sb.append(" and c.follower.employee.department.id = ").append(Long.parseLong(_dept));
+				}
+				if(_emp != null && !"".equals(_emp)){
+					sb.append(" and c.follower.employee.id = ").append(Long.parseLong(_emp));
+				}
+				if(_notAssignCom != null && !"".equals(_notAssignCom)){
+					if(_notAssignCom.equals("1")){
+						sb.append(" and c.assignTime != ''");
+					}else if(_notAssignCom.equals("2")){
+						sb.append(" and c.assignTime is null");
+					}
+		}
+			try {
+				List<Client> clients = dao.findAll(hql + sb);
+				String[] headers = new String[]{"客户名字","商机类型","客户联系方式","备用电话1","备用电话2","客户状态","成单率","客户地址","管理人","创建日期","分配时间","客户来源","备注"};
+		    	Map<String, String> configMap = new HashMap<String, String>();
+		    	configMap.put("客户名字", "clientName");
+		    	configMap.put("商机类型", "oppType");
+		    	configMap.put("客户联系方式", "contactTel");
+		    	configMap.put("备用电话1", "spareTel1");
+		    	configMap.put("备用电话2", "spareTel2");
+		    	configMap.put("客户状态", "clientStatus");
+		    	configMap.put("成单率", "signPossible");
+		    	configMap.put("客户地址", "clientAdd");
+		    	configMap.put("管理人", "follower.employee.name");
+		    	configMap.put("创建日期", "assignDate");
+		    	configMap.put("分配时间", "assignTime");
+		    	configMap.put("客户来源", "clientSourse.name");
+		    	configMap.put("备注", "remark");
+		    	Map<String, Object> model = new HashMap<String, Object>();
+		    	byte[] bytes;
+		    	bytes = util.executeExport(clients,headers, configMap, "客户管理", "客户管理");
+		    	model.put(AbstractMimeView.FILE_NAME, "客户管理.xls");
+		    	model.put(AbstractMimeView.FILE_DATA, bytes);
+		    	return new ModelAndView(new MimeBytesView(), model);
+			} catch (Exception e) {
+				
+			}
+		}
+		return null;
+	}
+	/**
+	 * 判断电话的重复性条件
+	 * @param num1
+	 * @param num2
+	 * @param num3
+	 * @return
+	 */
+	public Long judgeNum(String num1, String num2, String num3) throws Exception{
+		String hql = "select c.id, c.contactTel, c.spareTel1, c.spareTel2 from Client c";
+		List<Object[]> list = objDao.findAll(hql);
+		Object contactTel = null, spareTel1=null, spareTel2=null;
+		if(list.size() > 0){
+			for(Object[] obj : list){
+				contactTel = obj[1];
+				spareTel1 = obj[2];
+				spareTel2 = obj[3];
+				if(!"".equals(num1) && num1 != null){//电话号码不能与客户的任意号码重复
+					if(num1.equals(contactTel) || num1.equals(spareTel1) || num1.equals(spareTel2)){
+						return Long.parseLong(obj[0].toString());
+					}
+				}
+				if(!"".equals(num2) && num2 != null){//备用电话1不能与客户的任意号码重复
+					if(num2.equals(contactTel) || num2.equals(spareTel1) || num2.equals(spareTel2)){
+						return Long.parseLong(obj[0].toString());
+					}
+				}
+				if(!"".equals(num3) && num3 != null){//备用电话2不能与客户的任意号码重复
+					if(num3.equals(contactTel) || num3.equals(spareTel1) || num3.equals(spareTel2)){
+						return Long.parseLong(obj[0].toString());
+					}
+				}
+			}
+			return 0L;
+		}else{
+			return 0L;
+		}
+	}
+	/**
+	 * 
+	  *<功能简述>保存或修改客户信息
+	  *<功能详细描述>
+	  * @param client
+	  * @param request
+	  * @param opp 商机类型
+	  * @param sign 签单可能性
+	  * @return [参数说明]
+	  * 
+	  * @return ModelAndView [返回类型说明] 
+	  * @exception throws [异常类型] [异常说明]
+	  * @see [类、类#方法、类#成员]
+	 */
+	@SuppressWarnings("all")
+	@RequestMapping("/saveOrUpdateClient.do")
+	public ModelAndView saveOrUpdateClient(Client client, HttpServletRequest request, @RequestParam("_opp") String opp, 
+			@RequestParam("_sign") String sign, @RequestParam("_client") String _client){
+		JSONObject jsonObject = new JSONObject();
+		String num1 = client.getContactTel();
+		String num2 = client.getSpareTel1();
+		String num3 = client.getSpareTel2();
+		String hql = "select c.id from Client c";
+		String nowTime = StaticValues.sdf.format(new Date());//当前时间
+		try{
+			//通过联系方式、备用电话1、备用电话2三个判断客户信息的唯一性
+			if(request.getSession() != null){
+				User userSession = (User) request.getSession().getAttribute("userSession");
+				if("1".equals(opp) || "房贷".equals(opp)){//设置商机类型
+					client.setOppType("1");
+				}else if("2".equals(opp) || "信贷".equals(opp)){
+					client.setOppType("2");
+				}else if("3".equals(opp) || "短借".equals(opp)){
+					client.setOppType("3");
+				}else if("4".equals(opp) || "企贷".equals(opp)){
+					client.setOppType("4");
+				}else{
+					client.setOppType("5");
+				}
+				if("1".equals(sign) || "100%".equals(sign)){//设置签单可能性
+					client.setSignPossible("1");
+				}else if("2".equals(sign) || "80%".equals(sign)){
+					client.setSignPossible("2");
+				}else if("3".equals(sign) || "50%".equals(sign)){
+					client.setSignPossible("3");
+				}else if("5".equals(sign) || "0%".equals(sign)){
+					client.setSignPossible("5");
+				}else if("4".equals(sign) || "10%".equals(sign)){ 
+					client.setSignPossible("4");
+				}else{
+					client.setSignPossible("6");
+				}
+				ClientSource clientSource = new ClientSource();
+				clientSource.setId(Long.parseLong(_client));
+				client.setClientSourse(clientSource);
+				Long flag = judgeNum(num1, num2, num3);//判断电话号码的重复性
+				if("".equals(client.getId()) || client.getId() == null){
+					if(flag != 0){//判断重复添加
+						jsonObject.element("failure", true);
+						jsonObject.element("msg", "客户信息已经存在,添加失败!");
+					}else{
+						client.setClientStatus("2");//新增一条客户信息时默认设置为未签单
+						if(userSession.getEmployee() != null){
+							client.setAssignPerson(userSession);
+						}
+						User user = (User)request.getSession().getAttribute(StaticValues.USER_SESSION);//用户实体
+						Role role = user.getRole();//登录的角色
+						if(role != null){
+							client.setFollower(userSession);
+							if("201203".equals(role.getRoleCode()) || "201202".equals(role.getRoleCode())){//员工录入的客户资源是属于自己的资源
+								client.setAssignTime(StaticValues.format.format(new Date()));
+								dao.save(client);
+								saveClientUser(cu, client, String.valueOf(client.getId()), u, user.getId());
+							}else{
+								if("201206".equals(role.getRoleCode())){
+									client.setImportTime(StaticValues.sdf.format(new Date()));
+								}
+								dao.save(client);
+							}
+						}
+						jsonObject.element("success", true);
+						jsonObject.element("msg", "保存客户信息成功！");
+					}
+				}else{
+					if(flag == 0 || flag.equals(client.getId())){
+						SqlBuilder sb = new SqlBuilder("Client", SqlBuilder.TYPE_UPDATE);
+						sb.addField("clientName", client.getClientName());//客户名称
+						sb.addField("contactTel", client.getContactTel());//客户联系方式
+						sb.addField("loanAmount", client.getLoanAmount());//贷款金额
+						sb.addField("clientAdd", client.getClientAdd());//客户地址
+						sb.addField("oppType", client.getOppType());//商机类型(1为房贷、2为信贷、3为短借、4为企贷)
+						sb.addField("spareTel1", client.getSpareTel1());//备用电话1
+						sb.addField("spareTel2", client.getSpareTel2());//备用电话2
+						sb.addField("remark", client.getRemark());//备注
+						sb.addField("assignDate", client.getAssignDate());//分配日期
+						sb.addField("signPossible", client.getSignPossible());//签单可能性
+						sb.addField("editTime", nowTime);
+						sb.addField("clientSourse.id", client.getClientSourse().getId());
+						sb.addWhere("id", client.getId());
+						dao.updateByHQL(sb.getSql(), sb.getParams());
+						jsonObject.element("success", true);
+						jsonObject.element("msg", "保存客户信息成功！");
+					}else{
+						jsonObject.element("failure", true);
+						jsonObject.element("msg", "客户信息已经存在，无法修改！");
+					}
+				}
+			}else{
+				jsonObject.element("failure", true);
+				jsonObject.element("msg", "页面停留时间过长,请重新登录!");
+			}
+		}catch(Exception e){
+			e.printStackTrace();
+			jsonObject.element("failure", true);
+			jsonObject.element("msg", "提交失败,请联系管理员!");
+			return MvcUtil.jsonObjectModelAndView(jsonObject);
+		}
+		return MvcUtil.jsonObjectModelAndView(jsonObject);
+	}
+	/**
+	 * 
+	  *<功能简述>删除客户信息
+	  *<功能详细描述>
+	  * @param id
+	  * @return [参数说明]
+	  * 
+	  * @return ModelAndView [返回类型说明]
+	  * @exception throws [异常类型] [异常说明]
+	  * @see [类、类#方法、类#成员]
+	  * 黄剑锋
+	  * 2012-12-17 17:17第一次新建
+	 */
+	@RequestMapping("/deleteClient.do")      
+	public ModelAndView deleteClient(@RequestParam("id") String id){
+		JSONObject jsonObject = new JSONObject();
+		String[] ids = id.split(",");
+		int sum=0;
+		for(String i:ids){
+			try {
+				dao.deleteById(Long.parseLong(i),Client.class);
+				sum++;
+			} catch (Exception e) {
+				e.printStackTrace();
+				jsonObject.element("failure", false);
+				jsonObject.element("msg", "不能删除,该客户信息已经被引用!");
+				return MvcUtil.jsonObjectModelAndView(jsonObject);
+			}
+		}
+		if(sum>0){
+			jsonObject.element("success", true);
+			jsonObject.element("msg", "删除成功，删除了"+sum+"条数据!!!");
+		
+		}else{
+			jsonObject.element("failure", false);
+			jsonObject.element("msg", "不能删除,该客户信息已经被引用!");
+		}
+		return MvcUtil.jsonObjectModelAndView(jsonObject);
+	}
+	/**
+	 * 查找所有部门信息
+	  *<功能简述>
+	  *<功能详细描述>
+	  * @return [参数说明]
+	  * 
+	  * @return ModelAndView [返回类型说明]
+	  * @exception throws [异常类型] [异常说明]
+	  * @see [类、类#方法、类#成员]
+	  * 黄剑锋
+	  * 2012-12-18 14:51 第一次创建
+	 */
+	@RequestMapping("/loadDepartment.do")
+	public ModelAndView loadDepartment(HttpServletRequest req) {
+		JSONObject jsonObject = new JSONObject();
+		String flag = req.getParameter("flag");
+		StringBuffer sb = new StringBuffer();
+		try {
+			String hql = "from Department d";
+			if("0".equals(flag)){
+				sb.append(" where d.orderStatus = '1'");
+			}
+			List<Department> dataList = ddao.findAll(hql+sb);
+			JSONArray data = new JSONArray();
+			if (dataList.size() > 0) {
+				for (Department field : dataList) {
+					JSONObject item = new JSONObject();
+					item.element("departId", MvcUtil.toJsonString(field.getId()));//部门id
+					item.element("departName",MvcUtil.toJsonString(field.getDepaName()));//部门名称
+					data.add(item);
+				}
+			}
+			jsonObject.element("data", data);
+		} catch (Exception e) {
+			e.printStackTrace();
+			jsonObject.element("failure", true);
+			jsonObject.element("msg", "提交失败,请联系管理员!");
+			return MvcUtil.jsonObjectModelAndView(jsonObject);
+		}
+		return MvcUtil.jsonObjectModelAndView(jsonObject);
+	}
+	/**
+	 * 
+	  *<功能简述>查看所有员工信息 
+	  *<功能详细描述>
+	  * @return [参数说明]
+	  * 
+	  * @return ModelAndView [返回类型说明]
+	  * @exception throws [异常类型] [异常说明]
+	  * @see [类、类#方法、类#成员]
+	 */
+	@RequestMapping("/loadEmployee.do")
+	public ModelAndView loadEmployee(HttpServletRequest req){
+		JSONObject jObject = new JSONObject();
+		String flag = req.getParameter("flag");
+		StringBuffer sb = new StringBuffer();
+		String hql = "select u.employee.id, u.employee.name from User u where u.userDelState = '0' and u.isOrNotEnable = '2'";
+		JSONArray data = new JSONArray();
+		User user = null;
+		try {
+			if(req.getSession() != null){
+				user = (User)req.getSession().getAttribute(StaticValues.USER_SESSION);
+				if("201202".equals(user.getRole().getRoleCode())){
+					sb.append(" and u.employee.department.id = ").append(user.getEmployee().getDepartment().getId());
+				}
+			}
+			if("0".equals(flag)){
+				sb.append(" and u.employee.department.orderStatus = '1' and u.employee.signStatus = '1'");
+			}
+			List<Object[]> list = objDao.findAll(hql+sb);
+			for(Object[] obj : list){
+				JSONObject item = new JSONObject();
+				item.element("eId", MvcUtil.toJsonString(obj[0]));//员工id
+				item.element("eName", MvcUtil.toJsonString(obj[1]));//员工名字
+				data.add(item);
+			}
+			jObject.element("data", data);
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+		return MvcUtil.jsonObjectModelAndView(jObject);
+	}
+	/**
+	 * 
+	  *<功能简述>通过部门编号取员工
+	  *<功能详细描述>
+	  * @return [参数说明]
+	  * 
+	  * @return ModelAndView [返回类型说明]
+	  * @exception throws [异常类型] [异常说明]
+	  * @see [类、类#方法、类#成员]
+	  * 黄剑锋
+	  * 2012-12-18 15:38第一次新建
+	*/
+	@RequestMapping("/loadEmployees.do")
+	public ModelAndView loadEmployees(HttpServletRequest request){
+		JSONObject jObject = new JSONObject();
+		String eid = request.getParameter("eid");
+		String hql = "from User u where u.employee.id is not null and u.userDelState = '0' and u.isOrNotEnable = '2' and u.employee.signStatus = '1' and u.employee.department.id= " + Long.parseLong(eid);
+		JSONArray data = new JSONArray();
+		try {
+			List<User> list = udao.findAll(hql);
+			for(User u : list){
+				JSONObject item = new JSONObject();
+				item.element("eId", MvcUtil.toJsonString(u.getEmployee().getId()));//员工id
+				item.element("eName", MvcUtil.toJsonString(u.getEmployee().getName()));//员工名字
+				data.add(item);
+			}
+		} catch (Exception e) {
+			e.printStackTrace();
+			jObject.element("failure", true);
+			jObject.element("msg", "提交失败,请联系管理员!");
+			return MvcUtil.jsonObjectModelAndView(jObject);
+		}
+		jObject.element("data", data);
+		return MvcUtil.jsonObjectModelAndView(jObject);
+	}
+	/**
+	 * 手动分配客户信息
+	  *<功能简述>
+	  *<功能详细描述>
+	  *@param id 客户信息id集合
+	  *@param _emp 用户id
+	  * @return [参数说明]
+	  * 
+	  * @return ModelAndView [返回类型说明]
+	  * @exception throws [异常类型] [异常说明]
+	  * @see [类、类#方法、类#成员]
+	  * 黄剑锋
+	  * 2012-12-18 16:35 第一次新建
+	 */
+	@RequestMapping("/assignClient.do")
+	public ModelAndView assignClient(@RequestParam("id") String _id, @RequestParam("_emp") String _emp){
+		JSONObject json = new JSONObject();
+		String hql = "from User u where u.employee.id = " + Long.parseLong(_emp);
+		String hql2 = "from ClientUser cu where cu.client_id.id = ?";
+		String[] ids = _id.split(",");
+		try {
+			List<User> list = udao.findAll(hql);//查出员工对应的用户id
+			hql = "select c.clientStatus from Client c where c.id = ?";
+			for(String id : ids){
+				List<ClientUser> cuList = cudao.findByHql(hql2, new Object[]{Long.parseLong(id)});
+				List<Object> objList = odao.findByHql(hql, new Object[]{Long.parseLong(id)});
+				if(cuList.size() > 0){
+					cudao.deleteAl(cuList);
+				}
+				saveClientUser(cu, c, id, u, list.get(0).getId());
+				sb = new SqlBuilder("Client", SqlBuilder.TYPE_UPDATE);
+				sb.addField("assignTime", StaticValues.format.format(new Date()));//分配时间
+				sb.addField("follower.id", list.get(0).getId());
+				if(!"1".equals(objList.get(0).toString())){
+					sb.addField("clientStatus", "2");
+				}
+				sb.addWhere("id", Long.parseLong(id));
+				dao.updateByHQL(sb.getSql(), sb.getParams());
+			}
+			json.element("success", true);
+			json.element("msg", "分配成功!");
+			return MvcUtil.jsonObjectModelAndView(json);
+		} catch (Exception e) {
+			e.printStackTrace();
+			json.element("failure", true);
+			json.element("msg", "提交失败,请联系管理员!");
+			return MvcUtil.jsonObjectModelAndView(json);
+		}
+	}
+	/**
+	 * 自动分配客户资源
+	  *<功能简述>
+	  *<功能详细描述>
+	  * @param _id 没有分配的客户资源id集合
+	  * @return [参数说明]
+	  * 
+	  * @return ModelAndView [返回类型说明]
+	  * @exception throws [异常类型] [异常说明]
+	  * @see [类、类#方法、类#成员]
+	 */
+	@RequestMapping("/autoAssignClient.do")
+	public ModelAndView autoAssignClient(@RequestParam("id") String _id){
+		JSONObject json = new JSONObject();
+		String[] ids = _id.split(",");//需要分配的客户资源的id集合
+		String difHql = "from ClientDifRecord cdr";
+		int flag = 0;//标志位，标志分配到集合中第几个资源了
+		int dif = 0;//客户资源差数
+		int surplus = 0;//员工剩余分配数
+		try {
+			List<ClientDifRecord> clist = cdao.findAll(difHql);//查出上次自动分配时没有分配完的信息
+			if(clist.size() > 0){
+				for(ClientDifRecord cdr : clist){
+					dif = Integer.parseInt(cdr.getClientDif());
+					if(dif >= (ids.length - flag)){//一个用户的资源差数大于总的分配数，客户资源分配完
+						cycleUpdate(flag, ids.length, ids, Long.parseLong(cdr.getUserid()));//更新客户信息分配客户资源
+						surplus = Integer.parseInt(cdr.getClientDif()) - ids.length - flag;//员工剩余分配数
+						if(surplus > 0){
+							sb = new SqlBuilder("ClientDifRecord", SqlBuilder.TYPE_UPDATE);//更新客户资源差表，减去已经分配的资源数
+							sb.addField("clientDif", String.valueOf(surplus));
+							sb.addWhere("id", cdr.getId());//id
+							cdao.updateByHQL(sb.getSql(), sb.getParams());
+						}else{
+							cdao.deleteById(cdr.getId(), ClientDifRecord.class);//删除已经分配完的资源差记录
+						}
+						json.element("success", true);
+						json.element("msg", "分配成功!");
+						return MvcUtil.jsonObjectModelAndView(json);
+					}else{
+						cycleUpdate(flag, flag + dif, ids, Long.parseLong(cdr.getUserid()));//更新客户信息分配客户资源
+						cdao.deleteById(cdr.getId(), ClientDifRecord.class);//删除已经分配完的资源差记录
+						flag = flag + dif;//记录资源分配的位置
+					}
+				}
+				if((ids.length - flag) > 0){//资源差数分配完了，开始按系数分配
+					assignByNum(surplus, flag, ids);
+				}
+			}else{//没有资源差，直接按系数开始分配
+				assignByNum(surplus, flag, ids);
+			}
+			json.element("success", true);
+			json.element("msg", "分配成功!");
+			return MvcUtil.jsonObjectModelAndView(json);
+		} catch (Exception e) {
+			e.printStackTrace();
+			json.element("failure", true);
+			json.element("msg", "提交失败,请联系管理员!");
+			return MvcUtil.jsonObjectModelAndView(json);
+		}
+	}
+	/**
+	 * 开始按系数分配客户资源
+	  *<功能简述>
+	  *<功能详细描述> [参数说明]
+	  * 
+	  * @return void [返回类型说明]
+	  * @exception throws [异常类型] [异常说明]
+	  * @see [类、类#方法、类#成员]
+	  * 黄剑锋
+	 */
+	public void assignByNum(int surplus, int flag, String[] ids) throws Exception {
+		int total = 0;//所有员工的分配系数之和
+		surplus = ids.length - flag;//剩余的客户资源数
+		String hql = "from User u where u.employee.signStatus = '1' and u.userDelState = '0' and u.isOrNotEnable = '2' and u.employee.department.orderStatus = '1'";
+		List<User> ulist = udao.findAll(hql);//接单的员工集合
+		for(User u : ulist){
+			total = total + Integer.parseInt(u.getEmployee().getCounts());
+		}
+		int times = surplus/total;//剩余的资源数能全部分配几次
+		int assignSurplus = surplus%total;//分配剩余的余数
+		int assignNum = 0;//分配系数
+		int assignFlag = flag + times*total;//分配剩余的资源的位置
+		ClientDifRecord cdr = null;//需要存入的资源差实体
+		if(times > 0){
+			for(User u : ulist){
+				assignNum = Integer.parseInt(u.getEmployee().getCounts());
+				cycleUpdate(flag, flag + times*assignNum, ids, u.getId());//更新客户信息分配客户资源
+				flag = flag + times*assignNum;//下一次分配的开始位置
+				assignSurplus(assignSurplus, assignNum, assignFlag, u.getId(), ids);//分配客户资源的余数
+				assignSurplus = assignSurplus - assignNum;//剩下的余数
+				assignFlag = assignFlag + assignNum;//下一次分配的开始位置
+			}
+		}else{
+			for(User u : ulist){
+				assignNum = Integer.parseInt(u.getEmployee().getCounts());
+				assignSurplus(assignSurplus, assignNum, assignFlag, u.getId(), ids);//分配客户资源的余数
+				assignSurplus = assignSurplus - assignNum;//剩下的余数
+				assignFlag = assignFlag + assignNum;//下一次分配的开始位置
+			}
+		}
+	}
+	/**
+	 * 分配客户资源的余数
+	  *<功能简述>
+	  *<功能详细描述>
+	  * @param assignSurplus 分配剩余的余数
+	  * @param assignNum 分配系数
+	  * @param sb SqlBuilder
+	  * @param assignFlag 分配剩余的资源的位置
+	  * @param u 用户实体
+	  * @param ids [参数说明] 需要分配的客户信息id集合
+	  * 
+	  * @return void [返回类型说明]
+	  * @exception throws [异常类型] [异常说明]
+	  * @see [类、类#方法、类#成员]
+	  * 黄剑锋
+	 */
+	public void assignSurplus(int assignSurplus, int assignNum, int assignFlag, Long id, String[] ids) throws Exception{
+		ClientDifRecord cdr = null;//需要存入的资源差实体
+		if(assignSurplus > 0){
+			if(assignSurplus >= assignNum){
+				cycleUpdate(assignFlag, assignFlag + assignNum, ids, id);//更新客户信息分配客户资源
+			}else{
+				cycleUpdate(assignFlag, ids.length, ids, id);//更新客户信息分配客户资源
+				cdr = new ClientDifRecord();
+				cdr.setUserid(String.valueOf(id));
+				cdr.setClientDif(String.valueOf(assignNum - assignSurplus));
+				cdao.save(cdr);//将没分配够的资源差存入记录下次分配
+			}
+		}else{
+			cdr = new ClientDifRecord();
+			cdr.setUserid(String.valueOf(id));
+			cdr.setClientDif(String.valueOf(assignNum));
+			cdao.save(cdr);//将没分配够的资源差存入记录下次分配
+		}
+	}
+	/**
+	 * 更新客户信息分配客户资源
+	  *<功能简述>
+	  *<功能详细描述>
+	  * @param startFlag 开始位置
+	  * @param endFlag 结束位置
+	  * @param ids 客户资源id集合
+	  * @param id 用户id
+	  *  [参数说明]
+	  * @exception throws [异常类型] [异常说明]
+	  * @see [类、类#方法、类#成员]
+	  * 黄剑锋
+	 */
+	private void cycleUpdate(int startFlag, int endFlag, String[] ids, Long id) throws Exception{
+		String hql = "select c.clientStatus from Client c where c.id = ?";
+		for(int i = startFlag; i < endFlag; i++){//将资源余数分配完
+			saveClientUser(cu, c, ids[i], u, id);//存入客户信息和用户的中间表
+			sb = new SqlBuilder("Client", SqlBuilder.TYPE_UPDATE);
+			List<Object>  objects	= odao.findByHql(hql, new Object[]{Long.parseLong(ids[i])});
+			if(objects.size() > 0){
+				if("4".equals(objects.get(0))){
+					sb.addField("clientStatus", "2");
+				}
+			}
+			sb.addField("assignTime", StaticValues.format.format(new Date()));//分配时间
+			sb.addField("follower.id", id);
+			sb.addWhere("id", Long.parseLong(ids[i]));
+			dao.updateByHQL(sb.getSql(), sb.getParams());
+		}
+	}
+	/**
+	 * 存入客户信息和用户的中间表
+	  *<功能简述>
+	  *<功能详细描述>
+	  * @param cu 客户信息和用户的中间实体
+	  * @param c 客户信息实体
+	  * @param id 客户信息id
+	  * @param u [参数说明] 用户实体
+	  * 
+	  * @return void [返回类型说明]
+	  * @exception throws [异常类型] [异常说明]
+	  * @see [类、类#方法、类#成员]
+	  * 黄剑锋
+	 */
+	public void saveClientUser(ClientUser cuser, Client client, String id, User us, Long user_id) throws Exception{
+		cuser = new ClientUser();
+		client = new Client(); 
+		client.setId(Long.parseLong(id));
+		us = new User();
+		us.setId(user_id);
+		cuser.setClient_id(client);//客户信息
+		cuser.setUser_id(us);//分配的用户
+		cuser.setStatus("0");//分配的资源
+		cudao.save(cuser);
+	}
+	/**
+	 * 导入excel文件
+	  *<功能简述>
+	  *<功能详细描述>
+	  * @param _value 文件路径
+	  * @return [参数说明]
+	  * 
+	  * @return ModelAndView [返回类型说明]
+	  * @exception throws [异常类型] [异常说明]
+	  * @see [类、类#方法、类#成员]
+	 */
+	@RequestMapping("/importClient.do")
+	public ModelAndView importClient(@RequestParam("uploadFilePath")MultipartFile multipartFile, HttpServletRequest req){
+		JSONObject json = new JSONObject();
+		List<Map<String, String>> clientList = new ArrayList<Map<String,String>>();
+		ImportExcelUtil util = new ImportExcelUtil();
+		InputStream is = null;//输入流
+		Set<String> set = null;//key集合
+		Iterator<String> it = null;//迭代器
+		String location = "";//迭代位置
+		int num = 0;
+		String nowTime = StaticValues.sdf.format(new Date());//当前时间e
+		Date date = null;
+		User user = null;
+		String hql = "select c.id from Client c";
+		//实体字段名
+		String[] fields = {"录入日期", "客户信息", "客户地址", "客户联系方式", "备用电话1", "备用电话2", "客户状态", "备注", "客户来源"};
+		try {
+			if(req.getSession() != null){
+				user = (User)req.getSession().getAttribute(StaticValues.USER_SESSION);
+				is = multipartFile.getInputStream();
+				clientList = util.readXls(0, is, fields, clientList);
+				for(Map<String, String> map : clientList){
+					set = map.keySet();
+					it = set.iterator();
+					c = new Client();
+					while(it.hasNext()){
+						location = it.next();
+						if("录入日期".equals(location)){
+							if(map.get(location) == null || "".equals(map.get(location))){
+								c.setAssignDate(nowTime);
+							}else{
+								date = StaticValues.sdf.parse(map.get(location));
+								c.setAssignDate(StaticValues.sdf.format(date));
+							}
+							continue;
+						}
+						if("客户信息".equals(location)){
+							if(!"".equals(map.get(location))){
+								String str = map.get(location).replace("，", ",");//统一分隔符
+								String[] field = str.split(",");
+								if(field.length == 1){
+									c.setClientName(field[0]);
+									c.setOppType("5");
+								}else if(field.length == 2){
+									if("房贷".equals(field[1])){//设置商机类型
+										c.setOppType("1");
+									}else if("信贷".equals(field[1])){
+										c.setOppType("2");
+									}else if("短借".equals(field[1])){
+										c.setOppType("3");
+									}else if("企贷".equals(field[1])){
+										c.setOppType("4");
+									}else{
+										c.setOppType("5");
+									}
+									String flag = str.substring(0,1);//截取第一个字符
+									if(!",".equals(flag)){
+										c.setClientName(field[0]);
+									}
+								}else if(field.length == 3){
+									c.setClientName(field[0]);
+									if("房贷".equals(field[1])){//设置商机类型
+										c.setOppType("1");
+									}else if("信贷".equals(field[1])){
+										c.setOppType("2");
+									}else if("短借".equals(field[1])){
+										c.setOppType("3");
+									}else if("企贷".equals(field[1])){
+										c.setOppType("4");
+									}else{
+										c.setOppType("5");
+									}
+									if(!"".equals(field[2]) && field[2] != null){
+										String[] loans = field[2].split("万");
+										c.setLoanAmount(loans[0]);
+									}
+								}else{
+									c.setOppType("5");
+								}
+							}
+							continue;
+						}
+						if("客户地址".equals(location)){
+							c.setClientAdd(map.get(location));
+							continue;
+						}
+						if("客户联系方式".equals(location)){
+							c.setContactTel(map.get(location));
+							continue;
+						}
+						if("备用电话1".equals(location)){
+							c.setSpareTel1(map.get(location));
+							continue;
+						}
+						if("备用电话2".equals(location)){
+							c.setSpareTel2(map.get(location));
+							continue;
+						}
+						if("客户状态".equals(location)){
+							c.setClientStatus("2");
+							continue;
+						}
+						if("备注".equals(location)){
+							c.setRemark(map.get(location));
+							continue;
+						}
+						if("客户来源".equals(location)){
+							List<ClientSource> list = new ArrayList<ClientSource>();
+							if("".equals(map.get(location)) || map.get(location) == null){
+								list = csdao.findAll("from ClientSource c where c.name = '" + 101 + "'");
+							}else{
+								list = csdao.findAll("from ClientSource c where c.name = '" + map.get(location) + "'");
+							}
+							if(list.size() > 0){
+								c.setClientSourse(list.get(0));
+							}
+						}
+					}
+					if("".equals(c.getAssignDate()) || c.getAssignDate() == null){
+						c.setAssignDate(nowTime);
+					}
+					c.setSignPossible("3");
+					c.setAssignPerson(user);
+					c.setFollower(user);
+					c.setClientStatus("2");
+					c.setImportTime(nowTime);//导入时间
+					String num1 = c.getContactTel();
+					String num2 = c.getSpareTel1();
+					String num3 = c.getSpareTel2();
+					Long flag = judgeNum(num1, num2, num3);//判断号码的重复性
+					if(flag == 0){//判断导入的客户信息是否重复
+						dao.save(c);
+					}else{
+						String opptype = "";
+						if("1".equals(c.getOppType())){//设置商机类型
+							opptype = "房贷";
+						}else if("2".equals(c.getOppType())){
+							opptype = "信贷";
+						}else if("3".equals(c.getOppType())){
+							opptype = "短借";
+						}else if("4".equals(c.getOppType())){
+							opptype = "企贷";
+						}
+						opptype = c.getClientName() + "，" + opptype + "，" + c.getLoanAmount();
+						WrongClient wc = new WrongClient(c.getAssignDate(), opptype, c.getClientAdd(), c.getContactTel(),
+								c.getSpareTel1(), c.getSpareTel2(), c.getSignPossible());
+						wc.setRemark("重复客户资源");
+						wdao.save(wc);
+						num++;
+					}
+				}
+				if(num == clientList.size()){
+					json.element("success", true);
+					json.element("msg", "导入数据为重复数据!");
+					return MvcUtil.jsonObjectModelAndView(json);
+				}
+				json.element("success", true);
+				json.element("msg", "导入成功!");
+			}else{
+				json.element("failure", true);
+				json.element("msg", "页面停留时间过长，请重新登录！");
+			}
+		} catch (ArrayIndexOutOfBoundsException a){
+			a.printStackTrace();
+			json.element("failure", true);
+			json.element("msg", "导入失败,客户信息填写格式不合法!");
+			return MvcUtil.jsonObjectModelAndView(json);
+		} catch (Exception e) {
+			e.printStackTrace();
+			json.element("failure", true);
+			json.element("msg", "导入失败,请联系管理员!");
+			return MvcUtil.jsonObjectModelAndView(json);
+		}	
+		return MvcUtil.jsonObjectModelAndView(json);
+	}
+	/**	
+	 * 下载导入模板
+	  *<功能简述>
+	  *<功能详细描述>
+	  * @param request
+	  * @return [参数说明]
+	  * 
+	  * @return ModelAndView [返回类型说明]
+	  * @exception throws [异常类型] [异常说明]
+	  * @see [类、类#方法、类#成员]
+	  * 黄剑锋
+	 */
+	@RequestMapping("/downloadTemplet.do")
+	public ModelAndView  downloadTemplet(HttpServletRequest request,HttpServletResponse response){
+		UploadFile uf = new UploadFile();
+		Map<String, Object> model = new HashMap<String, Object>();
+		model = uf.downloadAttachment("Excel导入模板.xls", request.getRealPath("")+"//file");
+		return new ModelAndView(new MimeBytesView(), model);
+	}
+	/**
+	 * 导出导入错误的客户资源
+	  *<功能简述>
+	  *<功能详细描述>
+	  * @param request
+	  * @return [参数说明]
+	  * 
+	  * @return ModelAndView [返回类型说明]
+	  * @exception throws [异常类型] [异常说明]
+	  * @see [类、类#方法、类#成员]
+	 */
+	@RequestMapping("/exportWrong.do")
+	public ModelAndView exportWrong(HttpServletRequest request){
+		String hql = "from WrongClient wc";
+		Map<String, Object> model = null;
+		String[] fields = {"录入日期", "客户信息", "客户地址", "客户联系方式", "备用电话1", "备用电话2", "客户状态", "签单可能性", "备注"};
+		try {
+			List<WrongClient> wlist = wdao.findAll(hql);
+			Map<String, String> configMap = new HashMap<String, String>();
+			ExportExcelUtil util = new ExportExcelUtil();
+			configMap.put("录入日期", "inputTime");
+			configMap.put("客户信息", "clientMsg");
+			configMap.put("客户地址", "clientAdd");
+			configMap.put("客户联系方式", "clientTel");
+			configMap.put("备用电话1", "spareTel1");
+			configMap.put("备用电话2", "spareTel2");
+			configMap.put("客户状态", "clientStatus");
+			configMap.put("签单可能性", "signPossible");
+			configMap.put("备注", "remark");
+			model = new HashMap<String, Object>();
+			byte[] bytes;
+			bytes = util.executeExport(wlist,fields, configMap, "重复客户资源", "重复客户资源");
+			model.put(AbstractMimeView.FILE_NAME, "重复客户资源.xls");
+			model.put(AbstractMimeView.FILE_DATA, bytes);
+			if(bytes != null){
+				wdao.deleteAl(wlist);
+			}
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+		return new ModelAndView(new MimeBytesView(), model);
+	}
+	
+	
+	/**
+	 * 删除客户信息
+	 * 同时删除手动分配的中间表记录
+	 * 同时删除跟踪客户记录表记录
+	 * 根据ID 删除
+	 */
+	@RequestMapping("/deleteclientAction.do")
+	public ModelAndView deleteclientAction(@RequestParam("id")
+	final String id, HttpServletRequest request) {
+		JSONObject jsonObject = new JSONObject();
+		if (id != null) {
+			Object result = cdao.updateAction(new IDaoAction() {
+				public Object execute(PageHibernateTemplate template) {
+				String hql1 = "from Rcount r where r.loanDetail.client.id = ?";
+				String hql2 = "from LoanDetail ld where ld.client.id = ?";
+					try {
+						int sum = 0;
+						String[] idAry = id.split(",");
+						for (int i = 0; i < idAry.length; i++) {
+							String newsId = idAry[i];
+							//删除手动分配中间表记录
+							template.updateByHQL("delete ClientUser cu where cu.client_id.id=?", new Object[] { Long.parseLong(newsId)});
+							
+							//同时删除跟踪客户记录表记录
+							template.updateByHQL("delete  ResourcesTrack rt where rt.client_name.id=?",new Object[] { Long.parseLong(newsId) });
+							
+							//删除还款详细
+							List<Rcount> counts = rdao.findByHql(hql1, new Object[]{Long.parseLong(newsId)});
+							if(counts.size() > 0){
+								rdao.deleteAll(counts);
+							}
+							
+							//删除贷款详细
+							List<LoanDetail> ldsList = lddao.findByHql(hql2, new Object[]{Long.parseLong(newsId)});
+							if(ldsList.size() > 0){
+								lddao.deleteAll(ldsList);
+							}
+							//删除最新操作的5个的客户  （对应的客户）
+							template.updateByHQL("delete SeeClient s where s.c_id=?",new Object[]{String.valueOf(newsId)});
+							//删除客户信息
+							template.updateByHQL("delete Client c where c.id=?" ,new Object[]{Long.parseLong(newsId)});
+							sum++;
+						}
+						return 1;
+					} catch (Exception e) {
+						e.printStackTrace();
+						return 0;
+					}
+				}
+			});
+			jsonObject.element("success", true);
+			jsonObject.element("msg", "删除成功!");
+		} else {
+			jsonObject.element("failure", false);
+			jsonObject.element("msg", "删除出错!");
+		}
+		return MvcUtil.jsonObjectModelAndView(jsonObject);
+	}
+	/**
+	 * 
+	  *<功能简述>
+	  *<功能详细描述>
+	  * @param request
+	  * @return [参数说明]
+	  * 
+	  * @return ModelAndView [返回类型说明]
+	  * @exception throws [异常类型] [异常说明]
+	  * @see [类、类#方法、类#成员]
+	 */
+	@RequestMapping("/selectToday.do")
+	public ModelAndView selectToday(HttpServletRequest request){
+		JSONObject json = new JSONObject();
+		String nowTime = StaticValues.sdf.format(new Date());//当前时间
+		StringBuffer sb = new StringBuffer("");
+		String hql = "select rt.client_name.id from ResourcesTrack rt where rt.resourcestime = '"+nowTime+"'";
+		try {
+			List<Object> list = odao.findAll(hql);
+			if(list.size() > 0){
+				for(int i = 0; i < list.size(); i++){
+					if(i == list.size() - 1){
+						sb.append(list.get(i).toString());
+					}else{
+						sb.append(list.get(i).toString()).append(",");
+					}
+				}
+			}
+			json.element("success", true);
+			json.element("msg", sb.toString());
+		} catch (RuntimeException e) {
+			json.element("failure", false);
+			json.element("msg", "显示失败，请联系管理员!");
+			e.printStackTrace();
+		}
+		return MvcUtil.jsonObjectModelAndView(json);
+	}
+	/**
+	 * 查找编辑过的今日新增商机的id的集合
+	  *<功能简述>
+	  *<功能详细描述>
+	  * @param request
+	  * @return [参数说明]
+	  * 
+	  * @return ModelAndView [返回类型说明]
+	  * @exception throws [异常类型] [异常说明]
+	  * @see [类、类#方法、类#成员]
+	 */
+	@RequestMapping("/selectTodayAdd.do")
+	public ModelAndView selectTodayAdd(HttpServletRequest request){
+		JSONObject json = new JSONObject();
+		String nowTime = StaticValues.sdf.format(new Date());//当前时间
+		if(request.getSession() != null){
+			User user = (User)request.getSession().getAttribute(StaticValues.USER_SESSION);
+			String roleCode = user.getRole().getRoleCode();
+			String hql = "";
+			if("201202".equals(roleCode)){
+				hql = "select c.id from Client c where c.editTime = '"+nowTime+"' and c.follower.employee.department.id = "+user.getEmployee().getDepartment().getId();
+			}else if("201203".equals(roleCode)){
+				hql = "select c.id from Client c where c.editTime = '"+nowTime+"' and c.follower.id = "+user.getId();
+			}else{
+				hql = "select c.id from Client c where c.editTime = '"+nowTime+"'";
+			}
+			List<Object> olist = odao.findAll(hql);
+			if(olist.size() > 0){
+				StringBuffer sb = new StringBuffer("");
+				for(int i = 0; i < olist.size(); i++){
+					if(i == olist.size() - 1){
+						sb.append(olist.get(i));
+					}else{
+						sb.append(olist.get(i)).append(",");
+					}
+				}
+				json.element("msg", sb.toString());
+			}else{
+				json.element("operateIds", "null");
+			}
+		}
+		return MvcUtil.jsonObjectModelAndView(json);
+	}
+}

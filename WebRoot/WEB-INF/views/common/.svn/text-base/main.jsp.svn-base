@@ -1,0 +1,459 @@
+<%@ page contentType="text/html;charset=UTF-8"%>
+<%
+    String path = request.getContextPath();
+    String basePath = request.getScheme() + "://"
+            + request.getServerName() + ":" + request.getServerPort()
+            + path + "/";
+%>
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<html>
+	<head>
+		<base href="<%=basePath%>">
+		<meta http-equiv="X-UA-Compatible" content="IE=EmulateIE8" />
+		<meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+		<meta http-equiv="pragma" content="no-cache">
+		<meta http-equiv="cache-control" content="no-cache">
+		<meta http-equiv="expires" content="0">
+		<link rel="stylesheet" href="resources/css/ext-all.css"
+			type="text/css"></link>
+		<link rel="stylesheet" href="resources/css/animated-dataview.css"
+			type="text/css"></link>
+		<link rel="stylesheet"
+			href="resources/css/fileuploadfield.css" type="text/css"></link>
+		<link rel="stylesheet" href="resources/css/Spinner.css" type="text/css"></link>
+		<link rel="stylesheet" href="resources/css/ext-smt.css" type="text/css"></link>
+		<link rel="stylesheet" href="resources/css/costmon.css" type="text/css">
+		<script type="text/javascript" src="resources/js/ext-base.js"></script>
+		<script type="text/javascript" src="resources/js/ext-all.js"></script>
+		<script type="text/javascript" src="resources/js/ext-lang-zh_CN.js"></script>
+		<script type="text/javascript" src="resources/js/FileUploadField.js"></script>
+		<script type="text/javascript" src="resources/js/DateTimeField.js"></script>
+		<script type="text/javascript" src="resources/js/ComboBoxTree.js"></script>
+		<script type="text/javascript" src="resources/js/TreeCheckNodeUI.js"></script>
+		<title>CRM365</title>
+		<style type="text/css">
+			.title_a{
+				height: 20px;
+				width: 60px;
+			}
+			.title_b{
+				height: 20px;
+				width: 60px;
+			}
+			#btn_div{
+				height: 20px;
+				width: 140px;
+				margin-left:85%;
+				margin-top: 60px;
+				position: absolute;
+			}
+			#user{
+				float:right;
+				font-size: 12px;
+				color: black;
+				margin-top: 30px;
+				margin-left:72%;
+				position: absolute;
+			}
+			</style>
+	</head>
+	<body class="icon-male">
+<script type="text/javascript">  
+   var qfpwd=1; 
+   function resetpassword(){
+		Ext.getCmp('pwd').setValue('');
+		Ext.getCmp('mailbox').setValue('');
+		Ext.getCmp('idCardNum').setValue('');
+		Ext.getCmp('pwd2').setValue('');
+		Ext.getCmp('password').setValue('');
+		qfpwd=2;
+		Ext.getCmp('loginId').setValue('${userSession.loginId}');
+		Ext.getCmp('form1Window').show();
+	}
+var firstActive=true;		 
+Ext.onReady(function() {
+	Ext.QuickTips.init();// 浮动信息提示
+    Ext.BLANK_IMAGE_URL = 'resources/images/default/s.gif';// 替换图片文件地址为本地
+	var rootNodeList=[];
+	var  menu;
+	var sdf=${upPwd};
+	var loginName='${loginName}';
+	var sd='count';
+	var roleCode = '${userSession.role.roleCode}';
+    if(sdf==2){
+      Ext.Msg.confirm('确认', '该用户登录次数已完,是否修改密码?', function(aButton){
+	  if (aButton == 'yes'){
+	        Ext.getCmp('loginId').setValue(loginName);
+		    form1Window.show();
+	      }
+      });
+   }else if(sdf==3){
+     sd='month';
+     Ext.Msg.confirm('确认', '该用户已到期,是否修改密码?', function(aButton){
+	  if (aButton == 'yes'){
+	        Ext.getCmp('loginId').setValue(loginName);
+		    form1Window.show();
+	      }
+      });
+   }
+   
+      var updateForm = new Ext.form.FormPanel({
+        id: 'updateForm',
+        bodyStyle: 'padding:5px',
+        labelAlign:'right',
+        frame: true,
+        items: [{
+            layout: 'column',
+            labelWidth: 70,
+            layout: 'form',
+            defaults:{
+           	 width:200
+            },
+            items: [
+            {
+             inputType:'hidden',
+             fieldLabel: '*登录名',
+             xtype:'textfield',
+	         readOnly:true,
+	         allowBlank: false,
+	         id: 'loginId'
+            },
+            {
+	          fieldLabel: '*原始密码',
+	          xtype:'textfield',
+	          allowBlank: false,
+	          inputType : 'password',
+	          id: 'pwd'
+	       },
+	       {
+	        fieldLabel: '*身份证号',
+	          xtype:'textfield',
+	          allowBlank: false,
+	          id: 'idCardNum'
+	       },
+	       {
+	          fieldLabel: '*邮箱',
+	          xtype:'textfield',
+	          allowBlank: false,
+	          id: 'mailbox'
+	       },
+	        {
+	        fieldLabel: '*修改密码',
+	          xtype:'textfield',
+	          allowBlank: false,
+	          inputType : 'password',
+	          regex:/^[a-zA-Z0-9]{6,8}$/,
+	          id: 'pwd2'
+	       },
+             {
+             fieldLabel: '*确认密码',
+             inputType : 'password',
+             xtype:'textfield',
+	         allowBlank: false,
+	         regex:/^[a-zA-Z0-9]{6,8}$/,
+	         id: 'password'
+	         }
+            ]
+        }]
+    });
+
+	 var form1SaveAction = new Ext.Action({
+	        text: '保存',
+	        iconCls: 'saves',
+	        handler: function(){
+	            if(updateForm.getForm().isValid()){
+	            var _pwd = Ext.getCmp('pwd').getValue();
+	            var _pwd2 = Ext.getCmp('pwd2').getValue();
+	            var _pwd3 = Ext.getCmp('password').getValue();
+	            var _idCardNum = Ext.getCmp('idCardNum').getValue();
+	            var _mailbox = Ext.getCmp('mailbox').getValue();
+	            if(_pwd2 != _pwd3){
+	            	Ext.MessageBox.alert('提示', '输入的新密码不一致，请重新输入！'); 
+	            	return false;
+	            }
+	                updateForm.getForm().submit({
+	                    url: '<%=path%>/updataPwd.do',
+	                    params: {
+	                    _pwd: _pwd,
+	                    _pwd2:_pwd2,
+	                    _mailbox:_mailbox,
+	                    _idCardNum:_idCardNum,
+	                    _qfpwd:qfpwd,
+	                     sd:sd
+	                    },
+	                    waitTitle: '请等待',
+	                    waitMsg: '正在处理数据...',
+	                    timeout: 10,
+	                    success: function(aForm, aAction){
+	                        form1Window.hide();
+	                    	Ext.MessageBox.alert('提示', aAction.result.msg); 
+	                    },
+	                    failure: function(aForm, aAction) {
+	                       Ext.MessageBox.alert('提示', aAction.result.msg);                           
+	                    }
+	                });
+	            }
+	        }
+	    });
+       var form1Window = new Ext.Window({
+	       id:'form1Window',
+            title:'修改密码',
+	        width: 350,
+	        height: 250,
+	        modal: true,
+	        layout: 'fit',
+	        plain: true,
+	        bodyStyle: 'padding:5px;',
+	        buttonAlign: 'center',
+	        items: updateForm,
+	        closeAction: 'hide',
+	        buttons: [
+	                form1SaveAction
+	            ]
+	    });
+
+	   
+
+	var rootNodeRequest = function(url) {
+	    function createXhrObject() {
+	        var http;
+	        var activeX = ['MSXML2.XMLHTTP.3.0', 'MSXML2.XMLHTTP', 'Microsoft.XMLHTTP'];
+	        try {
+	            http = new XMLHttpRequest();
+	        } catch (e) {
+	            for (var i = 0; i < activeX.length; ++i) {
+	                try {
+	                    http = new ActiveXObject(activeX[i]);
+	                    break;
+	                } catch (e) { }
+	            }
+	        } finally {
+	            return http;
+	        }
+	    };
+	    var conn = createXhrObject();
+	    conn.open("POST", url, false);
+	    conn.send(null);
+	    if (conn.responseText != '') {
+	        return Ext.decode(conn.responseText);
+	    } else {
+	        return null;
+	    }
+	};
+	
+	var rootNode = rootNodeRequest('<%=path%>/menu/rootNode.do');
+	
+	var childNodeRequest = function(url) {
+	    function createXhrObject() {
+	        var http;
+	        var activeX = ['MSXML2.XMLHTTP.3.0', 'MSXML2.XMLHTTP', 'Microsoft.XMLHTTP'];
+	        try {
+	            http = new XMLHttpRequest();
+	        } catch (e) {
+	            for (var i = 0; i < activeX.length; ++i) {
+	                try {
+	                    http = new ActiveXObject(activeX[i]);
+	                    break;
+	                } catch (e) { }
+	            }
+	        } finally {
+	            return http;
+	        }
+	    };
+	    var conn = createXhrObject();
+	    conn.open("POST", url, false);
+	    conn.send(null);
+	    if (conn.responseText != '') {
+	        return Ext.decode(conn.responseText);
+	    } else {
+	        return null;
+	    }
+	};
+	
+	for(var i=0;i<rootNode.length;i++){
+	   var rootNodeStore='';
+		   rootNodeStore= new Ext.tree.TreePanel({
+	           id:rootNode[i].id,
+	           title:rootNode[i].title,
+	           iconCls:rootNode[i].iconCls,
+	           loader: new Ext.tree.TreeLoader(),
+	           width:100,
+	           rootVisible:false,
+	           lines:false,
+	           autoScroll:true,
+	           root:childNodeRequest('<%=path%>/menu/childNode.do?id='+rootNode[i].id),
+	           listeners: {
+		    		click: function(n) {
+		    			createTabpanelItems(n.attributes.url, n.text,n.id,n.attributes.iconCls);
+					}
+			  }
+      });
+      rootNodeList.push(rootNodeStore);
+	}
+	
+	var northTitle = new Ext.Panel({
+		region: 'north',
+        margins:'8 8 8 8',
+        border: false,
+        height:50,
+		bodyStyle:'font-size:12px;background-color:#DFE8F6;background-image:url(/CRM365/image/top_bg6.jpg);background-repeat:repeat-x;',
+		html: '<div id="user">用户姓名：<span style="color:red">${userSession.loginId}</span>&nbsp;&nbsp;<a class="title_a" href="javascript:resetpassword();">[密码修改]</a>&nbsp;&nbsp;<a class="title_a" href="<%=path%>/to_login">[退出登陆]</a></div>'
+	});
+	
+	var tree = new Ext.Panel({
+        id:'tree',
+		xtype:'panel',
+        region: 'west',
+		iconCls: 'menu_panel',
+        width: 130,
+        collapsible: true,
+        margins:'0 0 0 0',
+    	animCollapse:false,
+    	animFloat:false,
+        split:true,
+		layout:'accordion',
+		items:[
+			rootNodeList
+		]
+	});
+	
+	var form1ReturnAction = new Ext.Action({
+	        text: '返回',
+	        iconCls:'returns',
+	        handler: function(){
+		   }
+	    });
+	    var el = new Ext.Element();
+	var tab = new Ext.TabPanel({
+        region:'center',
+        margins:'0 0 0 0',
+		id:'tab_view',
+	 	activeTab:0,
+		tabWidth:130,
+		enableTabScroll:true,
+		defaults:{
+			xtype:'panel',
+		 	closable:true
+		},
+		items:[
+			{
+				iconCls:'smt-welcome',
+				title:'桌面',
+				id:'btnAlert',
+				closable:false,
+				html: '<iframe name="centerF" scrolling="auto" frameborder="0" width="100%" height="100%" src="<%=path%>/to_welcome"/>',
+				listeners:{
+				'render':function(){
+				 }
+				}
+		}
+		]
+	});
+	
+	var tabMainView = Ext.getCmp('tab_view');
+	tabMainView.onmouseout=function(){alert("mo")};
+	
+	var a=0;
+	var b='';	
+	function createTabpanelItems(href,tit,id,iconCls){
+			var tabMainView = Ext.getCmp('tab_view');
+			if(a==0){
+				a++;
+				var p = tabMainView.add({
+	                title:tit,
+		            id:id+"",
+		            iconCls:iconCls,
+					html: '<iframe name="centerF" frameborder="0" width="100%" height="100%" src="<%=path%>'+href+'"/>',    
+		            closable:true
+	            });
+	            b=id;
+	            tabMainView.setActiveTab(p);
+			}else{
+				a--;
+				tabMainView.remove(b);
+				var p = tabMainView.add({
+	                title:tit,
+		            id:id+"",
+		            iconCls:iconCls,
+					html: '<iframe name="centerF" frameborder="0" width="100%" height="100%" src="<%=path%>'+href+'"/>',    
+		            closable:true
+	            });
+	            a++;
+	            b=id;
+	            tabMainView.setActiveTab(p);
+			}
+            
+	        
+	        
+	        tabMainView.on('contextmenu', onContextMenu); 
+	        
+	        function onContextMenu(ts, item, e){ 
+        		if(!menu){ 
+            		menu = new Ext.menu.Menu({            
+            			items: [{ 
+                			id: tabMainView.id + '-close', 
+                			text: '关闭当前窗口', 
+			                handler : function(){ 
+			                    tabMainView.remove(ctxItem); 
+			                } 
+           				},{ 
+                			id: tabMainView.id + '-close-others', 
+                			text: '关闭非当前窗口', 
+			                handler : function(){ 
+			                    tabMainView.items.each(function(item){ 
+			                        if(item.closable && item != ctxItem){ 
+			                            tabMainView.remove(item); 
+			                        } 
+			                    }); 
+			                } 
+            			},{
+            				id: tabMainView.id + '-close-allOthers', 
+                			text: '关闭所有窗口', 
+			                handler : function(){ 
+			                    tabMainView.items.each(function(item){ 
+			                        if(item.closable && item != ctxItem){ 
+			                        	tabMainView.remove(ctxItem); 
+			                            tabMainView.remove(item); 
+			                        } 
+			                    }); 
+			                } 
+            			}]
+            		}); 
+        		} 
+        	ctxItem = item; 
+        	var items = menu.items; 
+        	items.get(tabMainView.id + '-close').setDisabled(!item.closable); 
+        	var disableOthers = true; 
+	        tabMainView.items.each(function(){ 
+	            if(this != item && this.closable){ 
+	                disableOthers = false; 
+	                return false; 
+	            } 
+	        }); 
+        	items.get(tabMainView.id + '-close-others').setDisabled(disableOthers); 
+        	items.get(tabMainView.id + '-close-allOthers').setDisabled(disableOthers); 
+			e.stopEvent(); 
+        	menu.showAt(e.getPoint()); 
+    	} 
+	}
+	if(roleCode == '201205' | roleCode == '201206' | roleCode == '201207' | roleCode == '201208'){
+		var viewport = new Ext.Viewport({
+	        layout:'border',
+	        items:[
+				northTitle,
+	    		tab
+	        ]
+	    });
+	}else{
+		var viewport = new Ext.Viewport({
+	        layout:'border',
+	        items:[
+				northTitle,
+	        	tree,
+	    		tab
+	        ]
+	    });
+	}
+});
+</script>
+<%@ include file="/WEB-INF/views/common/footer.jsp"%>

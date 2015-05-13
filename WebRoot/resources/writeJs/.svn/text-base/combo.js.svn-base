@@ -1,0 +1,393 @@
+	 var resouStore = new Ext.data.Store({
+	          proxy: new Ext.data.HttpProxy({
+	              url: '/CRM365/client/loadDepartment.do'
+	          }),
+	          reader: new Ext.data.JsonReader({
+	                  root: 'data',
+	                  id: 'departId'
+	              }, 
+	            ['departId', 'departName']
+	          )
+		});
+		//--------------跟踪记录部门下拉列表-----------------	  
+		var resouComboBox = new Ext.form.ComboBox({
+		      id: 'resouComboBox',
+			  allowBlank: true,
+			  width:80,
+		      fieldLabel: '部门',
+		      emptyText : '部门...',
+		      typeAhead: true,
+		      editable: false,
+		      triggerAction: 'all',
+		      lazyRender: true,
+			  mode: 'remote',
+		      store:resouStore,
+		      valueField: 'departId',
+		      displayField: 'departName',
+		      listeners:{
+		      	select:function(){
+		      		resouEmpComboBOx.reset();
+		      		resouEmpData.proxy = new Ext.data.HttpProxy({
+		      			url: '/CRM365/client/loadEmployees.do?eid=' + resouComboBox.getValue()
+		      		});
+		      		resouEmpData.load();
+		      	}
+		      }
+		  });
+		  //跟踪记录员工数据源  
+		var resouEmpData = new Ext.data.Store({
+     		proxy: new Ext.data.HttpProxy({
+		          url: '/CRM365/client/loadEmployee.do'
+		    }),
+		    reader: new Ext.data.JsonReader({
+		           root: 'data',
+		           id: 'eId'
+		    	}, 
+	          ['eId', 'eName']
+		    )
+		 });
+		 var resouEmpComboBOx = new Ext.form.ComboBox({
+	     	   id: 'resouEmpComboBOx',
+		       allowBlank: true,
+		       width:80,
+		       fieldLabel: '*操作员工',
+	           typeAhead: true,
+		       editable: false,
+		       triggerAction: 'all',
+		       lazyRender: true,
+			   mode: 'remote',
+		       store: resouEmpData,
+		       emptyText : '员工...',
+		       valueField: 'eId',
+		       displayField: 'eName',
+		       listeners: {
+		       	'expand': function(){
+		       		var _dept = Ext.getCmp('resouComboBox').getValue();
+		       		if(_dept == '' | _dept == null){
+		       			resouEmpComboBOx.reset();
+			      		clientEmpData.proxy = new Ext.data.HttpProxy({
+			      			url: '/CRM365/client/loadEmployee.do'
+			      		});
+			      		resouEmpData.load();
+		       		}
+		       	}
+		      }
+		  });
+		  var clientDepStore = new Ext.data.Store({
+	          proxy: new Ext.data.HttpProxy({
+	              url: '/CRM365/client/loadDepartment.do'
+	          }),
+	          reader: new Ext.data.JsonReader({
+	                  root: 'data',
+	                  id: 'departId'
+	              }, 
+	            ['departId', 'departName']
+	          )
+		});
+		//--------------部门下拉列表-----------------	  
+		var clientDepComboBox = new Ext.form.ComboBox({
+		      id: 'clientDepComboBox',
+			  allowBlank: true,
+			  width:80,
+		      fieldLabel: '部门',
+		      emptyText : '请选择部门...',
+		      typeAhead: true,
+		      editable: false,
+		      triggerAction: 'all',
+		      lazyRender: true,
+			  mode: 'remote',
+		      store:clientDepStore,
+		      valueField: 'departId',
+		      displayField: 'departName',
+		      listeners:{
+		      	select:function(){
+		      		clientEmpComboBOx.reset();
+		      		clientEmpData.proxy = new Ext.data.HttpProxy({
+		      			url: '/CRM365/client/loadEmployees.do?eid=' + clientDepComboBox.getValue()
+		      		});
+		      		clientEmpData.load();
+		      	}
+		      }
+		  });
+			  
+		var clientEmpData = new Ext.data.Store({
+     		proxy: new Ext.data.HttpProxy({
+		          url: '/CRM365/client/loadEmployee.do'
+		    }),
+		    reader: new Ext.data.JsonReader({
+		           root: 'data',
+		           id: 'eId'
+		    	}, 
+	          ['eId', 'eName']
+		    )
+		 });
+		 var clientEmpComboBOx = new Ext.form.ComboBox({
+	     	   id: 'clientEmpComboBOx',
+		       allowBlank: true,
+		       width:80,
+		       fieldLabel: '*操作员工',
+	           typeAhead: true,
+		       editable: false,
+		       triggerAction: 'all',
+		       lazyRender: true,
+			   mode: 'remote',
+		       store: clientEmpData,
+		       emptyText : '员工...',
+		       valueField: 'eId',
+		       displayField: 'eName',
+		       listeners: {
+		       	'expand': function(){
+		       		var _dept = Ext.getCmp('clientDepComboBox').getValue();
+		       		if(_dept == '' | _dept == null){
+		       			clientEmpComboBOx.reset();
+			      		clientEmpData.proxy = new Ext.data.HttpProxy({
+			      			url: '/CRM365/client/loadEmployee.do'
+			      		});
+			      		clientEmpData.load();
+		       		}
+		       	}
+		      }
+		  });
+		  var signedDepStore = new Ext.data.Store({
+	          proxy: new Ext.data.HttpProxy({
+	              url: '/CRM365/client/loadDepartment.do'
+	          }),
+	          reader: new Ext.data.JsonReader({
+	                  root: 'data',
+	                  id: 'departId'
+	              }, 
+	            ['departId', 'departName']
+	          )
+		});
+		//--------------已签单商机部门下拉列表-----------------	  
+		var signedDepComboBox = new Ext.form.ComboBox({
+		      id: 'signedDepComboBox',
+			  allowBlank: true,
+			  width:80,
+		      fieldLabel: '部门',
+		      emptyText : '请选择部门...',
+		      typeAhead: true,
+		      editable: false,
+		      triggerAction: 'all',
+		      lazyRender: true,
+			  mode: 'remote',
+		      store:signedDepStore,
+		      valueField: 'departId',
+		      displayField: 'departName',
+		      listeners:{
+		      	select:function(){
+		      		signedEmpComboBOx.reset();
+		      		signedEmpData.proxy = new Ext.data.HttpProxy({
+		      			url: '/CRM365/client/loadEmployees.do?eid=' + signedDepComboBox.getValue()
+		      		});
+		      		signedEmpData.load();
+		      	}
+		      }
+		  });
+		//已签单商机员工数据源  
+		var signedEmpData = new Ext.data.Store({
+     		proxy: new Ext.data.HttpProxy({
+		          url: '/CRM365/client/loadEmployee.do'
+		    }),
+		    reader: new Ext.data.JsonReader({
+		           root: 'data',
+		           id: 'eId'
+		    	}, 
+	          ['eId', 'eName']
+		    )
+		 });
+		 var signedEmpComboBOx = new Ext.form.ComboBox({
+	     	   id: 'signedEmpComboBOx',
+		       allowBlank: true,
+		       width:80,
+		       fieldLabel: '*操作员工',
+	           typeAhead: true,
+		       editable: false,
+		       triggerAction: 'all',
+		       lazyRender: true,
+			   mode: 'remote',
+		       store: signedEmpData,
+		       emptyText : '员工...',
+		       valueField: 'eId',
+		       displayField: 'eName',
+		       listeners: {
+		       	'expand': function(){
+		       		var _dept = Ext.getCmp('signedDepComboBox').getValue();
+		       		if(_dept == '' | _dept == null){
+		       			signedEmpComboBOx.reset();
+			      		signedEmpData.proxy = new Ext.data.HttpProxy({
+			      			url: '/CRM365/client/loadEmployee.do'
+			      		});
+			      		signedEmpData.load();
+		       		}
+		       	}
+		      }
+		  });
+		    var refundDepStore = new Ext.data.Store({
+	          proxy: new Ext.data.HttpProxy({
+	              url: '/CRM365/client/loadDepartment.do'
+	          }),
+	          reader: new Ext.data.JsonReader({
+	                  root: 'data',
+	                  id: 'departId'
+	              }, 
+	            ['departId', 'departName']
+	          )
+		});
+		//--------------还款部门下拉列表-----------------	  
+		var refundDepComboBox = new Ext.form.ComboBox({
+		      id: 'refundDepComboBox',
+			  allowBlank: true,
+			  width:80,
+		      fieldLabel: '部门',
+		      emptyText : '请选择部门...',
+		      typeAhead: true,
+		      editable: false,
+		      triggerAction: 'all',
+		      lazyRender: true,
+			  mode: 'remote',
+		      store:refundDepStore,
+		      valueField: 'departId',
+		      displayField: 'departName',
+		      listeners:{
+		      	select:function(){
+		      		refundEmpComboBOx.reset();
+		      		refundEmpData.proxy = new Ext.data.HttpProxy({
+		      			url: '/CRM365/client/loadEmployees.do?eid=' + refundDepComboBox.getValue()
+		      		});
+		      		refundEmpData.load();
+		      	}
+		      }
+		  });
+		//还款员工数据源  
+		var refundEmpData = new Ext.data.Store({
+     		proxy: new Ext.data.HttpProxy({
+		          url: '/CRM365/client/loadEmployee.do'
+		    }),
+		    reader: new Ext.data.JsonReader({
+		           root: 'data',
+		           id: 'eId'
+		    	}, 
+	          ['eId', 'eName']
+		    )
+		 });
+		 var refundEmpComboBOx = new Ext.form.ComboBox({
+	     	   id: 'refundEmpComboBOx',
+		       allowBlank: true,
+		       width:80,
+		       fieldLabel: '*操作员工',
+	           typeAhead: true,
+		       editable: false,
+		       triggerAction: 'all',
+		       lazyRender: true,
+			   mode: 'remote',
+		       store: refundEmpData,
+		       emptyText : '员工...',
+		       valueField: 'eId',
+		       displayField: 'eName',
+		       listeners: {
+		       	'expand': function(){
+		       		var _dept = Ext.getCmp('refundDepComboBox').getValue();
+		       		if(_dept == '' | _dept == null){
+		       			refundEmpComboBOx.reset();
+			      		refundEmpData.proxy = new Ext.data.HttpProxy({
+			      			url: '/CRM365/client/loadEmployee.do'
+			      		});
+			      		refundEmpData.load();
+		       		}
+		       	}
+		      }
+		  });
+//--------查询商机类型下拉列表-------------------
+	    var oppTypeSelData = new Ext.data.SimpleStore({
+		      fields:['key', 'value'],
+		      data:[
+	      		[ '1', '房贷'],
+			    [ '2', '信贷'],
+			    [ '3', '短借'],
+			    [ '4', '企贷']
+		      ]
+		});
+		var oppTypeSelCombox = new Ext.form.ComboBox({
+		      fieldLabel : '*商机类型',
+		      id : 'oppTypeSelCombox',
+		      store : oppTypeSelData,
+		      width: 70,
+		      editable: false,
+		      allowBlank: true,
+		      displayField : 'value', 
+		      valueField : 'key', 
+		      mode : 'local', 
+		      triggerAction : 'all', 
+		      emptyText : '商机...', // 默认值   selectOnFocus : true,
+		      hiddenName : 'oppType'  
+	    });
+	    var oppTypeSelData1 = new Ext.data.SimpleStore({
+		      fields:['key', 'value'],
+		      data:[
+	      		[ '1', '房贷'],
+			    [ '2', '信贷'],
+			    [ '3', '短借'],
+			    [ '4', '企贷']
+		      ]
+		});
+		var oppTypeSelCombox1 = new Ext.form.ComboBox({
+		      fieldLabel : '*商机类型',
+		      id : 'oppTypeSelCombox1',
+		      store : oppTypeSelData1,
+		      width: 70,
+		      editable: false,
+		      allowBlank: true,
+		      displayField : 'value', 
+		      valueField : 'key', 
+		      mode : 'local', 
+		      triggerAction : 'all', 
+		      emptyText : '商机...', // 默认值   selectOnFocus : true,
+		      hiddenName : 'oppType'  
+	    });
+	    var oppTypeSelData2 = new Ext.data.SimpleStore({
+		      fields:['key', 'value'],
+		      data:[
+	      		[ '1', '房贷'],
+			    [ '2', '信贷'],
+			    [ '3', '短借'],
+			    [ '4', '企贷']
+		      ]
+		});
+		var oppTypeSelCombox2 = new Ext.form.ComboBox({
+		      fieldLabel : '*商机类型',
+		      id : 'oppTypeSelCombox2',
+		      store : oppTypeSelData2,
+		      width: 70,
+		      editable: false,
+		      allowBlank: true,
+		      displayField : 'value', 
+		      valueField : 'key', 
+		      mode : 'local', 
+		      triggerAction : 'all', 
+		      emptyText : '商机...', // 默认值   selectOnFocus : true,
+		      hiddenName : 'oppType'  
+	    });
+	    var oppTypeSelData3 = new Ext.data.SimpleStore({
+		      fields:['key', 'value'],
+		      data:[
+	      		[ '1', '房贷'],
+			    [ '2', '信贷'],
+			    [ '3', '短借'],
+			    [ '4', '企贷']
+		      ]
+		});
+		var oppTypeSelCombox3 = new Ext.form.ComboBox({
+		      fieldLabel : '*商机类型',
+		      id : 'oppTypeSelCombox3',
+		      store : oppTypeSelData3,
+		      width: 70,
+		      editable: false,
+		      allowBlank: true,
+		      displayField : 'value', 
+		      valueField : 'key', 
+		      mode : 'local', 
+		      triggerAction : 'all', 
+		      emptyText : '商机...', // 默认值   selectOnFocus : true,
+		      hiddenName : 'oppType'  
+	    });

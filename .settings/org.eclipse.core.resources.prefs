@@ -1,0 +1,20 @@
+#Fri Nov 15 13:54:52 CST 2013
+eclipse.preferences.version=1
+encoding//WebRoot/resources/client/addClient.js=UTF-8
+encoding//WebRoot/resources/client/addTrack.js=UTF-8
+encoding//WebRoot/resources/client/assignClient.js=UTF-8
+encoding//WebRoot/resources/client/eliClient.js=UTF-8
+encoding//WebRoot/resources/client/exitClient.js=UTF-8
+encoding//WebRoot/resources/client/importClient.js=UTF-8
+encoding//WebRoot/resources/client/signClient.js=UTF-8
+encoding//WebRoot/resources/client/test.js=UTF-8
+encoding//WebRoot/resources/client/viewEliClient.js=UTF-8
+encoding//WebRoot/resources/js/ext-all.gzjs=UTF-8
+encoding//WebRoot/resources/js/index.js=UTF-8
+encoding//WebRoot/resources/welcome/jumpClient.js=UTF-8
+encoding//WebRoot/resources/welcome/report.js=UTF-8
+encoding//WebRoot/resources/welcome/search.js=UTF-8
+encoding//WebRoot/resources/writeJs/combo.js=UTF-8
+encoding//WebRoot/resources/writeJs/provinceCity.js=UTF-8
+encoding//src/cn/dgg/CRM365/web/resource/ClientController.java=UTF-8
+encoding/<project>=UTF-8

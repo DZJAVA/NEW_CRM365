@@ -1,0 +1,57 @@
+Ext.namespace('Com.kingviker.dynamicgrid');
+
+/**
+ * 动态列实例
+ *
+ * @class Com.kingviker.dynamicgrid.DynamicFormPanel
+ * @extends Ext.grid.GridPanel
+ * @constructor
+ *
+ * @param {Object} config The configuration options
+ */
+Com.kingviker.dynamicgrid.DynamicFormPanel = function(config){
+	
+	//************************************指标归类****************************
+		 var data1 = [["一列"],["二列"],["三列"],["四列"]];
+    var store1 = new Ext.data.SimpleStore({
+        fields: ['level'],
+        data: data1
+    });
+		var combo1 = new Ext.form.ComboBox({
+        store: store1,
+		id:'dynamiccombo',
+		fieldLabel :"动态grid",
+        displayField:'level',
+        typeAhead: true,
+		emptyText:'***请选择***',
+        triggerAction: 'all',
+		value:'一列',
+		anchor:'90%',mode: 'local',
+        selectOnFocus:true
+    });
+	//************************************指标归类****************************
+
+	
+	 // 初始化表单
+    Com.kingviker.dynamicgrid.DynamicFormPanel.superclass.constructor.call(this, Ext.applyIf(config, {
+        border: false,
+        labelAlign: 'left',
+        bodyStyle: 'padding: 0 10 0 15',
+        labelWidth: 80,
+        // 渲染表单背景
+        baseCls: 'x-panel-mc',
+		layout:'form',
+        items: [combo1]
+    }));
+}
+
+Ext.extend(Com.kingviker.dynamicgrid.DynamicFormPanel, Ext.form.FormPanel, {
+	getSelectCode: function(){
+		return Ext.getCmp('dynamiccombo').getValue();
+	},
+	renderComBox: function(){
+		Ext.getCmp('dynamiccombo').on('select', function(combo, record, index ){
+			Ext.getCmp('dynamicGridPanel').load(record.data["level"]);
+		}); 
+	}
+});

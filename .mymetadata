@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project-module
+  type="WEB"
+  name="NEW_CRM365"
+  id="myeclipse.1352184567577"
+  context-root="/CRM"
+  j2ee-spec="1.4"
+  archive="NEW_CRM365.war">
+  <attributes>
+    <attribute name="webrootdir" value="/WebRoot" />
+  </attributes>
+</project-module>
+

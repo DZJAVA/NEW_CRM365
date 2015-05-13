@@ -1,0 +1,1155 @@
+<%@ page language="java" import="java.util.*" pageEncoding="UTF-8"%>
+<%@ include file="/WEB-INF/views/common/header.jsp"%>
+		<script type="text/javascript">
+		Ext.onReady(function(){
+		
+			Ext.QuickTips.init();// 浮动信息提示
+    		Ext.BLANK_IMAGE_URL = '<%=path%>/resources/images/default/s.gif';// 替换图片文件地址为本地
+<%--	    var indexs='${userSession.role.roleCompetence}';--%>
+	    // --------------- grid store -------------------
+	    var masterStore = new Ext.data.JsonStore({
+	        url: '<%=path%>/template/loadTemplate.do',
+	        root: 'data',
+	        totalProperty: 'totalCount',
+	        idProperty: 'id',
+	        autoDestroy: true,
+	        baseParams: {
+	        	conditions:''
+	        },
+	        fields: [
+	            { name: 'id' },
+	            { name: 'titles'},
+	            { name: 'content'},
+	            { name: 'timingTime'}
+	        ]
+	    });
+	    //--------------部门下拉列表-----------------	  
+	    var departmentSelStore = new Ext.data.Store({
+	          proxy: new Ext.data.HttpProxy({
+	              url: '<%=path%>/client/loadDepartment.do'
+	          }),
+	          reader: new Ext.data.JsonReader({
+	                  root: 'data',
+	                  id: 'departId'
+	              }, 
+	            ['departId', 'departName']
+	          )
+		});
+		
+		var departSelComboBox = new Ext.form.ComboBox({
+		      id: 'departSelComboBox',
+		      fieldLabel:'管理部门',
+			  allowBlank: true,
+		      emptyText : '请选择部门...',
+		      width: 135,
+		      typeAhead: true,
+		      editable: false,
+		      triggerAction: 'all',
+		      lazyRender: true,
+			  mode: 'remote',
+		      store: departmentSelStore,
+		      valueField: 'departId',
+		      displayField: 'departName',
+		      listeners:{
+		      	select:function(){
+		      		employeeSelComboBOx.reset();
+		      		employeeSelData.proxy = new Ext.data.HttpProxy({
+		      			url: '<%=path%>/client/loadEmployees.do?eid=' + departSelComboBox.getValue()
+		      		});
+		      		employeeSelData.load();
+		      	}
+		      }
+		  });
+		  
+		  		var employeeSelData = new Ext.data.Store({
+     		proxy: new Ext.data.HttpProxy({
+		          url: '<%=path%>/client/loadEmployee.do'
+		    }),
+		    reader: new Ext.data.JsonReader({
+		           root: 'data',
+		           id: 'eId'
+		    	}, 
+	          ['eId', 'eName']
+		    )
+		 });
+		 var employeeSelComboBOx = new Ext.form.ComboBox({
+	     	   id: 'employeeSelComboBOx',
+	     	   fieldLabel:'管理人',
+		       allowBlank: true,
+		        width: 135,
+	           typeAhead: true,
+		       editable: false,
+		       triggerAction: 'all',
+		       lazyRender: true,
+			   mode: 'remote',
+		       store: employeeSelData,
+		       emptyText : '请选择员工...',
+		       valueField: 'eId',
+		       displayField: 'eName',
+		       listeners: {
+		       	'expand': function(){
+		       		var _dept = Ext.getCmp('departSelComboBox').getValue();
+		       		if(_dept == '' | _dept == null){
+		       			employeeSelComboBOx.reset();
+			      		employeeSelData.proxy = new Ext.data.HttpProxy({
+			      			url: '<%=path%>/client/loadEmployee.do'
+			      		});
+			      		employeeSelData.load();
+		       		}
+		       	}
+		       }
+		});
+		
+			    //---------------创建日期下拉列表--------------------------
+	    var createDateData = new Ext.data.SimpleStore({
+		      fields:['key', 'value'],
+		      data:[
+	      		[ '1', '今天'],
+			    [ '2', '本周'],
+			    [ '3', '本月'],
+			    [ '4', '本年']
+		      ]
+		});
+		var createDateCombox = new Ext.form.ComboBox({
+		      id : 'createDateCombox',
+		      fieldLabel:'创建日期',
+		      store : createDateData,
+		       width: 90,
+		      editable: false,
+		      allowBlank: true,
+		      displayField : 'value', 
+		      valueField : 'key', 
+		      mode : 'local', 
+		      triggerAction : 'all', 
+		      emptyText : '请选择...',// 默认值   selectOnFocus : true,
+		      listeners:{
+		      	'select': function(){
+		      		Ext.getCmp('createStart').setDisabled(true);
+		      		Ext.getCmp('createEnd').setDisabled(true);
+		      	}
+		      }
+	    });
+	   var resourcesDateData = new Ext.data.SimpleStore({
+		      fields:['key', 'value'],
+		      data:[
+	      		[ '1', '今天'],
+			    [ '2', '本周'],
+			    [ '3', '本月'],
+			    [ '4', '本年']
+		      ]
+		});
+		var resourcesDateCombox = new Ext.form.ComboBox({
+		      id : 'resourcesDateCombox',
+		      fieldLabel:'跟踪日期',
+		      store : resourcesDateData,
+		      width: 90,
+		      editable: false,
+		      allowBlank: true,
+		      displayField : 'value', 
+		      valueField : 'key', 
+		      mode : 'local', 
+		      triggerAction : 'all', 
+		      emptyText : '请选择...',// 默认值   selectOnFocus : true,
+		      listeners:{
+		      	'select': function(){
+		      		Ext.getCmp('resourcestimeStart').setDisabled(true);
+		      		Ext.getCmp('resourcestimeEnd').setDisabled(true);
+		      	}
+		      }
+	    });
+	    	    //---------------分配状态下拉列表--------------------------
+	    var signStatusData = new Ext.data.SimpleStore({
+		      fields:['key', 'value'],
+		      data:[
+	      		[ '1', '已签单'],
+			    [ '2', '未签单']
+		      ]
+		});
+		var signStatusCombox = new Ext.form.ComboBox({
+		      id : 'signStatusCombox',
+		      fieldLabel:'签单状态',
+		      store : signStatusData,
+		      width: 135,
+		      editable: false,
+		      allowBlank: true,
+		      displayField : 'value', 
+		      valueField : 'key', 
+		      mode : 'local', 
+		      triggerAction : 'all', 
+		      emptyText : '请选择...'// 默认值   selectOnFocus : true,
+	    });
+	    	     //---------------查询签单可能性下拉列表--------------------------
+	    var signPossibleSelData = new Ext.data.SimpleStore({
+		      fields:['key', 'value'],
+		      data:[
+	      		[ '1', '100%'],
+			    [ '2', '80%'],
+			    [ '3', '50%'],
+			    [ '4', '0%']
+		      ]
+		});
+		var signPossibleSelCombox = new Ext.form.ComboBox({
+		      fieldLabel : '签单可能性',
+		      id : 'signPossibleSelCombox',
+		      store : signPossibleSelData,
+		      width: 135,
+		      editable: false,
+		      allowBlank: true,
+		      displayField : 'value', 
+		      valueField : 'key', 
+		      mode : 'local', 
+		      triggerAction : 'all', 
+		      emptyText : '请选择...', // 默认值   selectOnFocus : true,
+		      hiddenName : 'signPossible'  
+	    });
+	    
+  
+  	    //--------查询商机类型下拉列表-------------------
+	    var oppTypeSelData = new Ext.data.SimpleStore({
+		      fields:['key', 'value'],
+		      data:[
+	      		[ '1', '房贷'],
+			    [ '2', '信贷'],
+			    [ '3', '短借'],
+			    [ '4', '企贷']
+		      ]
+		});
+		var oppTypeSelCombox = new Ext.form.ComboBox({
+		      fieldLabel : '贷款类型',
+		      id : 'oppTypeSelCombox',
+		      store : oppTypeSelData,
+		      width: 90,
+		      editable: false,
+		      allowBlank: true,
+		      displayField : 'value', 
+		      valueField : 'key', 
+		      mode : 'local', 
+		      triggerAction : 'all', 
+		      emptyText : '请选择...', // 默认值   selectOnFocus : true,
+		      hiddenName : 'oppType'  
+	    });
+  
+  
+  
+ //计划日期下俩框
+  var chientPlanStore = new Ext.data.Store({
+          proxy: new Ext.data.HttpProxy({
+              url: '<%=path%>/sendMassage/loadChientTiem.do'
+          }),
+          reader: new Ext.data.JsonReader({
+                  root: 'data',
+                  id: 'rtId'
+              }, 
+              ['rtId', 'plantime']
+          )
+	  });
+  var chientPlanComboBox = new Ext.form.ComboBox({
+      id: 'chientPlanComboBox',
+      hiddenName: 'dId',
+      width: 80,
+	  allowBlank: true,
+      fieldLabel: '计划日期',
+      typeAhead: true,
+      editable: false,
+      triggerAction: 'all',
+      lazyRender: false,
+	  mode: 'remote',
+      store:chientPlanStore,
+      valueField: 'rtId',
+      displayField: 'plantime'
+  }); 
+   //客户电话名称数据源
+     var clientStore = new Ext.data.JsonStore({
+	        url: '<%=path%>/sendMassage/testOnClick.do',
+	        root: 'data',
+	        totalProperty: 'totalCount',
+	        idProperty: 'id',
+	        autoDestroy: true,
+	        baseParams: {
+	        	conditions:''
+	        },
+	        fields: [
+	            { name: 'id' },
+	            { name: 'clientName'},
+	            { name: 'contactTel'}
+	        ]
+	    });
+	          // --------------- grid actions -----------------
+	    var myGridNewAction = new Ext.Action({
+	        text: '新增模板',
+	        iconCls: 'btn_add',
+	        scale: 'small',
+	        handler: function(){
+	            form1.getForm().reset();
+	            Ext.getCmp('formWindow').setTitle('新增模板信息');
+	            form1Window.show();
+	        }
+	    });
+	      
+	    var myGridEditAction = new Ext.Action({
+	        text: '编辑模板',
+	        iconCls: 'btn_edit',
+	        scale: 'small',
+	        disabled: true,
+	        handler: function(){
+	            var record = myGrid.getSelectionModel().getSelected();  
+	            if(record != null){
+	                Ext.getCmp('formWindow').setTitle('编辑模板信息');
+	                form1Window.show();
+	                form1.getForm().loadRecord(record);
+	            }
+	        }
+	    });
+	            
+	    var myGridDeleteAction = new Ext.Action({
+	        text: '删除模板',
+	        iconCls: 'btn_del',
+	        scale: 'small',
+	        disabled: true,
+	        handler: function(){
+	            if (myGrid.getSelectionModel().hasSelection()) {
+	                Ext.Msg.confirm('删除确认', '是否删除选择的记录?', function(aButton){
+	                    if (aButton == 'yes'){
+	                        var id = ''
+	                        var records = myGrid.getSelectionModel().getSelections();
+	                        for(var i = 0, len = records.length; i < len; i ++) {
+	                          id = id + records[i].id + ',';
+	                        }
+	                        Ext.Ajax.request({
+	                            url: '<%=path%>/template/deleteTemplate.do',
+	                            params: {
+	                                id: id
+	                            },
+	                            success: function(aResponse, aOptions){
+	                            	myGridLoadAction.execute();
+	                            	masterStore.reload({callback: myGridUpdateAction});
+	                                var result = Ext.decode(aResponse.responseText);
+				                    Ext.MessageBox.alert('提示', result.msg);
+	                            },
+	                            failure: function(aResponse, aOptions){
+	                            	myGridLoadAction.execute();
+	                                var result = Ext.decode(aResponse.responseText);
+				                    Ext.MessageBox.alert('提示', result.msg);
+	                            }
+	                        })
+	                    }
+	                });
+	            }
+	        }
+	    });
+
+        var searchButton = {
+				xtype:'button',
+				iconCls: 'check',
+				text:'查 询',
+				handler:function(){
+					var dn=Ext.getCmp('depName').getValue();
+						Ext.apply(masterStore.baseParams,{
+							conditions:'{dn:"'+dn+'"}'
+					});
+						masterStore.load({
+				            params:{
+				                start:0, 
+				                limit:20
+				            },
+				            waitTitle:'提示',waitMsg: '数据加载请稍后...',
+				            failure: function() {
+				                Ext.Msg.alert('提示', '读取数据失败！');                             
+				            }
+				        });
+						Ext.getCmp('depName').setValue('');
+				}
+			}
+	       var chientTiemButton = {
+				xtype:'button',
+				iconCls: 'check',
+				text:'查 询',
+				handler:function(){
+					//获取部门
+					var departSelComboBox=Ext.getCmp('departSelComboBox').getValue();
+					//获取跟单人
+					var employeeSelComboBOx=Ext.getCmp('employeeSelComboBOx').getValue();
+					//获取签单状态
+					var signStatusCombox=Ext.getCmp('signStatusCombox').getValue();
+					//获取签单可能性
+					var signPossibleSelCombox=Ext.getCmp('signPossibleSelCombox').getValue();
+					//获取贷款起金额
+					var startLoan=Ext.getCmp('startLoan').getValue();
+					//获取贷款止金额
+					var endLoan=Ext.getCmp('endLoan').getValue();
+					//获取跟踪日期
+					var resourcesDateCombox=Ext.getCmp('resourcesDateCombox').getValue();
+					//获取跟踪日期起
+					var resourcestimeStart=Ext.getCmp('resourcestimeStart').getValue();
+					if(resourcestimeStart!=''){
+						resourcestimeStart=resourcestimeStart.format('Y-m-d');
+					}
+					//获取跟踪日期止
+					var resourcestimeEnd=Ext.getCmp('resourcestimeEnd').getValue();
+					if(resourcestimeEnd!=''){
+						resourcestimeEnd=resourcestimeEnd.format('Y-m-d');
+					}
+					//获取创建日期
+					var createDateCombox=Ext.getCmp('createDateCombox').getValue();
+					//获取创建日起
+					var createStart=Ext.getCmp('createStart').getValue();
+					if(createStart!=''){
+						createStart=createStart.format('Y-m-d');
+					}
+					//获取创建日止
+					var createEnd=Ext.getCmp('createEnd').getValue();
+					if(createEnd!=''){
+						createEnd=createEnd.format('Y-m-d');
+					}
+					//获取贷款类型
+					var oppTypeSelCombox=Ext.getCmp('oppTypeSelCombox').getValue();
+					menuTree.loader.baseParams =   
+					    {  
+					        param1:departSelComboBox,   
+					        param2:employeeSelComboBOx,
+					        param3:signStatusCombox,
+					        param4:signPossibleSelCombox,
+					        param5:startLoan,
+					        param6:endLoan,
+					        param7:resourcesDateCombox,
+					        param8:resourcestimeStart,
+					        param9:resourcestimeEnd,
+					        param10:createDateCombox,
+					        param11:createStart,
+					        param12:createEnd,
+					        param13:oppTypeSelCombox
+					    };  
+					menuTree.root.reload();
+					Ext.getCmp('departSelComboBox').setValue('');
+					Ext.getCmp('employeeSelComboBOx').setValue('');
+					Ext.getCmp('signStatusCombox').setValue('');
+					Ext.getCmp('signPossibleSelCombox').setValue('');
+					Ext.getCmp('startLoan').setValue('');
+					Ext.getCmp('endLoan').setValue('');
+					Ext.getCmp('resourcesDateCombox').setValue('');
+					
+					Ext.getCmp('resourcestimeStart').setValue('');
+					Ext.getCmp('resourcestimeStart').setDisabled(false);
+					
+					Ext.getCmp('resourcestimeEnd').setValue('');
+					Ext.getCmp('resourcestimeEnd').setDisabled(false);
+					
+					Ext.getCmp('createDateCombox').setValue('');
+					Ext.getCmp('createStart').setValue('');
+					Ext.getCmp('createStart').setDisabled(false);
+					Ext.getCmp('createEnd').setValue('');
+					Ext.getCmp('createEnd').setDisabled(false);
+					Ext.getCmp('oppTypeSelCombox').setValue('');
+					
+				}
+			}
+		var myGridTemplateAction = new Ext.Action({
+	       text:'模板发送',
+	       iconCls:'emailGo',
+	       scale:'small',
+	       disabled: true,
+	       handler: function(){
+	       	getHeight();
+	       var record = myGrid.getSelectionModel().getSelections();
+	            if(record != null){
+	            var tid=record[0].id;
+	            var titles=record[0].get('titles');
+	            var content=record[0].get('content');
+	             var _id=record[0].get('id');
+	            Ext.getCmp('titless').setValue(titles);
+	            Ext.getCmp('contents').setValue(content);
+	            Ext.getCmp('tempId').setValue(_id); 
+	            Ext.getCmp('form2Window').setTitle('模板发送短信');
+	            form2Window.show();
+	          }
+	       }
+	     });
+   		var myGridCustomAction = new Ext.Action({
+	       text:'自定义发送',
+	       iconCls:'emialEdit',
+	       scale:'small',
+	       disabled: false,
+	       handler: function(){
+	          // Ext.get('chientPlanComboBox').setValue(10);
+       			Ext.getCmp('titless').setValue('');
+	            Ext.getCmp('contents').setValue('');
+	            Ext.getCmp('form2Window').setTitle('自定义发送短信');
+	            form2Window.show();
+	       }
+	     });
+	  //加载数据数据源
+   	  var menuTree = new Ext.tree.TreePanel({
+			frame:true,
+			rootVisible:false,
+			autoScroll:true,
+			useArrows:true,
+			height:318,
+			root:new Ext.tree.AsyncTreeNode({
+				id : '-1'
+			}),
+			loader:new Ext.tree.TreeLoader({
+				url : '<%=path%>/sendMassage/loadClient.do'
+			})
+		});
+	//点击树形操作事件
+		menuTree.on('click',function(node,e){
+			e.stopEvent();
+			if(node.isLeaf()){
+				try{
+				var numbers =Ext.getCmp('numbers').getValue();
+				var clieName = Ext.getCmp('clieName').getValue();
+				var sd=new Array();
+				if(numbers!=null||numbers!=''){
+				  sd=clieName.split(",");
+				}
+				var sign = false;
+				for(var i=0;i<sd.length;i++){
+				  if(sd[i]==node.text){
+				  	sign = true;
+				  	break;
+				  }
+				}
+				if(sign){
+					Ext.getCmp('clieName').setValue(Ext.getCmp('clieName').getValue());
+					for(var i =0;i<clientStore.data.length;i++){
+						if(clientStore.getAt(i).get('id')==node.id){
+							Ext.getCmp('numbers').setValue(Ext.getCmp('numbers').getValue());
+						}
+					}
+				}else{
+					Ext.getCmp('clieName').setValue(Ext.getCmp('clieName').getValue()+node.text+',');
+					for(var i =0;i<clientStore.data.length;i++){
+						if(clientStore.getAt(i).get('id')==node.id){
+							Ext.getCmp('numbers').setValue(Ext.getCmp('numbers').getValue()+clientStore.getAt(i).get('contactTel')+',');
+						}
+					}
+				}
+				}catch(e){
+				
+				}
+	         }
+		});
+   //grid里显示查询
+	var oneTbar=new Ext.Toolbar({
+		  	items:[
+		  		'标题：',
+				 {
+		     	 	xtype:'textfield',
+		     	 	width:80,
+		     	 	id:'depName'
+		     	 },
+				 searchButton
+			 ] });
+			 
+	        var myGridLoadAction = new Ext.Action({
+	        text: '刷新',
+	        iconCls:'btn_del',
+	        scale:'small',
+	        disabled: true,
+	        handler: function(aMasterId){
+	            masterStore.setBaseParam('masterId', aMasterId);
+	            masterStore.load({
+	                params:{
+	                    start:0, 
+	                    limit:20
+	                },
+	                waitTitle:'提示',waitMsg: '数据加载请稍后...',
+	                failure: function() {
+	                    Ext.Msg.alert('提示','读取数据失败！');                             
+	                }
+	            });
+	        }
+	    }); 
+	  //客户信息刷新
+	   var clienAction = new Ext.Action({
+	        text: '刷新',
+	        iconCls:'btn_del',
+	        scale:'small',
+	        disabled: true,
+	        handler: function(aMasterId){
+	            clientStore.setBaseParam('masterId', aMasterId);
+	            clientStore.load({
+	                params:{
+	                    start:0, 
+	                    limit:20
+	                },
+	                waitTitle:'提示',waitMsg: '数据加载请稍后...',
+	                failure: function() {
+	                    Ext.Msg.alert('提示','读取数据失败！');                             
+	                }
+	            });
+	        }
+	    });   
+	  //grid隐藏和显示编辑、删除、模板发送按钮
+	     function myGridUpdateAction (){
+	            if(myGrid.getSelectionModel().hasSelection()){
+	                myGridEditAction.enable();
+	                myGridDeleteAction.enable();
+	                myGridTemplateAction.enable();
+	            }else{
+	                myGridEditAction.disable();
+	                myGridDeleteAction.disable();
+	                myGridTemplateAction.disable();
+	            }
+	    };
+	
+		    // --------------- grid --------------------
+	    var myGrid = new Ext.grid.GridPanel({
+	        id: 'myGrid',
+	        store: masterStore,
+	        sm: new Ext.grid.CheckboxSelectionModel ({singleSelect : false}),
+	        frame:true,
+	        trackMouseOver: false,
+	        disableSelection: false,
+	        loadMask: true,
+	        columns: [
+	          new Ext.grid.CheckboxSelectionModel ({singleSelect : false}),
+	            {
+	            	header: 'id',
+	            	hidden:true,
+	                dataIndex: 'id'
+	            },
+	            {
+	            	header: '标题',
+	                sortable: true,
+	                width:200,
+	                dataIndex: 'titles'
+	            },
+	            {
+	               header:'内容',
+	               sotable:true,
+	               width:350,
+	               dataIndex:'content'
+	            },
+	            {
+	            	header: '发送时间',
+	                sortable: true,
+	                width:200,
+	                dataIndex: 'timingTime'
+	            }
+	        ],
+	        tbar: [
+	            myGridNewAction,
+	            myGridEditAction,           
+	            myGridDeleteAction,
+	            myGridTemplateAction,
+	            myGridCustomAction
+	        ],
+	         listeners : {
+			 'render' : function(){
+				 oneTbar.render(this.tbar); //add one tbar
+			 }
+			},
+	        bbar: new Ext.PagingToolbar({
+	            pageSize: 20,
+	            store: masterStore,
+	            displayInfo: true,
+	             plugins: new Ext.ux.ProgressBarPager(),
+	            displayMsg: '显示: {0} - {1} / 总数: {2}',
+	            emptyMsg: '没有记录'
+	        })
+	    });
+	    
+	    var form1ReturnAction = new Ext.Action({
+	        text: '返回',
+	        iconCls: 'returns',
+	        handler: function(){
+	           form1Window.hide();
+	        }
+	    });
+	  //短信按钮
+	  var form2ReturnAction = new Ext.Action({
+	        text: '返回',
+	        iconCls: 'returns',
+	        handler: function(){
+	           Ext.getCmp('numbers').setValue('');
+	           Ext.getCmp('clieName').setValue('');
+	           Ext.getCmp('checkAll').setValue(false);
+	           form2Window.hide();
+	        }
+	    });
+	    
+	     // bind event
+	    myGrid.getSelectionModel().addListener(
+	        'selectionchange', 
+	        myGridUpdateAction
+	    );
+	    
+	    var form1LoadAction = new Ext.Action({
+	        text: '刷新',
+	        handler: function(aId){
+	            var idValue = '<c:out value="${param.id}"/>';
+	
+	            if (Ext.type(aId) == 'number') {
+	                idValue = aId;
+	            }
+	            form1.getForm().reset();
+	            form1.getForm().load({
+	                url: '<c:url value="/security/usermanage.do"/>?action=form1_load',
+	                method: 'get',
+	                params: {
+	                    id: idValue
+	                },
+	                waitTitle:'提示',waitMsg: '数据加载请稍后...',
+	                success: function(aResponse, aOptions){
+	                    myGridUpdateAction();
+				// Ext.getCmp('image_id').el.dom.src =  aOptions.result.data.imageUrl;//更新form中图片控件
+	                },
+	                failure: function() {
+	                    Ext.Msg.alert('提示', '读取数据失败！');                             
+	                }
+	            });
+	        }
+	    });
+	     var form1SaveAction = new Ext.Action({
+	        text: '保存',
+	        iconCls: 'saves',
+	        handler: function(){
+	            if(form1.getForm().isValid()){
+	                form1.getForm().submit({
+	                    url: '<%=path%>/template/saveUpdateTemplate.do',
+	                    params: {
+	                    },
+	                    waitTitle: '请等待',
+	                    waitMsg: '正在处理数据...',
+	                    timeout: 10,
+	                    success: function(aForm, aAction){
+	                        form1Window.hide();
+	                        masterStore.reload({callback: myGridUpdateAction});
+	                    	Ext.MessageBox.alert('提示', aAction.result.msg); 
+	                    },
+	                    failure: function(aForm, aAction) {
+	                       Ext.MessageBox.alert('提示', aAction.result.msg);                           
+	                    }
+	                });
+	            }
+	        }
+	    });
+	     var sendMagAction = new Ext.Action({
+	        text: '发短信',
+	        iconCls: 'saves',
+	        handler: function(){
+	            if(form2.getForm().isValid()){
+	                var _contents = Ext.getCmp('contents').getValue();
+	                var _clieName = Ext.getCmp('clieName').getValue();
+	                var _numbers = Ext.getCmp('numbers').getValue();
+	                 var _tempId = Ext.getCmp('tempId').getValue();
+	                form2.getForm().submit({
+	                    url: '<%=path%>/sendMassage/sendMessages.do',
+	                    params: {
+		                    _contents:_contents,
+		                    _clieName:_clieName,
+		                    _numbers:_numbers,
+		                    _tempId:_tempId
+	                    },
+	                    waitTitle: '请等待',
+	                    waitMsg: '正在处理数据...',
+	                    timeout: 10,
+	                    success: function(aForm, aAction){
+		                    var _clieName = Ext.getCmp('clieName').setValue('');
+			                var _numbers = Ext.getCmp('numbers').setValue('');
+		                 	var _tempId = Ext.getCmp('tempId').setValue('');
+	                        form2Window.hide();
+	                        masterStore.reload({callback: myGridUpdateAction});
+	                    	var result = Ext.decode(aAction.response.responseText);
+	               			Ext.MessageBox.alert('提示', result.msg); 
+	                    },
+	                    failure: function(aForm, aAction) {
+	                       var result = Ext.decode(aAction.response.responseText);
+	               		   Ext.MessageBox.alert('提示', result.msg);                            
+	                    }
+	                });
+	            }
+	        }
+	    });
+	       var form1 = new Ext.form.FormPanel({
+	        id: 'form1',
+	        bodyStyle: 'padding:5px',
+	        labelAlign:'right',
+	        defaultType: 'textfield',
+	        layout: 'form',
+	        frame: true,
+	        items: [
+                      {
+				         inputType: 'hidden',
+                         fieldLabel: '*编号',
+                         id: 'id'
+                      },
+                      {
+                         fieldLabel: '*标题',
+                         allowBlank: false,
+                         width:220,
+                         id: 'titles'
+                      },
+                     {
+                         fieldLabel: '*定时发送时间',
+                         xtype:'datetimefield',
+                 		 format:'Y-m-d H:i',
+                         allowBlank: true,
+                         width:220,
+                         id: 'timingTime'
+                     },
+                      {
+                         fieldLabel: '*内容',
+                         xtype:'textarea',
+                         allowBlank: false,
+                         width:220,
+                         height:75,
+                         id: 'content'
+                     }	        
+	        ]
+	    });
+	    
+	       var form1Window = new Ext.Window({
+	        id:'formWindow',
+	        width: 450,
+	        height: 240,
+	        modal: true,
+	        layout: 'fit',
+	        plain: true,
+	        bodyStyle: 'padding:5px;',
+	        buttonAlign: 'center',
+	        items: form1,
+	        closeAction: 'hide',
+	        buttons: [
+	                form1SaveAction,
+	                form1ReturnAction
+	            ]
+	    });
+	    
+	    var form2 = new Ext.form.FormPanel({
+		        id: 'form2',
+		        bodyStyle: 'padding:5px',
+		        labelAlign:'right',
+				layout: 'form',
+				labelWidth: 80,
+		        frame: true,
+		        items: [
+		        {
+		            layout: 'column',
+		            items: [
+		            {
+		                	columnWidth: .5,
+		                	layout: 'form',
+		                	anchor:'98%',
+		                	items: [
+		                	 departSelComboBox
+		                	 ]
+		             },
+		             {
+		                	columnWidth: .5,
+		                	layout: 'form',
+		                	anchor:'98%',
+		                	items: [
+		                	 employeeSelComboBOx
+		                	 ]
+		             }
+		            ]
+		        },
+		        {
+		            layout: 'column',
+		            items: [
+		            {
+		                	columnWidth: .5,
+		                	layout: 'form',
+		                	anchor:'98%',
+		                	items: [
+		                	 signStatusCombox
+		                	 ]
+		             },
+		             {
+		                	columnWidth: .5,
+		                	layout: 'form',
+		                	anchor:'98%',
+		                	items: [
+		                	 signPossibleSelCombox
+		                	 ]
+		             }
+		            ]
+		        },
+		        {
+		            layout: 'column',
+		            items: [
+		            {
+		                	columnWidth: .5,
+		                	layout: 'form',
+		                	anchor:'98%',
+		                	items: [
+		                	 {
+								xtype: 'textfield',
+								fieldLabel:'贷款金额(万)',
+								width: 135,
+								id: 'startLoan',
+								regex:/^[0-9].*$/
+							 }
+		                 ]
+		             },
+		             {
+		                	columnWidth: .5,
+		                	layout: 'form',
+		                	anchor:'98%',
+		                	items: [
+		                	 	{
+									xtype: 'textfield',
+									fieldLabel:'至(万)',
+									width: 135,
+									id: 'endLoan',
+									regex:/^[0-9].*$/
+								}
+		                	 ]
+		             }
+		            ]
+		        },
+		        {
+		            layout: 'column',
+		            items: [
+		            {
+		                	columnWidth: .4,
+		                	layout: 'form',
+		                	anchor:'98%',
+		                	items: [
+			                	resourcesDateCombox
+		                	]
+		             },
+		             {
+		                	columnWidth: .3,
+		                	labelWidth:30,
+		                	layout: 'form',
+		                	items: [
+		                        {
+				                  fieldLabel:'起',
+				                  anchor:'99%',
+				                  xtype:'datefield',
+				                  format:'Y-m-d',
+				                  id:'resourcestimeStart'
+			                   }
+		                    ]
+		             },
+		             {
+		                	columnWidth: .3,
+		                	labelWidth:30,
+		                	layout: 'form',
+		                	anchor:'98%',
+		                	items: [
+		                        {
+				                  fieldLabel:'至',
+				                  anchor:'99%',
+				                  xtype:'datefield',
+				                  format:'Y-m-d',
+				                  id:'resourcestimeEnd'
+			                   }
+		                    ]
+		             }
+		            ]
+		        },
+		        {
+		            layout: 'column',
+		            items: [
+		            {
+		                	columnWidth: .4,
+		                	layout: 'form',
+		                	anchor:'98%',
+		                	items: [
+			                	createDateCombox
+		                	]
+		             },
+		             {
+		                	columnWidth: .3,
+		                	labelWidth:30,
+		                	layout: 'form',
+		                	items: [
+		                        {
+				                  fieldLabel:'起',
+				                  anchor:'99%',
+				                  xtype:'datefield',
+				                  format:'Y-m-d',
+				                  id:'createStart'
+			                   }
+		                    ]
+		             },
+		             {
+		                	columnWidth: .3,
+		                	labelWidth:30,
+		                	layout: 'form',
+		                	anchor:'98%',
+		                	items: [
+		                        {
+				                  fieldLabel:'至',
+				                  anchor:'99%',
+				                  xtype:'datefield',
+				                  format:'Y-m-d',
+				                  id:'createEnd'
+			                   }
+		                    ]
+		             }
+		            ]
+		        },
+		       {
+		            layout: 'column',
+		            items: [
+		                {
+		                    columnWidth: .5,
+		                    layout: 'form',
+		                    items: [
+		                        {
+		                        	xtype: 'textfield',
+									inputType: 'hidden',
+		                            fieldLabel: '*编号',
+		                            id: 'tempId'
+		                        },
+				                  oppTypeSelCombox
+		                    ]
+		                },
+		                {
+		                	columnWidth: .2,
+		                	layout: 'form',
+		                	anchor:'98%',
+		                	items: chientTiemButton
+		                }
+		            ]
+		        },
+                {
+                   fieldLabel: '全选',
+                   xtype:'checkbox',
+                   id: 'checkAll',
+                   listeners:{
+                  	check:function(thiz,checked){
+                      if(checked){
+                         menuTree.disable();
+	                     Ext.getCmp('clieName').setValue(''); 
+	                     Ext.getCmp('numbers').setValue('');
+	                     var roonodes = menuTree.getRootNode().childNodes; //获取主节点
+	                     findchildnode(roonodes);  //开始递归
+                    	 function findchildnode(node){ 
+	                      	for(var i=0;i<node.length;i++){  //从节点中取出子节点依次遍历  
+								Ext.getCmp('clieName').setValue(Ext.getCmp('clieName').getValue()+node[i].text+','); 
+	                            for(var j =0;j<clientStore.data.length;j++){
+									if(clientStore.getAt(j).get('id')==node[i].id){
+										Ext.getCmp('numbers').setValue(Ext.getCmp('numbers').getValue()+clientStore.getAt(j).get('contactTel')+',');
+									}	
+								}      
+			                 }    
+	                       }
+                      	}else{
+                      		menuTree.enable();
+                      	    Ext.getCmp('clieName').setValue('');
+                      	    Ext.getCmp('numbers').setValue('');
+                      	}
+                      }
+                    }
+                  },
+                  {
+                      fieldLabel: '*标题',
+                      xtype:'hidden',
+                      allowBlank: false,
+                      id: 'titless'
+                  },
+                   {
+                      fieldLabel: '*内容',
+                      allowBlank: true,
+                      xtype:'textarea',
+                      width: 340,
+                      height:45,
+                      id: 'contents'
+                  },
+                  {
+                     fieldLabel:'*客户姓名',
+                     xtype:'textarea',	
+                     width: 340,
+                     height:45,
+                     allowBlank:false,
+                     id:'clieName'
+                  },
+                  {
+                      fieldLabel: '*客户电话',
+                      allowBlank: false,
+                      width: 340,
+                      height:50,
+                      xtype:'textarea',
+                      id: 'numbers'
+                  }
+		        ]
+		    });
+	    
+       
+      //点模板或自定义发送设置高度
+	    function getHeight(){
+	    	treePanel.height = form2Window.height-80;
+	    	form2.height = form2Window.height-80;
+	    }
+	    
+	  //展现树形
+	   var treePanel = new Ext.Panel({
+		    title:'客户',
+		    frame:true,
+		    layout:'fit',
+		    items:menuTree,
+		    tbar:[
+				{
+					text:'展开',
+					tooltip:'展开所有菜单',
+					iconCls:'expand_btn',
+					handler:function(){
+						menuTree.expandAll();
+					}
+				},
+				{
+					text:'收起',
+					tooltip:'收起所有菜单',
+					iconCls:'collapse_btn',
+					handler:function(){
+						menuTree.collapseAll();
+					}
+				}
+		 ]
+	    });
+     var form2Window = new Ext.Window({
+            id:'form2Window',
+	        width: 700,
+	        height: 455,
+	        modal: true,
+	        layout: 'column',
+	        plain: true,
+	        bodyStyle: 'padding:5px;',
+	        buttonAlign: 'center',
+	        closeAction: 'hide',//点window窗口关闭隐藏
+	        items: [
+	        	{
+	        		columnWidth: .7,
+	        		anchor: '100%',
+	        		items: form2
+	        	},
+	        	{
+	        		columnWidth: .3,
+	        		anchor: '100%',
+	        		items: treePanel
+	        	}
+	        	
+	        ],
+	        closeable: false,
+	        buttons: [
+                sendMagAction,
+                form2ReturnAction
+	        ]
+	    });
+	     // bind event
+	    myGrid.getSelectionModel().addListener(
+	        'selectionchange', 
+	        myGridUpdateAction
+	    );
+	    // --------------- viewport --------------------
+	    var viewport = new Ext.Viewport({
+	        layout: 'fit',
+	        border: false,
+	        items: [
+	            myGrid
+	        ]
+	    });
+	
+	    // --------------- load data -------------------
+	    
+	    myGridLoadAction.execute();
+	    clienAction.execute();
+		});
+		</script>
+<%@ include file="/WEB-INF/views/common/footer.jsp"%>

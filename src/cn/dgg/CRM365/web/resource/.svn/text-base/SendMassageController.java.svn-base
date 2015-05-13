@@ -1,0 +1,548 @@
+package cn.dgg.CRM365.web.resource;
+
+import java.io.IOException;
+import java.io.InputStream;
+import java.net.URLEncoder;
+import java.text.SimpleDateFormat;
+import java.util.ArrayList;
+import java.util.Date;
+import java.util.List;
+import java.util.Timer;
+
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
+
+import net.sf.json.JSONArray;
+import net.sf.json.JSONObject;
+
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.stereotype.Controller;
+import org.springframework.web.bind.annotation.ModelAttribute;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.servlet.ModelAndView;
+
+import bsh.org.objectweb.asm.Type;
+
+import cn.dgg.CRM365.domain.authority.Role;
+import cn.dgg.CRM365.domain.authority.User;
+import cn.dgg.CRM365.domain.authority.UserRole;
+import cn.dgg.CRM365.domain.resources.ResourcesTrack;
+import cn.dgg.CRM365.domain.resourcesManage.Client;
+import cn.dgg.CRM365.domain.resourcesManage.ClientUser;
+import cn.dgg.CRM365.domain.resourcesManage.Messages;
+import cn.dgg.CRM365.domain.resourcesManage.Template;
+import cn.dgg.CRM365.util.SendMessage;
+import cn.dgg.CRM365.util.commonUtil.StringUtil;
+import cn.dgg.CRM365.util.mvc.MvcUtil;
+import cn.dgg.CRM365.util.orm.ICommonDAO;
+import cn.dgg.CRM365.util.orm.SqlBuilder;
+import cn.dgg.CRM365.util.page.GridLoadParams;
+import cn.dgg.CRM365.util.page.Pagination;
+
+/**
+ * 短信发送管理控制器
+  * <功能简述>
+  * <功能详细描述>
+  * 
+  * @author  王玉川
+  * @version  [版本号, Dec 25, 2012]
+  * @see  [相关类/方法]
+  * @since  [产品/模块版本]
+ */
+@SuppressWarnings("all")
+@RequestMapping("/sendMassage")
+@Controller
+public class SendMassageController {
+	@Autowired
+	@Qualifier("commonDAOProxy")
+	ICommonDAO<Messages> mdao;
+	
+	@Autowired
+	@Qualifier("commonDAOProxy")
+	ICommonDAO<ClientUser> cudao;
+	
+	@Autowired
+	@Qualifier("commonDAOProxy")
+	ICommonDAO<Client> udao;
+	
+	@Autowired
+	@Qualifier("commonDAOProxy")
+	ICommonDAO<Template> templateDao;
+	
+	@Autowired
+	@Qualifier("commonDAOProxy")
+	ICommonDAO<ResourcesTrack> rtDao;
+	
+	@Autowired
+	@Qualifier("commonDAOProxy")
+	ICommonDAO<Object[]> odao;
+	
+	@RequestMapping("/sendMassage.do")
+	public ModelAndView jumpPage(){
+		return new ModelAndView("resource/template");
+	}
+	
+	/**
+	 * 查询当前登录人客户信息信息 <功能简述> <功能详细描述>
+	 * 
+	 * @param gridLoadParams
+	 * @param request
+	 * @param conditions
+	 * @param node 树形执行的条件
+	 * @return [参数说明]
+	 * 
+	 * @return ModelAndView [返回类型说明]
+	 * @exception throws
+	 *                [异常类型] [异常说明]
+	 * @see [类、类#方法、类#成员]
+	 */
+	@RequestMapping("/loadChientTiem.do")
+	public ModelAndView loadChientTiem(HttpServletRequest request) {
+		JSONObject jsonObject = new JSONObject();
+		JSONArray data = new JSONArray();
+		User userSession = (User) request.getSession().getAttribute("userSession");
+		List<ResourcesTrack> cList=null;
+		//得到当前登录人的角色代码
+		String uRoleCode = userSession.getRole().getRoleCode();
+		if(uRoleCode.equals("201201")||uRoleCode.equals("201202")){
+			try {
+			    cList = rtDao.findAll("from ResourcesTrack");
+				if (cList.size() > 0) {
+					for (ResourcesTrack rt: cList) {
+						JSONObject item = new JSONObject();
+						item.element("rtId", MvcUtil.toJsonString(rt.getClient_name().getId()));
+						item.element("resourcestime", MvcUtil.toJsonString(rt.getResourcestime()));
+						item.element("plantime", MvcUtil.toJsonString(rt.getPlantime()));
+						data.add(item);
+					}
+				}
+				jsonObject.element("data", data);
+			} catch (Exception e) {
+				e.printStackTrace();
+			}
+		}else if(uRoleCode.equals("201203")){
+			List<ClientUser> cuList = cudao.findAll("from ClientUser c where c.user_id.id="+userSession.getId()+" and c.status='0'");
+			for(ClientUser clientuser:cuList){
+				try {
+//				 cList = udao.findAll("from Client c where c.id="+clientuser.getClient_id().getId());
+//				if (cList.size() > 0) {
+//					for (Client client: cList) {
+//						JSONObject item = new JSONObject();
+//						item.element("id", MvcUtil.toJsonString(client.getId()));
+//						item.element("text", MvcUtil.toJsonString(client.getClientName()));
+//						item.element("leaf", true);
+//						data.add(item);
+//					}
+//				}
+			} catch (Exception e) {
+				e.printStackTrace();
+			}
+			}
+		}
+		return MvcUtil.jsonObjectModelAndView(jsonObject);
+	}
+	public static StringBuffer loadChientId(List<ResourcesTrack> rtList){
+		StringBuffer sb = new StringBuffer(" where 1=1");
+		if(rtList.size()>0){
+			if(rtList.size() == 1){
+				sb.append(" and c.id = ").append(rtList.get(0).getClient_name().getId());
+			}else{
+				for(int i=0;i<rtList.size();i++){
+					if(i==0){
+						sb.append(" and (c.id = ").append(rtList.get(i).getClient_name().getId());
+					}else if(i == rtList.size() - 1){
+						sb.append(" or c.id = ").append(rtList.get(i).getClient_name().getId()).append(")");
+					}else{
+						sb.append(" or c.id = ").append(rtList.get(i).getClient_name().getId());
+					}
+				}
+			}
+		}else{
+			sb.append(" and c.id = ").append("0");
+		}
+		return sb;
+	}
+	
+	/**
+	 * 查询当前登录人客户信息信息 <功能简述> <功能详细描述>
+	 * 
+	 * @param gridLoadParams
+	 * @param request
+	 * @param conditions
+	 * @param node 树形执行的条件
+	 * @return [参数说明]
+	 * 
+	 * @return ModelAndView [返回类型说明]
+	 * @exception throws
+	 *                [异常类型] [异常说明]
+	 * @see [类、类#方法、类#成员]
+	 */
+	@RequestMapping("/loadClient.do")
+	public ModelAndView loadDepartment(@RequestParam("node") Long node, HttpServletRequest request) {
+		//	1为房贷、2为信贷、3为短借、4为企贷
+		System.out.println(node);
+		String ywType=node+"";
+		JSONArray data = new JSONArray();
+		if(node==-1){
+			JSONObject fd = new JSONObject();
+			fd.element("id","1");
+			fd.element("text","房贷");
+			data.add(fd);
+			JSONObject xd = new JSONObject();
+			xd.element("id","2");
+			xd.element("text","信贷");
+			data.add(xd);
+			JSONObject dj = new JSONObject();
+			dj.element("id","3");
+			dj.element("text","短借");
+			data.add(dj);
+			JSONObject qd = new JSONObject();
+			qd.element("id","4");
+			qd.element("text","企贷");
+			data.add(qd);
+			JSONObject wdy = new JSONObject();
+			wdy.element("id","5");
+			wdy.element("text","未定义");
+			data.add(wdy);
+		}else{
+			String param1 = request.getParameter("param1");//部门
+			String param2 = request.getParameter("param2");//跟单人
+			String param3 = request.getParameter("param3");//签单状态
+			String param4 = request.getParameter("param4");//签单可能性
+			String param5 = request.getParameter("param5");//贷款金额起
+			String param6 = request.getParameter("param6");//贷款金额至
+			String param7 = request.getParameter("param7");//跟踪日期今天、本周、本月、本年
+			String param8 = request.getParameter("param8");//跟踪日期起
+			String param9 = request.getParameter("param9");//跟踪日期止
+			String param10 = request.getParameter("param10");//创建日期今天、本周、本月、本年
+			String param11 = request.getParameter("param11");//创建日起
+			String param12 = request.getParameter("param12");//创建日止
+			String param13 = request.getParameter("param13");//贷款类型
+			JSONObject jsonObject = new JSONObject();
+			SimpleDateFormat sFormat = new SimpleDateFormat("yyyy-MM-dd");
+			String nowTime = sFormat.format(new Date());//当前时间
+			String[] dates = nowTime.split("-");
+			User userSession = (User) request.getSession().getAttribute("userSession");
+			List<Client> cList=null;
+			List<ResourcesTrack> rtList= null;
+			String sql = "from Client c";
+			StringBuffer sb = new StringBuffer(" where 1=1");
+			//得到当前登录人的角色代码
+			String uRoleCode = userSession.getRole().getRoleCode();
+				if(uRoleCode.equals("201203")){
+					sql = "select c from Client c, ClientUser cu";
+					sb.append(" and c.id = cu.client_id.id and cu.user_id.id = ").append(userSession.getId()).append(" and cu.status='0'");
+				}else if(uRoleCode.equals("201202")){
+					sql = "select c from Client c, ClientUser cu";
+					sb.append(" and c.id = cu.client_id.id and cu.user_id.employee.department.id = ").
+					append(userSession.getEmployee().getDepartment().getId()).append(" and cu.status='0'");
+				}
+				try {
+					if((param1!=null&&param1!="")||(param2!=null&&param2!="")||(param3!=null&&param3!="")||(param4!=null&&param4!="")
+					   ||(param5!=null&&param5!="")||(param6!=null&&param6!="")||(param7!=null&&param7!="")||(param8!=null&&param8!="")
+					   ||(param9!=null&&param9!="")||(param10!=null&&param10!="")||(param11!=null&&param11!="")||(param12!=null&&param12!="")
+					   ||(param13!=null&&param13!="")){
+						if(param1!=null&&param1!=""){
+							sql = "select c from Client c, ClientUser cu";
+							sb.append(" and cu.user_id.employee.department.id = ").append(Long.parseLong(param1)).append(" and cu.status = '0'");
+							sb.append(" and c.id = cu.client_id.id");
+						}
+						if(param2!=null&&param2!=""){
+							sql = "select c from Client c, ClientUser cu";
+							sb.append(" and cu.user_id.employee.id = ").append(Long.parseLong(param2)).append(" and cu.status = '0'");
+							sb.append(" and c.id = cu.client_id.id");
+						}
+						if(param3!=null&&param3!=""){
+							sb.append(" and c.clientStatus = ").append(param3);
+						}
+						if(param4!=null&&param4!=""){
+							sb.append(" and c.signPossible = ").append(param4);
+						}
+						if(param5!=null&&param5!=""&&param6!=null&&param6!=""){
+							sb.append(" and c.loanAmount between ").append(param5).append(" and ").append(param6);
+						}
+						if(param7==null||"".equals(param7)){
+							if(!"".equals(param8) && !"".equals(param9)){
+								sql = "select DISTINCT c from Client c, ClientUser cu, ResourcesTrack rt";
+								sb.append(" and rt.resourcestime between '").append(param8).append(" 00:00' and '").append(param9).append(" 59:59'");
+								sb.append(" and c.id = rt.client_name.id");
+							}
+							if(!"".equals(param9) && param9 != null && (param8 == null || "".equals(param8))){
+								sql = "select DISTINCT c from Client c, ClientUser cu, ResourcesTrack rt";
+								sb.append(" and rt.resourcestime  like '").append(param9).append("%'");
+								sb.append(" and c.id = rt.client_name.id");
+							}
+							if(!"".equals(param8) && param8 != null && (param9 == null || "".equals(param9))){
+								sql = "select DISTINCT c from Client c, ClientUser cu, ResourcesTrack rt";
+								sb.append(" and rt.resourcestime like '").append(param8).append("%'");
+								sb.append(" and c.id = rt.client_name.id");
+							}
+						}else{
+							if(param7!=null&&param7!=""){
+								if("1".equals(param7)){//今天
+									sql = "select DISTINCT c from Client c, ClientUser cu, ResourcesTrack rt";
+									sb.append(" and rt.resourcestime like '").append(nowTime).append("%'");
+									sb.append(" and c.id = rt.client_name.id");
+								}else if("2".equals(param7)){//本周
+									sql = "select DISTINCT c from Client c, ClientUser cu, ResourcesTrack rt";
+									String monday = StatementsController.getWeekTime(nowTime);//获取本周一时间
+									sb.append(" and rt.resourcestime between '").append(monday).append(" 00:00' and '").append(nowTime).append(" 59:59'");
+									sb.append(" and c.id = rt.client_name.id");
+								}else if("3".equals(param7)){//本月
+									sql = "select DISTINCT c from Client c, ClientUser cu, ResourcesTrack rt";
+									sb.append(" and rt.resourcestime like '").append(dates[0] + "-" + dates[1]).append("%'");
+									sb.append(" and c.id = rt.client_name.id");
+								}else if("4".equals(param7)){//本年
+									sql = "select DISTINCT c from Client c, ClientUser cu, ResourcesTrack rt";
+									sb.append(" and rt.resourcestime like '").append(dates[0]).append("%'");
+									sb.append(" and c.id = rt.client_name.id");
+								}
+							}
+						}
+						if(param10 == null || "".equals(param10)){
+							if(!"".equals(param11) && !"".equals(param12)){
+								sb.append(" and c.assignDate between '").append(param11).append("' and '").append(param12).append("'");
+							}
+							if(!"".equals(param12) && param12 != null && (param11 == null || "".equals(param11))){
+								sb.append(" and c.assignDate = '").append(param12).append("'");
+							}
+							if(!"".equals(param11) && param11 != null && (param12 == null || "".equals(param12))){
+								sb.append(" and c.assignDate = '").append(param11).append("'");
+							}
+						}else{
+							if("1".equals(param10)){//今天
+								sb.append(" and c.assignDate = '").append(nowTime).append("'");
+							}else if("2".equals(param10)){//本周
+								String monday = StatementsController.getWeekTime(nowTime);//获取本周一时间
+								sb.append(" and c.assignDate between '").append(monday).append("' and '").append(nowTime).append("'");
+							}else if("3".equals(param10)){//本月
+								sb.append(" and c.assignDate like '").append(dates[0] + "-" + dates[1]).append("%'");
+							}else if("4".equals(param10)){//本年
+								sb.append(" and c.assignDate like '").append(dates[0]).append("%'");
+							}
+						}
+						if(param13 != null && !"".equals(param13)){
+							sb.append(" and c.oppType = ").append(param13);
+						}
+					} 
+					sb.append(" and c.oppType='"+ywType+"'");
+					cList = udao.findAll(sql + sb);
+					if (cList.size() > 0) {
+						for (Client client: cList) {
+							JSONObject item = new JSONObject();
+							item.element("id", MvcUtil.toJsonString(client.getId()));
+							item.element("text", MvcUtil.toJsonString(client.getClientName()));
+							item.element("leaf", true);
+							data.add(item);
+						}
+					}
+				} catch (Exception e) {
+					e.printStackTrace();
+				}
+//				List<Object[]> olist = odao.findAll(sql + sb);
+//				if(olist.size() > 0){
+//					for (Object[] obj: olist) {
+//						JSONObject item = new JSONObject();
+//						item.element("id", MvcUtil.toJsonString(obj[0]));
+//						item.element("text", MvcUtil.toJsonString(obj[1]));
+//						item.element("leaf", true);
+//						data.add(item);
+//					}
+//				}
+		}
+		return MvcUtil.jsonArrayModelAndView(data);
+	}
+	
+	
+	
+	/**
+     * 
+     *<功能简述>
+     * 查询客户信息
+     *<功能详细描述>
+     * @param request
+     * @return [参数说明]
+     * 
+     * @return ModelAndView [返回类型说明]
+     * @exception throws [异常类型] [异常说明]
+     * @see [类、类#方法、类#成员]
+     */
+		@RequestMapping(value = "/testOnClick.do")
+		public ModelAndView testOnClick( HttpServletRequest request ) {
+		JSONObject jsonObject = new JSONObject();
+		JSONArray data = new JSONArray();
+		     try{
+			     String hql = "from Client c";
+			     List<Client> relatList=udao.findAll(hql);
+			     for(Client client:relatList){
+			    	 JSONObject item = new JSONObject();
+					 item.element("id", MvcUtil.toJsonString(client.getId()));
+					 item.element("clientName", MvcUtil.toJsonString(client.getClientName()));
+					 item.element("contactTel", MvcUtil.toJsonString(client.getContactTel()));
+					 data.add(item);
+			     }
+			     jsonObject.element("data", data);
+		     }catch (Exception e){
+			     e.printStackTrace();
+			     }
+			     return MvcUtil.jsonObjectModelAndView(jsonObject);
+		    }
+		/**
+	     * 
+	     *<功能简述>
+	     * 短信发送
+	     *<功能详细描述>
+	     * @param _contents 发送短信内容
+	     * @param _clieName 要发送客户名称
+	     * @param _numbers 要发送客户电话
+	     * @param request
+	     * @return [参数说明]
+	     * 
+	     * @return ModelAndView [返回类型说明]
+	     * @exception throws [异常类型] [异常说明]
+	     * @see [类、类#方法、类#成员]
+	     */	
+		@RequestMapping("/sendMessages.do")
+		public ModelAndView sendMessages(@RequestParam("_contents") String _contents,@RequestParam("_clieName")
+				String _clieName,@RequestParam("_numbers") String _numbers,@RequestParam("_tempId") String tempId,
+				HttpServletRequest request) throws Exception {
+			JSONObject jsonObject = new JSONObject();
+			JSONArray data = new JSONArray();
+			String sendtime =StringUtil.getSystemDate("yyyyMMddhhmmss");
+			String nubString="";
+			char endZIf=_numbers.charAt(_numbers.length()-1);
+			if(endZIf==','){
+				nubString=_numbers.substring(0, _numbers.length()-1);
+			}else{
+				nubString=_numbers+",";
+				nubString=nubString.substring(0, nubString.length()-1);
+			}
+			SendMessage sg = new SendMessage();
+			String sd=sg.infoSend(nubString,_contents,sendtime);
+			if(sd.split(",")[0].equals("0")){
+				if(!"".equals(tempId)){
+					SqlBuilder sb = new SqlBuilder("Template", SqlBuilder.TYPE_UPDATE);
+					sb.addField("sendState", "2");
+					sb.addWhere("id",Long.parseLong(tempId));
+					templateDao.updateByHQL(sb.getSql(), sb.getParams());
+				}
+				String[] clieNameAll = _clieName.split(",");
+				for(int i=0;i<clieNameAll.length;i++){
+					User user = (User)request.getSession().getAttribute("userSession");
+					sg.saveMessages(mdao,user.getLoginId(), clieNameAll[i], _contents);
+				}
+			}
+			String flag = sd.split(",")[0];
+			if("0".equals(flag)){
+				String _id = request.getParameter("_id");
+				if(_id != null && !"".equals(_id)){
+					SqlBuilder sql = new SqlBuilder("Client", SqlBuilder.TYPE_UPDATE);
+					SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd");
+					sql.addField("editTime", sdf.format(new Date()));
+					sql.addWhere("id", Long.parseLong(_id));
+					udao.updateByHQL(sql.getSql(), sql.getParams());
+				}
+				jsonObject.element("success", true);
+				jsonObject.element("msg", "短信发送成功");
+			}else if("-1".equals(flag)){
+				jsonObject.element("failure", true);
+				jsonObject.element("msg", "账号不存在");
+			}else if("-2".equals(flag)){
+				jsonObject.element("failure", true);
+				jsonObject.element("msg", "密码错误");
+			}else if("-3".equals(flag)){
+				jsonObject.element("failure", true);
+				jsonObject.element("msg", "账号被锁");
+			}else if("-4".equals(flag)){
+				jsonObject.element("failure", true);
+				jsonObject.element("msg", "账号余额为0");
+			}else if("-5".equals(flag)){
+				jsonObject.element("failure", true);
+				jsonObject.element("msg", "短信内容含有关键字");
+			}else if("-6".equals(flag)){
+				jsonObject.element("failure", true);
+				jsonObject.element("msg", "标示号taskId有误");
+			}else if("-7".equals(sd.split(",")[0])){
+				jsonObject.element("failure", true);
+				jsonObject.element("msg", "短信内容格式有误");
+			}else if("1".equals(flag)){
+				jsonObject.element("failure", true);
+				jsonObject.element("msg", "其他错误");
+			}else if("2".equals(flag)){
+				jsonObject.element("failure", true);
+				jsonObject.element("msg", "账号信息错误");
+			}else if("3".equals(flag)){
+				jsonObject.element("failure", true);
+				jsonObject.element("msg", "短信内容为空或电话号码为空");
+			}else if("4".equals(flag)){
+				jsonObject.element("failure", true);
+				jsonObject.element("msg", "账号余额不够发送当前短信");
+			}else if("5".equals(flag)){
+				jsonObject.element("failure", true);
+				jsonObject.element("msg", "发送短信过程中出错");
+			}else{
+				jsonObject.element("failure", true);
+				jsonObject.element("msg", "电话号码不符合规范！");
+			}
+			return MvcUtil.jsonObjectModelAndView(jsonObject);
+		}	
+		
+
+	
+	/**
+	 * 定时发送短信
+	 * @return
+	 * @throws Exception 
+	 */
+	public String sendInfo() throws Exception{
+		//查询模板为发送所以信息
+		List<Template> templateList =templateDao.findAll("from Template t where t.sendState = '1'"); 
+		String nowTime = new SimpleDateFormat("yyyy-MM-dd HH:mm").format(new Date());
+		SendMessage sg = new SendMessage();
+		String returnState =null;
+		for(int i=0;i<templateList.size();i++){
+			Template template =templateList.get(i);
+			//得到某个模板发送时间
+			String timingTime =template.getTimingTime();
+			String allContactTel = "";
+			String clientName = "";
+			String jltiem="";
+			//判断当前时间和模板时间是否相同
+			if(nowTime.equals(timingTime)){
+				jltiem=timingTime;
+				//查询所有客户信息
+				List<Client> clientList = udao.findAll("from Client c");
+				for(int j=0;j<clientList.size();j++){
+					Client client= clientList.get(j);
+					//记录所有客户电话
+					allContactTel+=client.getContactTel()+",";
+					//记录所有客户名称
+					clientName+=client.getClientName()+",";
+				}
+				//截取allContactTel最后一个数据
+				allContactTel = allContactTel.substring(0, allContactTel.length()-1);
+				//发送短信
+				returnState =sg.infoSend(allContactTel,template.getContent(),StringUtil.getSystemDate("yyyyMMddhhmmss"));
+				//判断短信是否发送成功
+				if(returnState.split(",")[0].equals("0")){
+					//查询模板时间和当前时间相同的数据
+					List<Template> templist = templateDao.findAll("from Template t where t.timingTime='"+jltiem+"'");
+					for(Template temp:templist){
+						SqlBuilder sb = new SqlBuilder("Template", SqlBuilder.TYPE_UPDATE);
+						sb.addField("sendState", "2");
+						sb.addWhere("id",temp.getId());
+						templateDao.updateByHQL(sb.getSql(), sb.getParams());
+					}
+					String[] cname = clientName.split(",");
+					//循环保存发送短信成功的信息
+					for(int k=0;k<cname.length;k++){
+						sg.saveMessages(mdao,"admin", cname[k], template.getContent());
+					}
+				}
+			}
+		}
+		return returnState;
+	}
+}

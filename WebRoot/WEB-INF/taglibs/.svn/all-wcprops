@@ -1,0 +1,35 @@
+K 25
+svn:wc:ra_dav:version-url
+V 56
+/svn/crm/!svn/ver/105/NEW_CRM365/WebRoot/WEB-INF/taglibs
+END
+sql.tld
+K 25
+svn:wc:ra_dav:version-url
+V 64
+/svn/crm/!svn/ver/105/NEW_CRM365/WebRoot/WEB-INF/taglibs/sql.tld
+END
+c.tld
+K 25
+svn:wc:ra_dav:version-url
+V 62
+/svn/crm/!svn/ver/105/NEW_CRM365/WebRoot/WEB-INF/taglibs/c.tld
+END
+spring.tld
+K 25
+svn:wc:ra_dav:version-url
+V 67
+/svn/crm/!svn/ver/105/NEW_CRM365/WebRoot/WEB-INF/taglibs/spring.tld
+END
+fmt.tld
+K 25
+svn:wc:ra_dav:version-url
+V 64
+/svn/crm/!svn/ver/105/NEW_CRM365/WebRoot/WEB-INF/taglibs/fmt.tld
+END
+x.tld
+K 25
+svn:wc:ra_dav:version-url
+V 62
+/svn/crm/!svn/ver/105/NEW_CRM365/WebRoot/WEB-INF/taglibs/x.tld
+END

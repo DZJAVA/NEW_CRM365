@@ -1,0 +1,256 @@
+<%@ page contentType="text/html;charset=UTF-8"%>
+<%@ include file="/WEB-INF/views/common/header.jsp"%>
+<style type="text/css">
+	.title_a:link {
+    color:#0f4988;
+    text-decoration:none;
+    }
+    .title_a:visited {
+    color:#0f4988;
+    text-decoration:none;
+    }
+    .title_a:hover {
+    color:#000000;
+    text-decoration:underline;
+    }
+    .title_a:active {
+    color:#0f4988;
+    text-decoration:none;
+    }
+</style>
+<script type="text/javascript">
+var resetPwdWindow = null;
+function resetpassword(){
+	if(resetPwdWindow != null){
+		resetPwdWindow.show();
+	}
+}
+
+Ext.onReady(function(){
+	Ext.QuickTips.init();
+<%--	var department = '<c:out value="${empty userSession.user.departmentId}" />';--%>
+	Ext.BLANK_IMAGE_URL = '<c:url value="/js/ext/images/default/s.gif"/>';
+<%--	var northHtml = '<div style="color:#0f4988;text-align:right;padding:15px 0px 5px 5px;background-repeat:no-repeat;' +--%>
+<%--					'width:100%;height:100%;border:none;background-image:url(/dggOA/images/top_left.jpg);">' +--%>
+<%--					'[ <a class="title_a" href="javascript:resetpassword();">密码修改</a> ]&nbsp;&nbsp;' +--%>
+<%--					'[ <a class="title_a" href="/dggOA/login.do?action=re_login">登陆</a> ]&nbsp;&nbsp;[ <a class="title_a" href="/dggOA/login.do?action=login_out">退出</a> ]&nbsp;&nbsp;&nbsp;<br/>' +--%>
+<%--					'当前用户：<c:out value="${userSession.userName}"/>&nbsp;&nbsp;&nbsp;<br/>' +--%>
+<%--					'所属部门：' + (department ? '<c:out value="${userSession.user.departmentId.depaName}" />' : '暂无部门') + '&nbsp;&nbsp;&nbsp;<br/>' +--%>
+<%--					'</div>';--%>
+	//系统菜单
+	var menuTree = new Ext.tree.TreePanel({
+		autoScroll : true,
+		border : false,
+		containerScroll : true,
+		rootVisible : false,
+		autoScroll : true,
+		bodyStyle:'background-image:url(/CDYFXLX/images/welcome.gif)',
+		//lines : false,
+		//singleExpand : true,
+		useArrows : true,
+		root:new Ext.tree.AsyncTreeNode({
+			id : '-1'
+		}),
+		loader:new Ext.tree.TreeLoader({
+			url : '<c:out value="main/menu.do" />'
+		})
+	});
+	//主界面
+    var viewport = new Ext.Viewport({
+        layout:'border',
+        items:[{
+				region: 'north',
+		        margins:'4 4 4 4',
+		        border: false,
+		        bodyStyle:'background-image:url(/CDYFXLX/images/top_bg.jpg);background-repeat:repeat-x;',
+				height: 70
+		        //html: northHtml
+			},{
+                title:'MENU',
+				xtype:'panel',
+                region: 'west',
+				iconCls: 'menu_panel',
+                width: 200,
+                collapsible: true,
+                margins:'0 0 4 4',
+			    animCollapse:false,
+			    animFloat:false,
+                split:true,
+				layout:'accordion',
+				items:[
+					{
+						title:'系统菜单',
+						iconCls: 'tree_panel',
+						layout:'fit',
+						items:menuTree,
+						tbar:[
+							{
+								text:'展开',
+								tooltip:'展开所有菜单',
+								iconCls:'expand_btn',
+								handler:function(){
+									menuTree.expandAll();
+								}
+							},{
+								text:'收起',
+								tooltip:'收起所有菜单',
+								iconCls:'collapse_btn',
+								handler:function(){
+									menuTree.collapseAll();
+								}
+							}
+						]
+					},{
+						title:'历史记录',
+						iconCls: 'history_panel'
+					}
+				]
+//	            html: '<iframe frameborder="0" width="100%" height="100%" src="<c:url value="/common/main/menu.html"/>"/>'
+            },{
+		        region:'center',
+		        margins:'0 4 4 0',
+				xtype:'tabpanel',
+				id:'tab_view',
+			 	activeTab:0,
+				tabWidth:120,
+				enableTabScroll:true,
+				defaults:{
+					xtype:'panel',
+				 	closable:true
+				},
+				items:[
+					{
+						title:'迎新主页',
+						iconCls:'tabpanel_btn',
+						closable:false,
+						html: '<iframe name="centerF" frameborder="0" width="100%" height="100%" src="<c:url value="/login.do?action=to_welcome"/>"/>'
+					}
+				]
+//		        html: '<iframe name="centerF" frameborder="0" width="100%" height="100%" src="<c:url value="/login.do?action=to_welcome"/>"/>'
+			}
+		]
+    });
+	resetPwdWindow = new Ext.Window({
+	    width: 400,
+	    height: 180,
+	    modal: true,
+	    layout: 'fit',
+	    plain: true,
+	    buttonAlign: 'center',
+		closeAction: 'hide',
+	    items:[{
+			xtype:'form',
+			id:'resetPwdForm',
+			labelWidth:65,
+			frame:true,
+			bodyStyle: 'padding:5px;',
+			border:false,
+			defaults: {
+                anchor:'95%', 
+				msgTarget: 'side'
+            },
+			items:[
+				{
+                    xtype:'textfield',
+					inputType:'password',
+					fieldLabel: '*原始密码',
+					maxLength:20,
+                    allowBlank: false,
+                    id: 'oldPassword'
+         		},{
+                    xtype:'textfield',
+					inputType:'password',
+					minLength:6,
+					maxLength:20,
+					fieldLabel: '*新密码',
+                    allowBlank: false,
+                    id: 'newPassword'
+         		},{
+                    xtype:'textfield',
+					inputType:'password',
+					minLength:6,
+					maxLength:20,
+					fieldLabel: '*确认密码',
+                    allowBlank: false,
+                    id: 'newPassword2'
+                }
+			]
+		}],
+	    buttons: [
+            {
+				text:'保存',
+				handler:function(){
+					var resetPwdForm = Ext.getCmp('resetPwdForm');
+					if(resetPwdForm.getForm().isValid()){
+						if(Ext.getCmp('newPassword').getValue() != Ext.getCmp('newPassword2').getValue()){
+							Ext.Msg.alert('提示','两次新密码输入不一致，请重新输入');
+							return;
+						}
+		                resetPwdForm.getForm().submit({
+		                    url: '<c:url value="/szyx/information.do" />?action=password_save',
+		                    waitTitle: '请等待',
+		                    waitMsg: '正在处理数据...',
+		                    timeout: 10,
+		                    success: function(aForm, aAction){
+								if(aAction.result.scs){
+									resetPwdWindow.hide();
+									resetPwdForm.form.reset();
+									Ext.Msg.alert('提示', '修改密码成功！');  
+								}else{
+									Ext.Msg.alert('提示', aAction.result.msg);  
+								}
+		                    },
+		                    failure: function(aForm, aAction) {
+								if(aAction.result.scs){
+									resetPwdWindow.hide();
+									resetPwdForm.form.reset();
+									Ext.Msg.alert('提示', '修改密码成功！');  
+								}else{
+									Ext.Msg.alert('提示', aAction.result.msg);  
+								}                          
+		                    }
+		                });
+		            }
+				}
+			},
+            {
+				text:'关闭',
+				handler:function(){
+					resetPwdWindow.hide();
+				}
+			}
+        ]
+	});
+//*******************************************************************************************
+//事件控制
+//*******************************************************************************************
+	menuTree.on('click',function(node,e){
+		e.stopEvent();
+		if(node.isLeaf()){
+			try{
+				createTabpanelItems(node.attributes.href, node.text,node.id);
+//				var hr = new historyRecord({tabId:node.id,urlName:node.text,checkTime:new Date(),url:node.attributes.href});
+//				historyStre.insert(0,hr);
+			}catch(e){}
+         }
+	});
+	//创建tabpanel面板
+	function createTabpanelItems(href,tit,id){
+		var tabMainView = Ext.getCmp('tab_view');
+		var tab = tabMainView.getComponent(id);
+		if(tab){
+			tabMainView.setActiveTab(tab);
+		}else{
+            var p = tabMainView.add({
+                title:tit,
+	            id:id+"",
+	            iconCls: 'tabpanel_btn',
+	            html: '<iframe width="100%" height="100%" frameborder="0" src="'+href+'"></iframe>',    
+	            closable:true
+            });
+            tabMainView.setActiveTab(p);
+		}
+	}
+});
+</script>
+<%@ include file="/WEB-INF/views/common/footer.jsp"%>

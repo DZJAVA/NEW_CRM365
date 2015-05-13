@@ -1,0 +1,170 @@
+﻿<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+	xmlns:context="http://www.springframework.org/schema/context"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" 
+	xmlns:aop="http://www.springframework.org/schema/aop"
+	xmlns:tx="http://www.springframework.org/schema/tx"
+	xsi:schemaLocation="
+       http://www.springframework.org/schema/beans 
+       http://www.springframework.org/schema/beans/spring-beans-3.0.xsd
+       http://www.springframework.org/schema/context 
+       http://www.springframework.org/schema/context/spring-context-3.0.xsd
+       http://www.springframework.org/schema/tx 
+       http://www.springframework.org/schema/tx/spring-tx-3.0.xsd">
+	<!-- ========================= RESOURCE DEFINITIONS ========================= -->
+
+	<bean id="propertyConfigurer"
+		class="org.springframework.beans.factory.config.PropertyPlaceholderConfigurer">
+		<property name="location" value="/WEB-INF/jdbc.properties" />
+	</bean>
+
+	<!-- c3p0连接池 -->
+	<bean id="dataSource"
+		class="com.mchange.v2.c3p0.ComboPooledDataSource"
+		destroy-method="close">
+		<property name="driverClass" value="${jdbc.driverClassName}" />
+		<property name="jdbcUrl" value="${jdbc.url}" />
+		<property name="user" value="${jdbc.username}" />
+		<property name="password" value="${jdbc.password}" />
+		<property name="initialPoolSize"
+			value="${jdbc.initialPoolSize}" />
+		<property name="minPoolSize" value="${jdbc.minPoolSize}" />
+		<property name="maxPoolSize" value="${jdbc.maxPoolSize}" />
+		<property name="maxIdleTime" value="${jdbc.maxIdleTime}" />
+		<property name="acquireIncrement"
+			value="${jdbc.acquireIncrement}" />
+		<property name="idleConnectionTestPeriod" value="60"></property>
+
+	</bean>
+
+	<bean id="sessionFactory"
+		class="org.springframework.orm.hibernate3.annotation.AnnotationSessionFactoryBean">
+		<property name="dataSource" ref="dataSource" />
+		<property name="hibernateProperties">
+			<props>
+				<prop key="hibernate.dialect">
+					${hibernate.dialect}
+				</prop>
+				<prop key="hibernate.show_sql">
+					${hibernate.show_sql}
+				</prop>
+			</props>
+		</property>
+		<property name="eventListeners">
+			<map>
+				<entry key="merge">
+					<bean
+						class="org.springframework.orm.hibernate3.support.IdTransferringMergeEventListener" />
+				</entry>
+			</map>
+		</property>
+		<property name="annotatedClasses">
+			<list>
+				<value>cn.dgg.CRM365.domain.authority.User</value>
+				<value>cn.dgg.CRM365.domain.authority.Menu</value>
+				<value>cn.dgg.CRM365.domain.authority.MenuRole</value>
+				<value>cn.dgg.CRM365.domain.authority.Role</value>
+				<value>cn.dgg.CRM365.domain.authority.UserRole</value>
+				<value>cn.dgg.CRM365.domain.authority.Log</value>
+				<value>cn.dgg.CRM365.domain.authority.Department</value>
+				<value>cn.dgg.CRM365.domain.owners.Employee</value>
+				<value>cn.dgg.CRM365.domain.owners.Counts</value>	
+				<value>cn.dgg.CRM365.domain.owners.Position</value>	
+
+                <!--	菜单操作bean			-->
+				<value>cn.dgg.CRM365.domain.authority.MenuOperation</value>
+				<!--	角色栏目表			-->
+				<value>cn.dgg.CRM365.domain.authority.MenuOperationRole</value>
+				<!--                   hjf                                   -->
+				<value>cn.dgg.CRM365.domain.resourcesManage.Client</value>
+				<value>cn.dgg.CRM365.domain.resourcesManage.WrongClient</value>
+				<value>cn.dgg.CRM365.domain.resourcesManage.ClientDifRecord</value>
+				<value>cn.dgg.CRM365.domain.resourcesManage.ClientUser</value>
+				<value>cn.dgg.CRM365.domain.resourcesManage.ClientSource</value>
+				<!-- chenqin -->
+				<value>cn.dgg.CRM365.domain.replyment.LoanDetail</value>
+				<value>cn.dgg.CRM365.domain.replyment.Rcount</value>
+				
+				 <!--	资源管理-资源跟踪记录			-->
+			  <value>cn.dgg.CRM365.domain.resourcesManage.Messages</value>
+			  <value>cn.dgg.CRM365.domain.resourcesManage.SeeClient</value>
+			  <value>cn.dgg.CRM365.domain.resourcesManage.Template</value>
+			  <value>cn.dgg.CRM365.domain.resources.ResourcesTrack</value>
+			  <value>cn.dgg.CRM365.domain.resources.Eliminate</value>
+			  <value>cn.dgg.CRM365.domain.resources.AddClient</value>
+			  <value>cn.dgg.CRM365.domain.resources.SignClient</value>
+			  <value>cn.dgg.CRM365.domain.resources.EliminateClient</value>
+			  <value>cn.dgg.CRM365.domain.resourcesManage.ShowClient</value>
+			  <value>cn.dgg.CRM365.domain.resourcesManage.XzAllocation</value>
+			  <value>cn.dgg.CRM365.domain.resourcesManage.XzShituAllocation</value>
+			  <value>cn.dgg.CRM365.domain.resources.AutoAssign</value>
+			  
+			</list>
+		</property>
+	</bean>
+	<context:component-scan base-package="cn.dgg.CRM365.web">
+		<context:exclude-filter type="annotation"
+			expression="org.springframework.stereotype.Controller" />
+	</context:component-scan>
+	
+	<bean id="transactionManager"
+		class="org.springframework.orm.hibernate3.HibernateTransactionManager">
+		<property name="sessionFactory" ref="sessionFactory" />
+	</bean>
+
+	<!-- ========================= BUSINESS OBJECT DEFINITIONS ========================= -->
+	<bean id="commonDao" class="cn.dgg.CRM365.util.orm.CommonDAO">
+		<property name="sessionFactory" ref="sessionFactory"></property>
+	</bean>
+
+	<!-- 将事务与Hibernate关联 -->
+	<bean id="commonDAOProxy"
+		class="org.springframework.transaction.interceptor.TransactionProxyFactoryBean">
+		<property name="transactionManager" ref="transactionManager" />
+		<property name="target" ref="commonDao" />
+		<property name="transactionAttributes">
+			<props>
+				<prop key="insert*">PROPAGATION_REQUIRED</prop>
+				<prop key="update*">PROPAGATION_REQUIRED</prop>
+				<prop key="save*">PROPAGATION_REQUIRED</prop>
+				<prop key="delete*">PROPAGATION_REQUIRED</prop>
+				<prop key="load*">PROPAGATION_REQUIRED,readOnly</prop>
+				<prop key="find*">PROPAGATION_REQUIRED,readOnly</prop>
+			</props>
+		</property>
+	</bean>
+	<context:annotation-config />
+	<tx:annotation-driven />
+	
+	
+	<!-- 定时器 -->
+	<!-- 第一步: 配置好要定时调用的业务类 -->
+	<bean id="ioctimingTimer" class="cn.dgg.CRM365.web.resource.TimingAssign" />
+	<!-- 第二步: 定义好具体要使用类的哪一个业务方法 -->
+	<bean id="proTimerDetail"
+		class="org.springframework.scheduling.quartz.MethodInvokingJobDetailFactoryBean">
+		<!-- 目标bean -->
+		<property name="targetObject" ref="ioctimingTimer" />
+		<!-- 要执行目标bean的哪一个业务方法 -->
+		<property name="targetMethod" value="timingAssign" />
+		<!-- 是否并发 -->
+		<property name="concurrent" value="false" />
+	</bean>
+	<!-- 第三步: 定义好调用模式: 如每隔5秒钟调用一次或每天的哪个时间调用一次等 -->
+	<bean id="proTimerTrigger"
+		class="org.springframework.scheduling.quartz.CronTriggerBean">
+		<property name="jobDetail" ref="proTimerDetail" />
+		<property name="cronExpression">
+			<value>0 0 9 * * ?</value>
+		</property>
+	</bean>
+	<!--第四步 把定义好的任务放到调度（Scheduler）工厂里面,注意这里的ref bean -->
+<!--	<bean-->
+<!--		class="org.springframework.scheduling.quartz.SchedulerFactoryBean">-->
+<!--		<property name="triggers">-->
+<!--			<list>-->
+<!--				<ref bean="proTimerTrigger" />-->
+<!--			</list>-->
+<!--		</property>-->
+<!--	</bean>-->
+</beans>

@@ -1,0 +1,588 @@
+<%@ page language="java" import="java.util.*" pageEncoding="UTF-8"%>
+<%@ include file="/WEB-INF/views/common/header.jsp"%>
+		<script type="text/javascript"><!--
+		Ext.onReady(function(){
+			Ext.QuickTips.init();// 浮动信息提示
+    		Ext.BLANK_IMAGE_URL = '<%=path%>/resources/images/default/s.gif';// 替换图片文件地址为本地
+		var cid = '';	//客户资源	
+	
+	   //---------------资源列表-----
+	    var masterStore = new Ext.data.JsonStore({
+	        url: '<%=path%>/SuccessfulResource/loadSuccessfulResource.do',
+	        root: 'data',
+	        totalProperty: 'totalCount',
+	        idProperty: 'id',
+	        autoDestroy: true,
+	        baseParams: {
+	        	conditions:''
+	        },
+	        fields: [
+                 { name: 'id' },
+	             { name: 'clientName' },
+	             { name: 'contactTel' },
+	             { name: 'loanAmount' },
+	             { name: 'clientAdd' },
+	             { name: 'oppType' },
+	             { name: 'spareTel1' },
+	             { name: 'spareTel2' },
+	             { name: 'clientStatus' },
+	             { name: 'signPossible' },
+	             { name: 'assignDate' },
+	             { name: 'assignTime' },
+	             { name: 'remark' },
+	             { name: 'emp_id' },
+	             { name: 'emp_name' },
+	             { name: 'department_id'},
+	             { name: 'department_name'}
+
+	        ]
+	    });
+	    
+	     //---------------资源跟踪列表-----
+	    var _gridStore = new Ext.data.JsonStore({
+	        url: '<%=path%>/SuccessfulResource/findBySuccessfulResource.do',
+	        root: 'data',
+	        totalProperty: 'totalCount',
+	        idProperty: 'id',
+	        autoDestroy: true,
+	        baseParams: {
+	        	conditions:''
+	        },
+	        fields: [
+	             { name: 'rtid' },
+	            { name: 'resourcescontent' },
+	            { name: 'resourcestime' },
+	            { name: 'resourcespeople_id' },
+	            { name: 'resourcespeople_name' },
+	            { name: 'intoasinglerate' },
+	            { name: 'workplan' },
+	            { name: 'client_name_id' },
+	            { name: 'client_name_name' },
+	            { name: 'remark' },
+	            { name: 'status'}
+	            
+	        ]
+	    });
+	    
+	     //---------------资源列表  客户预约-----
+	    var _gridStore1 = new Ext.data.JsonStore({
+	        url: '<%=path%>/SuccessfulResource/findBySuccessfulResource.do',
+	        root: 'data',
+	        totalProperty: 'totalCount',
+	        idProperty: 'id',
+	        autoDestroy: true,
+	        baseParams: {
+	        	conditions:''
+	        },
+	        fields: [
+	             
+	             { name: 'calltime' },
+	             { name: 'types' }
+	        ]
+	    });
+	        
+	        
+	
+	       //-------------成单率------
+	      var comboxStatecdl = new Ext.form.ComboBox({
+	        id: 'comboxStatecdl',
+        	hiddenName: 'intoasinglerate',
+	        fieldLabel: '*成单率',
+	        triggerAction: 'all',
+	        allowBlank: false,
+	        editable: false,
+	        mode: 'local',
+	        store: new Ext.data.ArrayStore({
+	            id: 'key',
+	            fields: [ 'key', 'value'],
+	            data: [
+					[ '1', '100%'],
+	                [ '2', '80%'],
+	                [ '3', '50%'],
+	                [ '4', '30%'],
+	                [ '5', '10%'],
+	                [ '6', '0%']
+	            ]
+	        }),
+	 		valueField: 'key',
+	        displayField: 'value'
+	    });
+	   
+	   
+	     //-------------签单 已签单必须填写备注------
+        var comboxStateqy2 = new Ext.data.SimpleStore({
+		      fields:['key', 'value'],
+		      data:[
+		      		[ '1', '已签单'],
+	                [ '2', '未签单']
+		           ]
+		     });
+		   // 下拉列表框控件
+	   var comboxType2 = new Ext.form.ComboBox({
+		      fieldLabel : '*签单状态',
+		      id : 'comboxType2',
+		      width:100,
+		      hiddenName: 'status',
+		      store : comboxStateqy2,
+		      editable:false,
+		      displayField : 'value', 
+		      valueField : 'key', 
+		      mode : 'local', 
+		      triggerAction : 'all', 
+		      allowBlank: false,
+		      emptyText : '请选择...', 
+			  listeners:{
+		      select:function(){
+		      var a = Ext.getCmp('comboxType2').getValue();
+				if(a==2){
+				   Ext.getCmp('remark').allowBlank = true;
+				}else{
+				   Ext.getCmp('remark').allowBlank = false;
+				}
+				form1.doLayout();
+			  }
+			 }
+	     });    
+	   
+	   
+
+	    
+	       //-------------客户签约------
+        var comboxStateqy1 = new Ext.data.SimpleStore({
+		      fields:['key', 'value'],
+		      data:[
+		      		[ '1', '已上门'],
+	                [ '2', '未上门']
+		           ]
+		     });
+		   // 下拉列表框控件
+	   var comboxType1 = new Ext.form.ComboBox({
+		      fieldLabel : '*上门状态',
+		      id : 'comboxType1',
+		      width:100,
+		      hiddenName: 'types',
+		      store : comboxStateqy1,
+		      editable:false,
+		      displayField : 'value', 
+		      valueField : 'key', 
+		      mode : 'local', 
+		      triggerAction : 'all', 
+		      allowBlank: false,
+		      emptyText : '请选择...', 
+			  listeners:{
+		      select:function(){
+		      var a = Ext.getCmp('comboxType1').getValue();
+				if(a==2){
+				   Ext.getCmp('calltime').allowBlank = true;
+				}else{
+				   Ext.getCmp('calltime').allowBlank = false;
+				}
+				form1.doLayout();
+			  }
+			 }
+	     });    
+	   
+	    
+		 //-----刷新 资源列表---------------
+	     var myGridLoadAction = new Ext.Action({
+	        text: '刷新',
+	        iconCls:'btn_del',
+	        scale:'small',
+	        disabled: true,
+	        handler: function(aMasterId){
+	            masterStore.setBaseParam('masterId', aMasterId);
+	            masterStore.load({
+	                params:{
+	                    start:0, 
+	                    limit:20
+	                },
+	                waitTitle:'提示',waitMsg: '数据加载请稍后...',
+	                failure: function() {
+	                    Ext.Msg.alert('提示', '读取数据失败！');                             
+	                }
+	            });
+	        }
+	    });   
+	    
+	    
+	     
+			 
+	      //-----刷新 资源列表--资料跟踪-------------
+	        var _gridloanLoadAction = new Ext.Action({
+	        text: '刷新',
+	        iconCls:'btn_del',
+	        scale:'small',
+	        disabled: true,
+	        handler: function(aMasterId){
+	            _gridStore.setBaseParam('masterId', aMasterId);
+	            _gridStore.load({
+	                params:{
+	                    start:0, 
+	                    limit:20
+	                },
+	                waitTitle:'提示',waitMsg: '数据加载请稍后...',
+	                failure: function() {
+	                    Ext.Msg.alert('提示', '读取数据失败！');                             
+	                }
+	            });
+	        }
+	    });   
+	    
+	    	 
+	  
+     
+     //---------------资源列表  -----
+      function myGridUpdateAction1 (){
+      	if(myGrid.getSelectionModel().hasSelection()){
+	        var record = myGrid.getSelectionModel().getSelected(); 
+	            if(record != null){
+	                cid = record.id;
+	                 _gridStore.load({
+							params:{
+								cid:cid
+						}
+					});
+					  _gridStore1.load({
+							params:{
+								cid:cid
+						}
+					});
+	               }else{
+	               
+	               }
+	            }
+	  	  };  
+	  	  
+	  	  
+	  
+	  	  
+	 
+	  	    var comboxState1 = new Ext.form.ComboBox({
+	        id: 'comboxState1',
+        	hiddenName: 'oppType',
+	        fieldLabel: '*商机类型',
+	        triggerAction: 'all',
+	        allowBlank: true,
+	        editable: false,
+	        mode: 'local',
+	        store: new Ext.data.ArrayStore({
+	            id: 'key',
+	            fields: [ 'key', 'value'],
+	            data: [
+					[ '1', '房贷'],
+				    [ '2', '信贷'],
+				    [ '3', '短借'],
+				    [ '4', '企贷']
+	            ]
+	        }),
+	 		valueField: 'key',
+	        displayField: 'value'
+	    });
+	    
+	        
+	   var searchButton = {
+		xtype:'button',
+			text:'查询',
+			iconCls: 'check',
+			handler:function(){
+			  var fat1 = Ext.getCmp('comboxState1').getValue();
+<%--			  var fat2 = Ext.getCmp('clientName').getValue();
+			      var fat3 = Ext.getCmp('contactTel').getValue();
+			      var fat4 = Ext.getCmp('emp_name').getValue();--%>
+				Ext.apply(masterStore.baseParams,{
+				conditions:'{fat1:"'+fat1+'"}'  //conditions负责传值给后台
+<%--					conditions:'{fat1:"'+fat1+'",fat2:"'+fat2+'",fat3:"'+fat3+'",fat4:"'+fat4+'"}'  //conditions负责传值给后台--%>
+				});
+				masterStore.load({
+		            params:{
+		                start:0, 
+		                limit:20
+		            },
+		            waitTitle:'提示',waitMsg: '数据加载请稍后...',
+		            failure: function() {
+		                Ext.Msg.alert('提示', '读取数据失败！');                             
+		            }
+		        });
+		               <%--  Ext.getCmp('clientName').setValue('');
+						Ext.getCmp('contactTel').setValue('');--%> 
+						Ext.getCmp('comboxState1').setValue(''); 
+			}
+		} 
+	      var oneTbar=new Ext.Toolbar({
+		  items:[
+	     '商机类型',
+	         comboxState1,
+	   <%--  '&nbsp;&nbsp;&nbsp;客户名字:',
+	            {
+	            	xtype:'textfield',
+	            	width:120,
+	            	id:'clientName'
+	            },
+	            '&nbsp;&nbsp;&nbsp;联系电话:',
+	            {
+	            	xtype:'textfield',
+	            	width:120,
+	            	id:'contactTel'
+	            },
+	            '&nbsp;&nbsp;&nbsp;员工:',
+	            {
+	            	xtype:'textfield',
+	            	width:120,
+	            	id:'emp_name'
+	            },--%> 
+	            searchButton
+	    ]});
+	  	   
+			   // --------------- grid  资料列表 --------------------
+	    var myGrid = new Ext.grid.GridPanel({
+	        id: 'myGrid',
+	        store: masterStore,
+	         sm: new Ext.grid.RowSelectionModel(),
+	        frame:true,
+	        trackMouseOver: false,
+	        disableSelection: false,
+	        loadMask: true,
+	        viewConfig: {
+			    forceFit: true
+			},
+	        columns: [
+	            {
+	                hidden:true,
+	            	header: '编号',
+	                sortable: false,
+	                dataIndex: 'id'
+	            },
+	            {
+	            	header: '客户姓名',
+	                sortable: true,
+	                dataIndex: 'clientName'
+	            },
+	            {
+	               header: '商机类型',
+	                sortable: true,
+	                dataIndex: 'oppType',
+	                renderer:function(v){
+	                	if(v == '1'){
+	                		return '房贷';
+	                	}
+	                	if(v == '2'){
+	                		return '信贷';
+	                	}
+	                	if(v == '3'){
+	                		return '短借';
+	                	}
+	                	if(v == '4'){
+	                		return '企贷';
+	                	}
+	                	
+	                }
+	            
+	            },
+	            {
+	            	header: '联系电话',
+	                sortable: true,
+	                dataIndex: 'contactTel'
+	              },
+	                {
+	            	header: '部门',
+	                sortable: true,
+	                dataIndex: 'department_name'
+	            },
+	            {
+	            	header: '员工',
+	                sortable: true,
+	                dataIndex: 'emp_name'
+	            }
+	        ],
+	        tbar: [
+	        
+	        ],  listeners : {
+			 'render' : function(){
+				 oneTbar.render(this.tbar); //add one tbar
+			 }
+			},
+	        
+	        bbar: new Ext.PagingToolbar({
+	            pageSize: 20,
+	            store: masterStore,
+	            displayInfo: true,
+	            displayMsg: '显示: {0} - {1} / 总数: {2}',
+	            emptyMsg: '没有记录'
+	        })
+	    });
+	    
+	    
+	    //-----------------资料追踪-----------------
+	      var _grid = new Ext.grid.GridPanel({
+	        id: '_grid',
+	        store:_gridStore,
+	        sm: new Ext.grid.RowSelectionModel(),
+	        frame:true,
+	        trackMouseOver: false,
+	        disableSelection: false,
+	        loadMask: true,
+	        viewConfig: {
+			    forceFit: true
+			},
+	        columns: [
+	            {
+	                hidden:true,
+	            	header: '编号',
+	                sortable: false,
+	                dataIndex: 'rtid'
+	            },
+	            {
+	            	header: '内容',
+	                sortable: true,
+	                dataIndex: 'resourcescontent'
+	            },
+	            {
+	            	header: '跟单人',
+	                sortable: true,
+	                   dataIndex: 'resourcespeople_name'
+	            },
+	            {
+	            	header: '跟单时间',
+	                sortable: true,
+	                   dataIndex: 'resourcestime'
+	              },
+	            
+	            {
+	            	header: '工作计划',
+	                sortable: true,
+	                   dataIndex: 'workplan',
+	                    renderer:function(value){
+	                	return '<font style="color:red;">'+value+'</font>'
+	                }
+	                
+	            },
+	             {
+	               header: '签单状态',
+	                sortable: true,
+	                dataIndex: 'status',
+	                renderer:function(v){
+	                	if(v == '1'){
+	                		return '已签单';
+	                	}
+	                	if(v == '2'){
+	                		return '未签单';
+	                	}
+	                }
+	            
+	            }
+	        ],
+	        tbar: [
+	       
+	        ],
+	        bbar: new Ext.PagingToolbar({
+	            pageSize: 20,
+	            store:_gridStore,
+	            displayInfo: true,
+	            displayMsg: '显示: {0} - {1} / 总数: {2}',
+	            emptyMsg: '没有记录'
+	        })
+	    });
+	    //-------------------客户签约----------------------
+	    var _grid1 = new Ext.grid.GridPanel({
+	        id: '_grid1',
+	        store: _gridStore1,
+	        sm: new Ext.grid.RowSelectionModel(),
+	        frame:true,
+	        trackMouseOver: false,
+	        disableSelection: false,
+	        loadMask: true,
+	        viewConfig: {
+			    forceFit: true
+			},
+	        columns: [
+	           
+	            {
+	               header: '上门状态',
+	                sortable: true,
+	                dataIndex: 'types',
+	                renderer:function(v){
+	                	if(v == '1'){
+	                		return '已上门';
+	                	}
+	                	if(v == '2'){
+	                		return '未上门';
+	                	}
+	                }
+	            
+	            },
+	            {
+	            	header: '上门时间',
+	                sortable: true,
+	                dataIndex: 'calltime'
+	            }
+	        ],
+	        tbar: [
+	        ],
+	        bbar: new Ext.PagingToolbar({
+	            pageSize: 20,
+	            store:_gridStore1,
+	            displayInfo: true,
+	            displayMsg: '显示: {0} - {1} / 总数: {2}',
+	            emptyMsg: '没有记录'
+	        })
+	    });
+	   
+	    
+	     // bind event
+	    myGrid.getSelectionModel().addListener(
+	        'selectionchange', 
+	        myGridUpdateAction1
+	    );
+	    
+	   
+	  
+	  
+	    // --------------- viewport --------------------
+	     var viewport = new Ext.Viewport({
+	        layout:'border',
+	        items:[
+	        {
+		            xtype:'panel',
+		            region:'center',
+		            layout:'column',
+		            autoScroll:true,
+		            items:[{
+		                columnWidth:.4,
+		                items:[{
+		                    title: '成功签单资料列表',
+		                    layout:'fit',
+		                    autoScroll:true,
+		                    height:500,
+		                    items:myGrid
+		                }]
+		            },{
+		                columnWidth:.4,
+		                items:[{
+		                    title: '资源跟踪记录',
+		                    layout:'fit',
+		                    autoScroll:true,
+		                    height:500,
+		                    items:_grid
+		                }]
+		            },{
+		                columnWidth:.2,
+		                items:[{
+		                    title: '客户预约',
+		                    layout:'fit',
+		                    autoScroll:true,
+		                    height:500,
+		                    items:_grid1
+		                }]
+		            }
+		            ]
+	        }
+	        ]
+	    });
+	
+	    // --------------- load data -------------------
+	    myGridLoadAction.execute();
+	    _gridloanLoadAction.execute();
+	    _gridEliminateLoadAction.execute();
+		});
+		</script>
+<%@ include file="/WEB-INF/views/common/footer.jsp"%>

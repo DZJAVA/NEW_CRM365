@@ -1,0 +1,23 @@
+K 25
+svn:wc:ra_dav:version-url
+V 64
+/svn/crm/!svn/ver/105/NEW_CRM365/src/cn/dgg/CRM365/util/mvc/view
+END
+JSONView.java
+K 25
+svn:wc:ra_dav:version-url
+V 78
+/svn/crm/!svn/ver/105/NEW_CRM365/src/cn/dgg/CRM365/util/mvc/view/JSONView.java
+END
+AbstractMimeView.java
+K 25
+svn:wc:ra_dav:version-url
+V 86
+/svn/crm/!svn/ver/105/NEW_CRM365/src/cn/dgg/CRM365/util/mvc/view/AbstractMimeView.java
+END
+MimeBytesView.java
+K 25
+svn:wc:ra_dav:version-url
+V 83
+/svn/crm/!svn/ver/105/NEW_CRM365/src/cn/dgg/CRM365/util/mvc/view/MimeBytesView.java
+END

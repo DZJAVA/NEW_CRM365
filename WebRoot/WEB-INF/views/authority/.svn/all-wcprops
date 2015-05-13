@@ -1,0 +1,53 @@
+K 25
+svn:wc:ra_dav:version-url
+V 64
+/svn/crm/!svn/ver/105/NEW_CRM365/WebRoot/WEB-INF/views/authority
+END
+menuOperation.jsp
+K 25
+svn:wc:ra_dav:version-url
+V 82
+/svn/crm/!svn/ver/105/NEW_CRM365/WebRoot/WEB-INF/views/authority/menuOperation.jsp
+END
+menuRole.jsp
+K 25
+svn:wc:ra_dav:version-url
+V 77
+/svn/crm/!svn/ver/105/NEW_CRM365/WebRoot/WEB-INF/views/authority/menuRole.jsp
+END
+userInfo.jsp
+K 25
+svn:wc:ra_dav:version-url
+V 77
+/svn/crm/!svn/ver/120/NEW_CRM365/WebRoot/WEB-INF/views/authority/userInfo.jsp
+END
+logInfo.jsp
+K 25
+svn:wc:ra_dav:version-url
+V 76
+/svn/crm/!svn/ver/105/NEW_CRM365/WebRoot/WEB-INF/views/authority/logInfo.jsp
+END
+roleInfo.jsp
+K 25
+svn:wc:ra_dav:version-url
+V 77
+/svn/crm/!svn/ver/120/NEW_CRM365/WebRoot/WEB-INF/views/authority/roleInfo.jsp
+END
+departmentInfo.jsp
+K 25
+svn:wc:ra_dav:version-url
+V 83
+/svn/crm/!svn/ver/120/NEW_CRM365/WebRoot/WEB-INF/views/authority/departmentInfo.jsp
+END
+menuInfo.jsp
+K 25
+svn:wc:ra_dav:version-url
+V 77
+/svn/crm/!svn/ver/120/NEW_CRM365/WebRoot/WEB-INF/views/authority/menuInfo.jsp
+END
+userRole.jsp
+K 25
+svn:wc:ra_dav:version-url
+V 77
+/svn/crm/!svn/ver/105/NEW_CRM365/WebRoot/WEB-INF/views/authority/userRole.jsp
+END

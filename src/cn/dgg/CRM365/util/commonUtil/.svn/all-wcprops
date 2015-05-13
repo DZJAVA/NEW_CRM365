@@ -1,0 +1,89 @@
+K 25
+svn:wc:ra_dav:version-url
+V 66
+/svn/crm/!svn/ver/105/NEW_CRM365/src/cn/dgg/CRM365/util/commonUtil
+END
+CreateFilePath.java
+K 25
+svn:wc:ra_dav:version-url
+V 86
+/svn/crm/!svn/ver/105/NEW_CRM365/src/cn/dgg/CRM365/util/commonUtil/CreateFilePath.java
+END
+ExportExcelUtil.java
+K 25
+svn:wc:ra_dav:version-url
+V 87
+/svn/crm/!svn/ver/105/NEW_CRM365/src/cn/dgg/CRM365/util/commonUtil/ExportExcelUtil.java
+END
+Persistent.java
+K 25
+svn:wc:ra_dav:version-url
+V 82
+/svn/crm/!svn/ver/105/NEW_CRM365/src/cn/dgg/CRM365/util/commonUtil/Persistent.java
+END
+UploadFileUtil.java
+K 25
+svn:wc:ra_dav:version-url
+V 86
+/svn/crm/!svn/ver/105/NEW_CRM365/src/cn/dgg/CRM365/util/commonUtil/UploadFileUtil.java
+END
+IdGenerator.java
+K 25
+svn:wc:ra_dav:version-url
+V 83
+/svn/crm/!svn/ver/105/NEW_CRM365/src/cn/dgg/CRM365/util/commonUtil/IdGenerator.java
+END
+StringUtil.java
+K 25
+svn:wc:ra_dav:version-url
+V 82
+/svn/crm/!svn/ver/105/NEW_CRM365/src/cn/dgg/CRM365/util/commonUtil/StringUtil.java
+END
+UploadFile.java
+K 25
+svn:wc:ra_dav:version-url
+V 82
+/svn/crm/!svn/ver/105/NEW_CRM365/src/cn/dgg/CRM365/util/commonUtil/UploadFile.java
+END
+ChineseTurnSpell.java
+K 25
+svn:wc:ra_dav:version-url
+V 88
+/svn/crm/!svn/ver/105/NEW_CRM365/src/cn/dgg/CRM365/util/commonUtil/ChineseTurnSpell.java
+END
+StaticValues.java
+K 25
+svn:wc:ra_dav:version-url
+V 84
+/svn/crm/!svn/ver/128/NEW_CRM365/src/cn/dgg/CRM365/util/commonUtil/StaticValues.java
+END
+ImportExcelUtil.java
+K 25
+svn:wc:ra_dav:version-url
+V 87
+/svn/crm/!svn/ver/105/NEW_CRM365/src/cn/dgg/CRM365/util/commonUtil/ImportExcelUtil.java
+END
+loadingVerificationCodeUtil.java
+K 25
+svn:wc:ra_dav:version-url
+V 99
+/svn/crm/!svn/ver/105/NEW_CRM365/src/cn/dgg/CRM365/util/commonUtil/loadingVerificationCodeUtil.java
+END
+BeanMessage.java
+K 25
+svn:wc:ra_dav:version-url
+V 83
+/svn/crm/!svn/ver/105/NEW_CRM365/src/cn/dgg/CRM365/util/commonUtil/BeanMessage.java
+END
+ConvertJson.java
+K 25
+svn:wc:ra_dav:version-url
+V 83
+/svn/crm/!svn/ver/105/NEW_CRM365/src/cn/dgg/CRM365/util/commonUtil/ConvertJson.java
+END
+TimeInterceptor.java
+K 25
+svn:wc:ra_dav:version-url
+V 87
+/svn/crm/!svn/ver/105/NEW_CRM365/src/cn/dgg/CRM365/util/commonUtil/TimeInterceptor.java
+END

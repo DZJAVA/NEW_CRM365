@@ -1,0 +1,59 @@
+K 25
+svn:wc:ra_dav:version-url
+V 67
+/svn/crm/!svn/ver/105/NEW_CRM365/src/cn/dgg/CRM365/domain/authority
+END
+UserRole.java
+K 25
+svn:wc:ra_dav:version-url
+V 81
+/svn/crm/!svn/ver/105/NEW_CRM365/src/cn/dgg/CRM365/domain/authority/UserRole.java
+END
+Log.java
+K 25
+svn:wc:ra_dav:version-url
+V 76
+/svn/crm/!svn/ver/105/NEW_CRM365/src/cn/dgg/CRM365/domain/authority/Log.java
+END
+Role.java
+K 25
+svn:wc:ra_dav:version-url
+V 77
+/svn/crm/!svn/ver/105/NEW_CRM365/src/cn/dgg/CRM365/domain/authority/Role.java
+END
+Department.java
+K 25
+svn:wc:ra_dav:version-url
+V 83
+/svn/crm/!svn/ver/105/NEW_CRM365/src/cn/dgg/CRM365/domain/authority/Department.java
+END
+Menu.java
+K 25
+svn:wc:ra_dav:version-url
+V 77
+/svn/crm/!svn/ver/105/NEW_CRM365/src/cn/dgg/CRM365/domain/authority/Menu.java
+END
+MenuOperation.java
+K 25
+svn:wc:ra_dav:version-url
+V 86
+/svn/crm/!svn/ver/105/NEW_CRM365/src/cn/dgg/CRM365/domain/authority/MenuOperation.java
+END
+MenuRole.java
+K 25
+svn:wc:ra_dav:version-url
+V 81
+/svn/crm/!svn/ver/105/NEW_CRM365/src/cn/dgg/CRM365/domain/authority/MenuRole.java
+END
+MenuOperationRole.java
+K 25
+svn:wc:ra_dav:version-url
+V 90
+/svn/crm/!svn/ver/105/NEW_CRM365/src/cn/dgg/CRM365/domain/authority/MenuOperationRole.java
+END
+User.java
+K 25
+svn:wc:ra_dav:version-url
+V 77
+/svn/crm/!svn/ver/105/NEW_CRM365/src/cn/dgg/CRM365/domain/authority/User.java
+END

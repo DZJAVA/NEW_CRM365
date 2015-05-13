@@ -1,0 +1,254 @@
+package cn.dgg.CRM365.web.resources;
+
+import java.text.SimpleDateFormat;
+import java.util.Date;
+import java.util.List;
+
+import javax.servlet.http.HttpServletRequest;
+
+import net.sf.json.JSONArray;
+import net.sf.json.JSONObject;
+
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.stereotype.Controller;
+import org.springframework.web.bind.annotation.ModelAttribute;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.servlet.ModelAndView;
+
+import cn.dgg.CRM365.domain.authority.User;
+import cn.dgg.CRM365.domain.owners.Employee;
+import cn.dgg.CRM365.domain.resources.ResourcesTrack;
+import cn.dgg.CRM365.domain.resourcesManage.Client;
+import cn.dgg.CRM365.domain.resourcesManage.ClientUser;
+import cn.dgg.CRM365.util.mvc.MvcUtil;
+import cn.dgg.CRM365.util.orm.ICommonDAO;
+import cn.dgg.CRM365.util.page.GridLoadParams;
+import cn.dgg.CRM365.util.page.Pagination;
+
+
+
+/**
+ * 资源列表 <功能简述> <功能详细描述>
+ * 
+ * @author wangqiang
+ * @version [版本号, Aug 12, 2012]
+ * @see [相关类/方法]
+ * @since [产品/模块版本]
+ * 成功的资源列表
+ */
+@SuppressWarnings("all")
+@RequestMapping("/SuccessfulResource")
+@Controller
+public class SuccessfulResourceController {
+	
+	@Autowired
+	@Qualifier("commonDAOProxy")
+	ICommonDAO<ResourcesTrack> rtDao;
+	
+	@Autowired
+	@Qualifier("commonDAOProxy")
+	ICommonDAO<User> uDao;
+	
+	@Autowired
+	@Qualifier("commonDAOProxy")
+	ICommonDAO<Client> cDao;
+	
+	@Autowired
+	@Qualifier("commonDAOProxy")
+	ICommonDAO<Employee> eDao;
+
+	
+	@Autowired
+	@Qualifier("commonDAOProxy")
+	ICommonDAO<ClientUser> cuDao;
+	
+	@RequestMapping("/jumpPage.do")
+	public ModelAndView jumpPage() {
+		return new ModelAndView("resourcestrack/successfulresource");
+	}
+
+	
+	/**
+	 * 资源列表 <功能简述> <功能详细描述>
+	 * 管理员可以查看所以资源
+	 * 部门经理可以查看 自己部门的所有资源
+	 * 当前登录人只能查看自己分配到的资源
+	 * @param gridLoadParams
+	 * @param request
+	 * @param conditions
+	 * @return [参数说明]
+	 * 
+	 * @return ModelAndView [返回类型说明]
+	 * @exception throws
+	 *                [异常类型] [异常说明]
+	 * @see [类、类#方法、类#成员]
+	 */
+	@RequestMapping("/loadSuccessfulResource.do")
+	public ModelAndView loadSuccessfulResource(@ModelAttribute("params")
+GridLoadParams gridLoadParams, HttpServletRequest request,@RequestParam("conditions")String conditions) {
+		
+		JSONObject jsonObject = new JSONObject();
+		Pagination pagination = new Pagination();
+		pagination.set(gridLoadParams.getStart(), gridLoadParams.getLimit());
+		User userSession = (User) request.getSession().getAttribute("userSession");
+		StringBuffer whereStr = new StringBuffer(" and 1=1");
+		try{
+			if (conditions != null && !"".equals(conditions.trim())) {
+				JSONObject jsonObject2 = jsonObject.fromObject(conditions);
+				String fat1 = String.valueOf(jsonObject2.get("fat1"));//商机类型(1为房贷、2为信贷、3为短借、4为企贷)
+				if (!"".equals(fat1) && fat1 != null) {
+					whereStr.append(" and cu.client_id.oppType ='").append(fat1).append("'");
+				}
+				
+			}
+			
+			Long lDepartment = null;	//得到当前登录人的部门信息
+			String ruleDe = null;	//得到当前登录人的角色代码 
+			List<ClientUser> cuser = null;//资源分配 中间表（客户）
+			if(userSession.getEmployee() != null){
+				String hql = null;
+				lDepartment = userSession.getEmployee().getDepartment().getId();//得到当前登录人的部门信息
+				ruleDe = userSession.getRole().getRoleCode();//得到角色代码
+				if(ruleDe.equals("201202")){ 	//部门经理
+					 hql = "from ClientUser cu where cu.status=0 and cu.client_id.clientStatus = '2' and cu.client_id.assignTime!='' and cu.user_id.employee.department.id = "+lDepartment;
+				}else if(ruleDe.equals("201203")){	//员工
+					hql = "from ClientUser cu where cu.status=0 and cu.client_id.clientStatus = '2' and cu.client_id.assignTime!='' and cu.user_id.id ='"+userSession.getId().toString()+"'";//如果是员工（只查看自己的分配的资源）
+				}else{
+					hql = "from ClientUser cu where cu.status=0 and cu.client_id.assignTime!='' and  cu.client_id.clientStatus='2'";//管理员查看所有分配资源
+				}
+				cuser = cuDao.findAll(hql+whereStr, pagination);
+			}else{
+				String hql1 = "from ClientUser cu where cu.status=0 and cu.client_id.assignTime!='' and  cu.client_id.clientStatus='2'";//管理员查看所有分配资源
+				cuser = cuDao.findAll(hql1+whereStr,pagination);
+			}
+			jsonObject.element("totalCount", pagination.getTotalResults());
+			JSONArray data = new JSONArray();
+			if (cuser.size() > 0) {
+				for (ClientUser field : cuser) {
+					JSONObject item = new JSONObject();
+					if(field.getClient_id()==null)
+					{
+						item.element("id", MvcUtil.toJsonString(""));
+						item.element("clientName", MvcUtil.toJsonString(""));//客户姓名
+						item.element("contactTel", MvcUtil.toJsonString(""));//联系电话
+						item.element("loanAmount", MvcUtil.toJsonString(""));//贷款金额
+						item.element("clientAdd", MvcUtil.toJsonString(""));//客户地址
+						item.element("oppType", MvcUtil.toJsonString(""));//商机类型(1为房贷、2为信贷、3为短借、4为企贷)
+						item.element("spareTel1", MvcUtil.toJsonString(""));//备用电话1
+						item.element("spareTel2", MvcUtil.toJsonString(""));//备用电话2
+						item.element("clientStatus", MvcUtil.toJsonString(""));//客户状态(1为已签单、2为未签单、3为淘汰)
+						item.element("signPossible", MvcUtil.toJsonString(""));//签单可能性(1为100%、2为80%、3为50%、4为0%)
+						item.element("assignDate", MvcUtil.toJsonString(""));//分配日期
+						item.element("assignTime", MvcUtil.toJsonString(""));//分配时间
+						item.element("remark", MvcUtil.toJsonString(""));//备注
+					}else{
+					item.element("id", MvcUtil.toJsonString(field.getId()));
+					item.element("clientName", MvcUtil.toJsonString(field.getClient_id().getClientName()));//客户姓名
+					item.element("contactTel", MvcUtil.toJsonString(field.getClient_id().getContactTel()));//联系电话
+					item.element("loanAmount", MvcUtil.toJsonString(field.getClient_id().getLoanAmount()));//贷款金额
+					item.element("clientAdd", MvcUtil.toJsonString(field.getClient_id().getClientAdd()));//客户地址
+					item.element("oppType", MvcUtil.toJsonString(field.getClient_id().getOppType()));//商机类型(1为房贷、2为信贷、3为短借、4为企贷)
+					item.element("spareTel1", MvcUtil.toJsonString(field.getClient_id().getSpareTel1()));//备用电话1
+					item.element("spareTel2", MvcUtil.toJsonString(field.getClient_id().getSpareTel1()));//备用电话2
+					item.element("clientStatus", MvcUtil.toJsonString(field.getClient_id().getClientStatus()));//客户状态(1为已签单、2为未签单、3为淘汰)
+					item.element("signPossible", MvcUtil.toJsonString(field.getClient_id().getSignPossible()));//签单可能性(1为100%、2为80%、3为50%、4为0%)
+					item.element("assignDate", MvcUtil.toJsonString(field.getClient_id().getAssignDate()));//分配日期
+					item.element("assignTime", MvcUtil.toJsonString(field.getClient_id().getAssignTime()));//分配时间
+					item.element("remark", MvcUtil.toJsonString(field.getClient_id().getRemark()));//备注
+					}
+					if(field.getUser_id().getEmployee()==null)
+					{
+						item.element("emp_id",MvcUtil.toJsonString(""));//员工ID
+						item.element("emp_name",MvcUtil.toJsonString(""));//员工姓名(上一次跟单人)
+					}else{
+						item.element("emp_id",MvcUtil.toJsonString(field.getUser_id().getEmployee().getId()));//员工ID
+						item.element("emp_name",MvcUtil.toJsonString(field.getUser_id().getEmployee().getName()));//员工姓名(上一次跟单人)
+					}
+					data.add(item);
+				}
+			}
+			jsonObject.element("data", data);
+		}catch (Exception e) {
+			e.printStackTrace();
+		}
+		
+		return MvcUtil.jsonObjectModelAndView(jsonObject);
+		
+	}
+	
+	
+	
+	/**
+	 * 查看成功签单的资料的------跟踪明细
+	  *<功能简述>
+	  *<功能详细描述>
+	  * @return [参数说明]
+	  * 资料跟踪明细
+	  * @return ModelAndView [返回类型说明]
+	  * @exception throws [异常类型] [异常说明]
+	  * @see [类、类#方法、类#成员]
+	 */
+	@RequestMapping("/findBySuccessfulResource")
+	private ModelAndView findBySuccessfulResource(@RequestParam("cid") String cid,@ModelAttribute("params")
+			GridLoadParams gridLoadParams, HttpServletRequest request){
+		JSONObject jsonObject = new JSONObject();
+		Pagination pagination = new Pagination();
+		pagination.set(gridLoadParams.getStart(), gridLoadParams.getLimit());
+		if("".equals(cid) || cid == null){
+			jsonObject.element("data", "");
+		}else{
+			String hql="from ResourcesTrack rt where 1=1";
+			hql+=" and rt.client_name.id = " + Long.parseLong(cid);
+			try{
+				List<ResourcesTrack> rtrackList = rtDao.findAll(hql);
+				jsonObject.element("totalCount", pagination.getTotalResults());
+				JSONArray data = new JSONArray();
+				if (rtrackList.size() > 0) {
+					for (ResourcesTrack field : rtrackList) {
+						JSONObject item = new JSONObject();
+						item.element("rtid", MvcUtil.toJsonString(field.getRtid()));
+						item.element("resourcescontent", MvcUtil.toJsonString(field.getResourcescontent()));//跟踪内容
+						item.element("resourcestime", MvcUtil.toJsonString(field.getResourcestime()));//跟踪时间
+						if(field.getResourcespeople().getEmployee()==null)
+						{
+							item.element("resourcespeople_id", MvcUtil.toJsonString(""));//id
+							item.element("resourcespeople_name", MvcUtil.toJsonString(""));//跟踪人
+						}else{
+							item.element("resourcespeople_id", MvcUtil.toJsonString(field.getResourcespeople().getEmployee().getId()));//id
+							item.element("resourcespeople_name", MvcUtil.toJsonString(field.getResourcespeople().getEmployee().getName()));//跟踪人
+						}
+						item.element("intoasinglerate", MvcUtil.toJsonString(field.getIntoasinglerate()));//成单率
+						item.element("workplan", MvcUtil.toJsonString(field.getWorkplan()));//工作计划
+						if(field.getClient_name()==null)
+						{
+							item.element("client_name_id", MvcUtil.toJsonString(""));//客户id
+							item.element("client_name_name", MvcUtil.toJsonString(""));//客户名字
+						}else{
+						item.element("client_name_id", MvcUtil.toJsonString(field.getClient_name().getId()));//客户id
+						item.element("client_name_name", MvcUtil.toJsonString(field.getClient_name().getClientName()));//客户名字
+						}
+						 
+						item.element("calltime", MvcUtil.toJsonString(field.getCalltime()));//上门时间
+						item.element("types", MvcUtil.toJsonString(field.getTypes()));////类型（1已上门，2未上门）
+						
+						item.element("remark", MvcUtil.toJsonString(field.getRemark()));//备注
+						item.element("status", MvcUtil.toJsonString(field.getStatus()));
+						data.add(item);
+					}
+				}
+				jsonObject.element("data", data);
+			}
+			catch (Exception e) {
+				e.printStackTrace();
+			}
+		}
+		return MvcUtil.jsonObjectModelAndView(jsonObject);
+	}
+
+	
+	
+	
+
+}

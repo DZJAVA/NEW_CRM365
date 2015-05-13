@@ -1,0 +1,12 @@
+
+ .icon-male {
+
+    background: url(1.png) no-repeat 52% 28% #A0B9DA!important ;
+
+}
+
+ .icon-males {
+
+    background: url(1.png) no-repeat 52% 28% #A0B9DA !important ;
+
+}

@@ -1,0 +1,182 @@
+package cn.dgg.CRM365.web.resource;
+
+import java.util.List;
+
+import javax.servlet.http.HttpServletRequest;
+
+import net.sf.json.JSONArray;
+import net.sf.json.JSONObject;
+
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.stereotype.Controller;
+import org.springframework.web.bind.annotation.ModelAttribute;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.servlet.ModelAndView;
+
+import cn.dgg.CRM365.domain.authority.Department;
+import cn.dgg.CRM365.domain.resourcesManage.Messages;
+import cn.dgg.CRM365.domain.resourcesManage.Template;
+import cn.dgg.CRM365.util.mvc.MvcUtil;
+import cn.dgg.CRM365.util.orm.ICommonDAO;
+import cn.dgg.CRM365.util.page.GridLoadParams;
+import cn.dgg.CRM365.util.page.Pagination;
+
+/**
+ * 模板管理控制器
+  * <功能简述>
+  * <功能详细描述>
+  * 
+  * @author  王玉川
+  * @version  [版本号, Dec 25, 2012]
+  * @see  [相关类/方法]
+  * @since  [产品/模块版本]
+ */
+@SuppressWarnings("all")
+@RequestMapping("/template")
+@Controller
+public class TemplateController {
+	@Autowired
+	@Qualifier("commonDAOProxy")
+	ICommonDAO<Template> dao;
+	
+	@RequestMapping("/template.do")
+	public ModelAndView jumpPage(){
+		return new ModelAndView("resource/template");
+	}
+	/**
+	 * 查询所有未发送模板信息 <功能简述> <功能详细描述>
+	 * 
+	 * @param gridLoadParams
+	 * @param request
+	 * @param conditions
+	 * @return [参数说明]
+	 * 
+	 * @return ModelAndView [返回类型说明]
+	 * @exception throws
+	 *                [异常类型] [异常说明]
+	 * @see [类、类#方法、类#成员]
+	 */
+	@RequestMapping("/loadTemplate.do")
+	public ModelAndView loadDepartment(@ModelAttribute("params")
+	GridLoadParams gridLoadParams, HttpServletRequest request,
+			@RequestParam("conditions") String conditions) {
+		JSONObject jsonObject = new JSONObject();
+		Pagination pagination = new Pagination();
+		pagination.set(gridLoadParams.getStart(), gridLoadParams.getLimit());
+		String hql = "from Template t ";
+		StringBuffer wherehql = new StringBuffer("where 1=1");
+		if (conditions != null && !"".equals(conditions.trim())) {
+			JSONObject jsonObject2 = JSONObject.fromObject(conditions);
+			String dn = String.valueOf(jsonObject2.get("dn"));
+			if (!dn.equals("") && dn != null) {
+				wherehql.append(" and t.titles like '").append(dn).append("%'");
+			}
+		}
+		try {
+			List<Template> dataList = dao.findByHql(hql + wherehql, null,pagination);
+			jsonObject.element("totalCount", pagination.getTotalResults());
+			// 有无数据都要产生data节点
+			JSONArray data = new JSONArray();
+
+			if (dataList.size() > 0) {
+				for (Object d : dataList) {
+					JSONObject item = new JSONObject();
+					Template field = (Template) d;
+					item.element("id", MvcUtil.toJsonString(field.getId()));
+					item.element("titles", MvcUtil.toJsonString(field.getTitles()));
+					item.element("content", MvcUtil.toJsonString(field.getContent()));
+					item.element("timingTime", MvcUtil.toJsonString(field.getTimingTime()));
+					data.add(item);
+				}
+			}
+			jsonObject.element("data", data);
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+		return MvcUtil.jsonObjectModelAndView(jsonObject);
+	}
+	/**
+	 * 新增和修改模板信息
+	 * 
+	 * @param template
+	 * @param request
+	 * @return
+	 */
+	@RequestMapping("/saveUpdateTemplate.do")
+	public ModelAndView saveOrUpdatePosition(Template template,
+			HttpServletRequest request) {
+		JSONObject jsonObject = new JSONObject();
+			try {
+				String hql = "from Template t where t.titles='"+template.getTitles()+"'";
+				List<Template> ds = dao.findAll(hql);
+				if (request.getSession() != null) {
+					template.setSendState("1");
+					if ("".equals(template.getId()) || template.getId() == null) {
+						if (ds.size() == 0) {
+								dao.save(template);
+								jsonObject.element("success", true);
+								jsonObject.element("msg", "添加模板信息成功！");
+								return MvcUtil.jsonObjectModelAndView(jsonObject);
+						} else {
+							jsonObject.element("failure", true);
+							jsonObject.element("msg", "添加模板标题信息失败，该模板标题已存在！");
+							return MvcUtil.jsonObjectModelAndView(jsonObject);
+						}
+					} else {
+							dao.update(template);
+							jsonObject.element("success", true);
+							jsonObject.element("msg", " 修改模板信息成功！");
+							return MvcUtil.jsonObjectModelAndView(jsonObject);
+					}
+					}
+			} catch (Exception e) {
+				e.printStackTrace();
+				jsonObject.element("failure", true);
+				jsonObject.element("msg", " 保存模板信息失败！");
+				return MvcUtil.jsonObjectModelAndView(jsonObject);
+			}
+		
+		return MvcUtil.jsonObjectModelAndView(jsonObject);
+	}
+	
+
+	/**
+	 * 删除模板信息 <功能简述> <功能详细描述>
+	 * 
+	 * @param id
+	 * @return [参数说明]
+	 * 
+	 * @return ModelAndView [返回类型说明]
+	 * @exception throws
+	 *                [异常类型] [异常说明]
+	 * @see [类、类#方法、类#成员]
+	 */
+	@RequestMapping("/deleteTemplate.do")
+	public ModelAndView deleteDepartment(@RequestParam("id")
+	String id) {
+		JSONObject jsonObject = new JSONObject();
+		String[] ids = id.split(",");
+		int sum = 0;
+		for (String i : ids) {
+			try {
+				dao.deleteById(Long.parseLong(i),Template.class);
+				sum++;
+			} catch (Exception e) {
+				e.printStackTrace();
+				continue;
+			}
+		}
+		if (sum > 0) {
+			jsonObject.element("success", true);
+			jsonObject.element("msg", "删除成功，删除了" + sum + "条数据!!!");
+		} else {
+			jsonObject.element("failure", false);
+			jsonObject.element("msg", "删除模板信息出错,模板信息已被引用，不能进行删除！");
+
+		}
+		return MvcUtil.jsonObjectModelAndView(jsonObject);
+	}
+	
+}

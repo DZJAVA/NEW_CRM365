@@ -1,0 +1,35 @@
+K 25
+svn:wc:ra_dav:version-url
+V 48
+/svn/crm/!svn/ver/108/NEW_CRM365/WebRoot/WEB-INF
+END
+spring-servlet.xml
+K 25
+svn:wc:ra_dav:version-url
+V 67
+/svn/crm/!svn/ver/105/NEW_CRM365/WebRoot/WEB-INF/spring-servlet.xml
+END
+applicationContext-hibernate.xml
+K 25
+svn:wc:ra_dav:version-url
+V 81
+/svn/crm/!svn/ver/124/NEW_CRM365/WebRoot/WEB-INF/applicationContext-hibernate.xml
+END
+log4j.properties
+K 25
+svn:wc:ra_dav:version-url
+V 65
+/svn/crm/!svn/ver/105/NEW_CRM365/WebRoot/WEB-INF/log4j.properties
+END
+web.xml
+K 25
+svn:wc:ra_dav:version-url
+V 56
+/svn/crm/!svn/ver/105/NEW_CRM365/WebRoot/WEB-INF/web.xml
+END
+jdbc.properties
+K 25
+svn:wc:ra_dav:version-url
+V 64
+/svn/crm/!svn/ver/105/NEW_CRM365/WebRoot/WEB-INF/jdbc.properties
+END

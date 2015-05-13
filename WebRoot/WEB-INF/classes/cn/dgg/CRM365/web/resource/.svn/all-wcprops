@@ -1,0 +1,41 @@
+K 25
+svn:wc:ra_dav:version-url
+V 63
+/svn/crm/!svn/ver/105/NEW_CRM365/src/cn/dgg/CRM365/web/resource
+END
+TemplateController.java
+K 25
+svn:wc:ra_dav:version-url
+V 87
+/svn/crm/!svn/ver/105/NEW_CRM365/src/cn/dgg/CRM365/web/resource/TemplateController.java
+END
+ClientController.java
+K 25
+svn:wc:ra_dav:version-url
+V 85
+/svn/crm/!svn/ver/118/NEW_CRM365/src/cn/dgg/CRM365/web/resource/ClientController.java
+END
+ClientSourceController.java
+K 25
+svn:wc:ra_dav:version-url
+V 91
+/svn/crm/!svn/ver/105/NEW_CRM365/src/cn/dgg/CRM365/web/resource/ClientSourceController.java
+END
+MessagesController.java
+K 25
+svn:wc:ra_dav:version-url
+V 87
+/svn/crm/!svn/ver/105/NEW_CRM365/src/cn/dgg/CRM365/web/resource/MessagesController.java
+END
+StatementsController.java
+K 25
+svn:wc:ra_dav:version-url
+V 89
+/svn/crm/!svn/ver/113/NEW_CRM365/src/cn/dgg/CRM365/web/resource/StatementsController.java
+END
+SendMassageController.java
+K 25
+svn:wc:ra_dav:version-url
+V 90
+/svn/crm/!svn/ver/105/NEW_CRM365/src/cn/dgg/CRM365/web/resource/SendMassageController.java
+END

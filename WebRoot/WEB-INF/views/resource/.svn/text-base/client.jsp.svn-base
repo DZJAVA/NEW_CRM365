@@ -1,0 +1,1352 @@
+<%@ page language="java" import="java.util.*" pageEncoding="UTF-8"%>
+<%@ include file="/WEB-INF/views/common/header.jsp"%>
+<script type="text/javascript">
+		Ext.onReady(function(){
+			Ext.QuickTips.init();// 浮动信息提示
+    		Ext.BLANK_IMAGE_URL = '<%=path%>/resources/images/default/s.gif';// 替换图片文件地址为本地
+    		var	_tid  = '${param.tid}';//得到从首页传过来的今日新增商机Id
+	        var	_sid = '${param.sid}';//得到从首页传过来的已签单的商机ID
+	        var	seid = '${param.seid}';//得到从首页传过来的已签单的商机ID
+    	var roleCode = '${userSession.role.roleCode}';
+	    // --------------- grid store -------------------
+	    var clientStore = new Ext.data.JsonStore({
+	        url: '<%=path%>/client/loadClient.do',
+	        root: 'data',
+	        totalProperty: 'totalCount',
+	        idProperty: 'id',
+	        autoDestroy: true,
+	        baseParams: {
+	        	conditions: '',
+	        	_tid:_tid,
+	            _sid:_sid,
+	            seid:seid
+	        },
+	        fields: [
+	            { name: 'id' },
+	            { name: 'clientName' },
+	            { name: 'oppType'},
+	            { name: 'loanAmount'},
+	            { name: 'clientAdd'},
+	            { name: 'contactTel'},
+	            { name: 'spareTel1'},
+	            { name: 'spareTel2'},
+	            { name: 'clientStatus'},
+	            { name: 'signPossible'},
+	            { name: 'assignDate'},
+	            { name: 'assignTime'},
+	            { name: 'emp_id'},
+	            { name: 'creater'},
+	            { name: 'follower'},
+	            { name: 'remark'}
+	        ]
+	    });
+	    
+	    //---------------商机类型下拉列表--------------------------
+	    var oppTypeData = new Ext.data.SimpleStore({
+		      fields:['key', 'value'],
+		      data:[
+	      		[ '1', '房贷'],
+			    [ '2', '信贷'],
+			    [ '3', '短借'],
+			    [ '4', '企贷']
+		      ]
+		});
+		var oppTypeCombox = new Ext.form.ComboBox({
+		      fieldLabel : '*商机类型',
+		      id : 'oppTypeCombox',
+		      store : oppTypeData,
+		      editable:false,
+		      allowBlank: true,
+		      displayField : 'value', 
+		      valueField : 'key', 
+		      mode : 'local', 
+		      triggerAction : 'all', 
+		      emptyText : '请选择...', // 默认值   selectOnFocus : true,
+		      hiddenName : 'oppType'  
+	    });
+	    //--------查询商机类型下拉列表-------------------
+	    var oppTypeSelData = new Ext.data.SimpleStore({
+		      fields:['key', 'value'],
+		      data:[
+	      		[ '1', '房贷'],
+			    [ '2', '信贷'],
+			    [ '3', '短借'],
+			    [ '4', '企贷']
+		      ]
+		});
+		var oppTypeSelCombox = new Ext.form.ComboBox({
+		      fieldLabel : '*商机类型',
+		      id : 'oppTypeSelCombox',
+		      store : oppTypeSelData,
+		      width: 90,
+		      editable: false,
+		      allowBlank: true,
+		      displayField : 'value', 
+		      valueField : 'key', 
+		      mode : 'local', 
+		      triggerAction : 'all', 
+		      emptyText : '请选择...', // 默认值   selectOnFocus : true,
+		      hiddenName : 'oppType'  
+	    });
+	     //---------------签单可能性下拉列表--------------------------
+	    var signPossibleData = new Ext.data.SimpleStore({
+		      fields:['key', 'value'],
+		      data:[
+	      		[ '1', '100%'],
+			    [ '2', '80%'],
+			    [ '3', '50%'],
+			    [ '4', '0%']
+		      ]
+		});
+		var signPossibleCombox = new Ext.form.ComboBox({
+		      fieldLabel : '*成单率',
+		      id : 'signPossibleCombox',
+		      store : signPossibleData,
+		      editable:false,
+		      allowBlank: true,
+		      displayField : 'value', 
+		      valueField : 'key', 
+		      mode : 'local', 
+		      triggerAction : 'all', 
+		      emptyText : '请选择...', // 默认值   selectOnFocus : true,
+		      hiddenName : 'signPossible'  
+	    });
+	     //---------------查询签单可能性下拉列表--------------------------
+	    var signPossibleSelData = new Ext.data.SimpleStore({
+		      fields:['key', 'value'],
+		      data:[
+	      		[ '1', '100%'],
+			    [ '2', '80%'],
+			    [ '3', '50%'],
+			    [ '4', '0%']
+		      ]
+		});
+		var signPossibleSelCombox = new Ext.form.ComboBox({
+		      id : 'signPossibleSelCombox',
+		      store : signPossibleSelData,
+		      width: 90,
+		      editable: false,
+		      allowBlank: true,
+		      displayField : 'value', 
+		      valueField : 'key', 
+		      mode : 'local', 
+		      triggerAction : 'all', 
+		      emptyText : '请选择...', // 默认值   selectOnFocus : true,
+		      hiddenName : 'signPossible'  
+	    });
+	    //---------------分配状态下拉列表--------------------------
+	    var signStatusData = new Ext.data.SimpleStore({
+		      fields:['key', 'value'],
+		      data:[
+	      		[ '1', '已签单'],
+			    [ '2', '未签单']
+		      ]
+		});
+		var signStatusCombox = new Ext.form.ComboBox({
+		      id : 'signStatusCombox',
+		      store : signStatusData,
+		      width: 90,
+		      editable: false,
+		      allowBlank: true,
+		      displayField : 'value', 
+		      valueField : 'key', 
+		      mode : 'local', 
+		      triggerAction : 'all', 
+		      emptyText : '请选择...'// 默认值   selectOnFocus : true,
+	    });
+	    var departmentStore = new Ext.data.Store({
+	          proxy: new Ext.data.HttpProxy({
+	              url: '<%=path%>/client/loadDepartment.do'
+	          }),
+	          reader: new Ext.data.JsonReader({
+	                  root: 'data',
+	                  id: 'departId'
+	              }, 
+	            ['departId', 'departName']
+	          )
+		});
+		//--------------部门下拉列表-----------------	  
+		var departComboBox = new Ext.form.ComboBox({
+		      id: 'departComboBox',
+			  allowBlank: true,
+		      fieldLabel: '部门',
+		      emptyText : '请选择部门...',
+		      typeAhead: true,
+		      editable: false,
+		      triggerAction: 'all',
+		      lazyRender: true,
+			  mode: 'remote',
+		      store:departmentStore,
+		      valueField: 'departId',
+		      displayField: 'departName',
+		      listeners:{
+		      	select:function(){
+		      		employeeComboBOx.reset();
+		      		employeeData.proxy = new Ext.data.HttpProxy({
+		      			url: '<%=path%>/client/loadEmployees.do?eid=' + departComboBox.getValue()
+		      		});
+		      		employeeData.load();
+		      	}
+		      }
+		  });
+			  
+		var employeeData = new Ext.data.Store({
+     		proxy: new Ext.data.HttpProxy({
+		          url: '<%=path%>/client/loadEmployee.do'
+		    }),
+		    reader: new Ext.data.JsonReader({
+		           root: 'data',
+		           id: 'eId'
+		    	}, 
+	          ['eId', 'eName']
+		    )
+		 });
+		 var employeeComboBOx = new Ext.form.ComboBox({
+	     	   id: 'employeeComboBOx',
+		       allowBlank: true,
+		       fieldLabel: '*操作员工',
+	           typeAhead: true,
+		       editable: false,
+		       triggerAction: 'all',
+		       lazyRender: true,
+			   mode: 'remote',
+		       store: employeeData,
+		       emptyText : '请选择员工...',
+		       valueField: 'eId',
+		       displayField: 'eName',
+		       listeners: {
+		       	'expand': function(){
+		       		var _dept = Ext.getCmp('departComboBox').getValue();
+		       		if(_dept == '' | _dept == null){
+		       			employeeComboBOx.reset();
+			      		employeeData.proxy = new Ext.data.HttpProxy({
+			      			url: '<%=path%>/client/loadEmployee.do'
+			      		});
+			      		employeeData.load();
+		       		}
+		       	}
+		      }
+		  });
+	    // --------------- grid actions -----------------
+	    var myGridNewAction = new Ext.Action({
+	        text: '新增客户信息',
+	        iconCls: 'btn_add',
+	        scale: 'small',
+	        handler: function(){
+	        	alert(1);
+	            clientForm.getForm().reset();
+	            Ext.getCmp('contactTel').setDisabled(false);
+            	Ext.getCmp('spareTel1').setDisabled(false);
+            	Ext.getCmp('spareTel2').setDisabled(false);
+	            Ext.getCmp('assignDate').setValue(new Date().format('Y-m-d'));
+	            form1Window.show();
+	        }
+	    });
+	      
+	    var myGridEditAction = new Ext.Action({
+	        text: '编辑客户信息',
+	        iconCls: 'btn_edit',
+	        scale: 'small',
+	        disabled: true,
+	        handler: function(){
+	        	oneTbar.show();
+	            var record = myGrid.getSelectionModel().getSelected(); 
+	            if(record != null){
+	            	if(record.get('contactTel') != ''){
+	            		Ext.getCmp('contactTel').setDisabled(true);
+	            	}else{
+	            		Ext.getCmp('contactTel').setDisabled(false);
+	            	}
+	            	if(record.get('spareTel2') != ''){
+	            		Ext.getCmp('spareTel2').setDisabled(true);
+	            	}else{
+	            		Ext.getCmp('spareTel2').setDisabled(false);
+	            	}
+	            	if(record.get('spareTel1') != ''){
+	            		Ext.getCmp('spareTel1').setDisabled(true);
+	            	}else{
+	            		Ext.getCmp('spareTel1').setDisabled(false);
+	            	}
+            		form1Window.show();
+                	clientForm.getForm().loadRecord(record);
+	            }
+	        }
+	    });
+	    //------------------------导入Excel文件-------------------------
+	    var importAction = new Ext.Action({
+	        text: '导入Excel',
+	        iconCls: 'export',
+	        scale: 'small',
+	        handler: function(){
+	        	importForm.getForm().reset();
+	        	importWindow.show();
+	        }
+	    });
+	    //-----------高级搜索
+	     var searchAction = new Ext.Action({
+	        text: '高级搜索',
+	        iconCls: 'check',
+	        scale: 'small',
+	        handler: function(){
+	        	Ext.getCmp('one').show();
+	        	Ext.getCmp('two').show();
+	        }
+	    });
+
+	    var downloadImportAction = new Ext.Action({
+	        text: '下载导入Excel模板',
+	        iconCls: 'xzfj',
+	        scale: 'small',
+	        handler: function(){
+	        	location.href='<%=path%>/client/downloadTemplet.do';
+	        }
+	    });
+	    var exportWrongAction = new Ext.Action({
+	        text: '下载导入错误的客户资源',
+	        iconCls: 'export',
+	        scale: 'small',
+	        handler: function(){
+	        	location.href='<%=path%>/client/exportWrong.do';
+	        }
+	    });
+	    //------------自动分配客户信息--------------
+	    var autoAssignAction = new Ext.Action({
+	        text: '自动分配',
+	        scale: 'small',
+	        iconCls: 'zidong',
+	        handler: function(){
+	        	Ext.Msg.confirm('分配确认', '确认自动分配？', function(aButton){
+	        		if(aButton == 'yes'){
+	        			var _store = myGrid.getStore();
+			        	var id = '';
+			        	for(var i = 0; i < _store.data.length; i++){//----获取没被分配的客户信息id集合----------
+			        		if(_store.getAt(i).get('assignTime') == null | _store.getAt(i).get('assignTime') == ''){
+			        			id = id + _store.getAt(i).id + ',';
+			        		}
+			        	}
+			        	if(id == ''){
+			        		Ext.MessageBox.alert('提示', '没有可以分配的客户信息了!');
+			        	}else{
+			        		Ext.Ajax.request({
+		                        url: '<%=path%>/client/autoAssignClient.do',
+		                        params: {
+		                            id: id
+		                        },
+		                        success: function(aResponse, aOptions){
+		                        	clientStore.reload({callback: myGridUpdateAction});
+		                            var result = Ext.decode(aResponse.responseText);
+		                   			Ext.MessageBox.alert('提示', result.msg);
+		                        },
+		                        failure: function(aResponse, aOptions){
+		                            var result = Ext.decode(aOptions.response.responseText);
+		                            Ext.MessageBox.alert('提示', result.msg);
+		                        }
+			                })
+			        	}
+			        }
+	        	});
+	        }
+	    });
+	    //------------手动分配客户信息--------------
+	    var assignAction = new Ext.Action({
+	        text: '手动分配',
+	        scale: 'small', 
+	        iconCls: 'shoudong',
+	        disabled: true,
+	        handler: function(){
+	        	employeeComboBOx.reset();
+	        	departComboBox.reset();
+	        	employeeData.load();
+	            assignWindow.show();
+	        }
+	    });
+	     
+	     //-----------发送短信-------------
+	    var sendAction = new Ext.Action({
+	        text: '发送短信',
+	        iconCls: 'emailGo',
+	        scale: 'small',
+	        disabled: true,
+	        handler: function(){
+	        	if (myGrid.getSelectionModel().hasSelection()) {
+	            	var record = myGrid.getSelectionModel().getSelected();
+	            	if(record != null){
+	            		sendForm.getForm().reset();
+               			form7Window.show();
+	            	}
+            	}
+	        }
+	    });
+	            
+	    var myGridDeleteAction = new Ext.Action({
+	        text: '删除客户信息',
+	        iconCls: 'btn_del',
+	        scale: 'small',
+	        disabled: true,
+	        handler: function(){
+	            if (myGrid.getSelectionModel().hasSelection()) {
+	                Ext.Msg.confirm('删除确认', '是否删除选择的记录?', function(aButton){
+	                    if (aButton == 'yes'){
+	                        var id = '';
+	                        var flag = 0;
+	                        var records = myGrid.getSelectionModel().getSelections();
+	                        for(var i = 0, len = records.length; i < len; i ++) {
+	                          id = id + records[i].id + ',';
+	                          if(records[i].get('assignTime') != null && records[i].get('assignTime') != ''){
+	                          	flag = 1;
+	                          	break;
+	                          }
+	                        }
+	                        if(flag == 1){
+	                        	Ext.MessageBox.alert('提示', '选中的记录存在已经分配的客户信息,不能删除!');
+	                        }else{
+	                        	Ext.Ajax.request({
+		                            url: '<%=path%>/client/deleteClient.do',
+		                            params: {
+		                                id: id
+		                            },
+		                            success: function(aResponse, aOptions){
+		                            	clientStore.reload({callback: myGridUpdateAction});
+		                                var result = Ext.decode(aResponse.responseText);
+					                    Ext.MessageBox.alert('提示', result.msg);
+		                            },
+		                            failure: function(aResponse, aOptions){
+		                                var result = Ext.decode(aOptions.response.responseText);
+		                                Ext.MessageBox.alert('提示', result.msg);
+		                            }
+		                        })
+	                        }
+	                    }
+	                });
+	            }
+	        }
+	    });
+	    
+	    var myGridLoadAction = new Ext.Action({
+	        text: '刷新',
+	        iconCls:'btn_del',
+	        scale:'small',
+	        disabled: true,
+	        handler: function(aMasterId){
+	        	if(_tid != '' || _sid != '' || seid != ''){
+	        		returnToIndex.show();
+	        	}
+				if(roleCode != '201201'){
+					myGridDeleteAction.hide();
+          			assignAction.hide();
+          			autoAssignAction.hide();
+          			importAction.hide();
+          			downloadImportAction.hide();
+          			exportWrongAction.hide();
+				}else{
+					myGridDeleteAction.show();
+          			assignAction.show();
+          			autoAssignAction.show();
+          			importAction.show();
+          			downloadImportAction.show();
+          			exportWrongAction.show();
+				}
+	            clientStore.setBaseParam('masterId', aMasterId);
+	            clientStore.load({
+	                params:{
+	                    start:0, 
+	                    limit:20
+	                },
+	                waitTitle:'提示',waitMsg: '数据加载请稍后...',
+	                failure: function() {
+	                    Ext.Msg.alert('提示', '读取数据失败！');                             
+	                }
+	            });
+	        }
+	    });   
+	    
+	     //----------返回到首页
+		  var returnToIndex = new Ext.Action({
+		        text: '返回首页',
+		        hidden :true,
+		        iconCls: 'returns', 
+		        handler: function(){
+		           document.location.href ='<%=path%>/to_welcome.do';
+		        }
+		    });
+	    function myGridUpdateAction (){
+           if(myGrid.getSelectionModel().hasSelection()){
+               myGridEditAction.enable();
+               myGridDeleteAction.enable();
+               assignAction.enable();
+               sendAction.enable();
+           }else{
+               myGridEditAction.disable();
+               myGridDeleteAction.disable();
+               assignAction.disable();
+               sendAction.disable();
+           }
+	    };
+	    //--------------部门下拉列表-----------------	  
+	    var departmentSelStore = new Ext.data.Store({
+	          proxy: new Ext.data.HttpProxy({
+	              url: '<%=path%>/client/loadDepartment.do'
+	          }),
+	          reader: new Ext.data.JsonReader({
+	                  root: 'data',
+	                  id: 'departId'
+	              }, 
+	            ['departId', 'departName']
+	          )
+		});
+		
+		var departSelComboBox = new Ext.form.ComboBox({
+		      id: 'departSelComboBox',
+			  allowBlank: true,
+		      emptyText : '请选择部门...',
+		      width: 120,
+		      typeAhead: true,
+		      editable: false,
+		      triggerAction: 'all',
+		      lazyRender: true,
+			  mode: 'remote',
+		      store: departmentSelStore,
+		      valueField: 'departId',
+		      displayField: 'departName',
+		      listeners:{
+		      	select:function(){
+		      		employeeSelComboBOx.reset();
+		      		employeeSelData.proxy = new Ext.data.HttpProxy({
+		      			url: '<%=path%>/client/loadEmployees.do?eid=' + departSelComboBox.getValue()
+		      		});
+		      		employeeSelData.load();
+		      	}
+		      }
+		  });
+			  
+		var employeeSelData = new Ext.data.Store({
+     		proxy: new Ext.data.HttpProxy({
+		          url: '<%=path%>/client/loadEmployee.do'
+		    }),
+		    reader: new Ext.data.JsonReader({
+		           root: 'data',
+		           id: 'eId'
+		    	}, 
+	          ['eId', 'eName']
+		    )
+		 });
+		 var employeeSelComboBOx = new Ext.form.ComboBox({
+	     	   id: 'employeeSelComboBOx',
+		       allowBlank: true,
+		       width: 120,
+	           typeAhead: true,
+		       editable: false,
+		       triggerAction: 'all',
+		       lazyRender: true,
+			   mode: 'remote',
+		       store: employeeSelData,
+		       emptyText : '请选择员工...',
+		       valueField: 'eId',
+		       displayField: 'eName',
+		       listeners: {
+		       	'expand': function(){
+		       		var _dept = Ext.getCmp('departSelComboBox').getValue();
+		       		if(_dept == '' | _dept == null){
+		       			employeeSelComboBOx.reset();
+			      		employeeSelData.proxy = new Ext.data.HttpProxy({
+			      			url: '<%=path%>/client/loadEmployee.do'
+			      		});
+			      		employeeSelData.load();
+		       		}
+		       	}
+		       }
+		});
+	    //---------------创建日期下拉列表--------------------------
+	    var createDateData = new Ext.data.SimpleStore({
+		      fields:['key', 'value'],
+		      data:[
+	      		[ '1', '今天'],
+			    [ '2', '本周'],
+			    [ '3', '本月'],
+			    [ '4', '本年']
+		      ]
+		});
+		var createDateCombox = new Ext.form.ComboBox({
+		      id : 'createDateCombox',
+		      store : createDateData,
+		      width: 80,
+		      editable: false,
+		      allowBlank: true,
+		      displayField : 'value', 
+		      valueField : 'key', 
+		      mode : 'local', 
+		      triggerAction : 'all', 
+		      emptyText : '请选择...',// 默认值   selectOnFocus : true,
+		      listeners:{
+		      	'select': function(){
+		      		Ext.getCmp('createStart').setDisabled(true);
+		      		Ext.getCmp('createEnd').setDisabled(true);
+		      	}
+		      }
+	    });
+	    function transferDate(date){
+	    	date = date.getValue();
+	    	if(date != ''){
+	    		date = date.format('Y-m-d');
+	    	}
+	    	return date;
+	    }
+	    function judgeTime(start, end){
+	    	if(start.getValue() != '' & end.getValue() != ''){
+	    		start = start.getValue().format('Ymd');
+	    		end = end.getValue().format('Ymd');
+	    		if(end > start | end == start){
+	    			return true;
+	    		}else{
+	    			return false;
+	    		}
+	    	}else{
+	    		return true;
+	    	}
+	    }
+	    var searchButton = {
+	    	xtype:'button',
+			iconCls: 'check',
+			text:'查 询',
+			handler:function(){
+				Ext.getCmp('createStart').setDisabled(false);
+		      	Ext.getCmp('createEnd').setDisabled(false);
+				var _createStart = Ext.getCmp('createStart');
+				var _createEnd = Ext.getCmp('createEnd');
+				var _lastTimeStart = Ext.getCmp('lastTimeStart');
+				var _lastTimeEnd = Ext.getCmp('lastTimeEnd');
+				_createStart = transferDate(_createStart);
+				_createEnd = transferDate(_createEnd);
+				var createFlag = judgeTime(Ext.getCmp('createStart'), Ext.getCmp('createEnd'));
+				var _createDate = Ext.getCmp('createDateCombox').getValue();
+				var _oppType=Ext.getCmp('oppTypeSelCombox').getValue();
+				var _assignStatus = Ext.getCmp('signStatusCombox').getValue();
+				var _signPos=Ext.getCmp('signPossibleSelCombox').getValue();
+				var _startLoan = Ext.getCmp('startLoan').getValue();
+				var _endLoan = Ext.getCmp('endLoan').getValue();
+				var _dept = Ext.getCmp('departSelComboBox').getValue();
+				var _emp = Ext.getCmp('employeeSelComboBOx').getValue();
+				if(createFlag){
+					if((_startLoan != '' & _endLoan == '') | (_endLoan != '' & _startLoan == '')){
+						Ext.MessageBox.alert('提示', '贷款金额条件不完整!');
+					}else{
+						if(_startLoan > _endLoan){
+							Ext.MessageBox.alert('提示', '结束金额必须大于开始金额!');
+						}else{
+							Ext.apply(clientStore.baseParams,{
+								conditions:'{_createStart:"'+_createStart+'",_createEnd:"'+_createEnd+'",_createDate:"'+_createDate+'",_dept:"'+_dept+'",_emp:"'+_emp+'",_oppType:"'+_oppType+'",_signPos:"'+_signPos+'",_startLoan:"'+_startLoan+'",_endLoan:"'+_endLoan+'",_assignStatus:"'+_assignStatus+'"}'
+							});
+							clientStore.load({
+					            params:{
+					                start:0, 
+					                limit:20
+					            },
+					            waitTitle:'提示',waitMsg: '数据加载请稍后...',
+					            failure: function() {
+					                Ext.Msg.alert('提示', '读取数据失败！');                             
+					            }
+						    });
+						}
+					}
+				}else{
+					Ext.MessageBox.alert('提示', '结束时间必须大于开始时间!');
+				}
+			}
+	    }
+	    
+	    
+	    var one=new Ext.Toolbar({
+	    	id:'one',
+			items:[
+				'创建日期：',
+				createDateCombox,
+				'创建起止日期：',
+				 {
+		     	 	xtype:'datefield',
+		     	 	width:90,
+		     	 	format:'Y-m-d',
+		     	 	editable: false,
+		     	 	id:'createStart'
+		     	 },
+		     	 '至',
+		     	 {
+		     	 	xtype:'datefield',
+		     	 	width:90,
+		     	 	format:'Y-m-d',
+		     	 	editable: false,
+		     	 	id:'createEnd'
+		     	 },
+		     	 searchButton	     	 
+			] 
+		}); 
+	    var oneTbar=new Ext.Toolbar({
+	    	id:'two',
+			items:[
+				'跟单部门：',
+				departSelComboBox,
+				'跟单人：',
+				employeeSelComboBOx,
+		     	'商机类型：',
+				oppTypeSelCombox,
+		     	'成单率：',
+				signPossibleSelCombox,
+				'贷款金额(万)：',
+				{
+					xtype: 'textfield',
+					width: 80,
+					id: 'startLoan',
+					regex:/^[0-9].*$/
+				},
+				'至',
+				{
+					xtype: 'textfield',
+					width: 80,
+					id: 'endLoan',
+					regex:/^[0-9].*$/
+				},
+				'签单状态：',
+				signStatusCombox
+			] 
+		}); 
+		// --------------- grid --------------------
+	    var myGrid = new Ext.grid.GridPanel({
+	        id: 'myGrid',
+	        store: clientStore,
+	        sm: new Ext.grid.RowSelectionModel(),
+	        frame:true,
+	        trackMouseOver: false,
+	        disableSelection: false,
+	        loadMask: true,
+	        viewConfig: {
+				forceFit: true
+			},
+	        columns: [
+	        	{
+	            	header: '录入日期',
+	                sortable: true,
+	                dataIndex: 'assignDate'
+	            },
+	            {
+	            	header: '客户名称',
+	                sortable: true,
+	                dataIndex: 'clientName'
+	            },
+	            {
+	            	header: '商机类型',
+	                sortable: true,
+	                dataIndex: 'oppType'
+	            },
+	            {
+	            	header: '贷款金额(万)',
+	                sortable: true,
+	                dataIndex: 'loanAmount'
+	            },
+	            {
+	            	header: '客户地址',
+	                sortable: true,
+	                dataIndex: 'clientAdd'
+	            },
+	            {
+	            	header: '客户联系方式',
+	                sortable: true,
+	                dataIndex: 'contactTel'
+	            },
+	            {
+	            	header: '备用电话1',
+	                sortable: true,
+	                dataIndex: 'spareTel1'
+	            },
+	            {
+	            	header: '备用电话2',
+	                sortable: true,
+	                dataIndex: 'spareTel2'
+	            },
+	            {
+	            	header: '客户状态',
+	                sortable: true,
+	                dataIndex: 'clientStatus'
+	            },
+	            {
+	            	header: '成单率',
+	                sortable: true,
+	                dataIndex: 'signPossible'
+	            },
+	            {
+	            	header: '分配时间',
+	                sortable: true,
+	                dataIndex: 'assignTime'
+	            },
+	            {
+	            	header: '跟单人',
+	            	sortable: true,
+	            	dataIndex: 'follower'
+	            },
+	            {
+	            	header: '备注',
+	                sortable: true,
+	                dataIndex: 'remark'
+	            }
+	        ],
+	        tbar: [
+	            myGridNewAction,
+	            myGridEditAction,           
+	            myGridDeleteAction,
+	            autoAssignAction,
+	            assignAction,
+                importAction,
+                downloadImportAction,
+                exportWrongAction,
+                sendAction,
+                returnToIndex
+<!--                searchAction-->
+	        ],
+	        listeners:{
+	        	'render': function(){
+	        		oneTbar.render(this.tbar);
+	        		one.render(this.tbar);
+	        	},
+	        	'dblclick': function(){
+	        		var record = myGrid.getSelectionModel().getSelected();
+	        		if(record != null){
+	        			Ext.getCmp('remarkMsg').setValue(record.get('remark'));
+	        		}
+	        		_window.show();
+	        	}  
+	        },
+	        bbar: new Ext.PagingToolbar({
+	            pageSize: 20,
+	            store: clientStore,
+	            displayInfo: true,
+	             plugins: new Ext.ux.ProgressBarPager(),
+	            displayMsg: '显示: {0} - {1} / 总数: {2}',
+	            emptyMsg: '没有记录'
+	        })
+	    });
+	    var remarkReturnAction = new Ext.Action({
+	    	text: '返回',
+	        iconCls:'returns',
+	        handler: function(){
+	           _window.hide();
+	        }
+	    });
+	    var _window = new Ext.Window({
+	    	title: '备注信息',
+	        width: 380,
+	        height: 180,
+	        modal: true,
+	        layout: 'fit',
+	        plain: true,
+	        bodyStyle: 'padding:5px;',
+	        buttonAlign: 'center',
+	        items: [
+	        	{
+	        		xtype: 'textarea',
+	        		id: 'remarkMsg'
+	        	}
+	        ],
+	        closable: true,
+	        closeAction: 'hide',
+	        buttons: [
+	        	remarkReturnAction
+	        ]
+	    });
+	     // bind event
+	    myGrid.getSelectionModel().addListener(
+	        'selectionchange', 
+	        myGridUpdateAction
+	    );
+			   
+	    var form1SaveAction = new Ext.Action({
+	        text: '保存',
+	        iconCls:'saves',
+	        handler: function(){
+	        	Ext.getCmp('contactTel').setDisabled(false);
+            	Ext.getCmp('spareTel1').setDisabled(false);
+            	Ext.getCmp('spareTel2').setDisabled(false);
+	        	var _opp = Ext.getCmp('oppTypeCombox').getValue(); 
+	        	var _sign = Ext.getCmp('signPossibleCombox').getValue();
+	        	var _spare1 = Ext.getCmp('spareTel1').getValue();
+	        	var _spare2 = Ext.getCmp('spareTel2').getValue();
+	        	var _contact = Ext.getCmp('contactTel').getValue();
+	            if(clientForm.getForm().isValid()){
+	            	if(_spare1 == '' && _spare2 == '' && _contact == ''){
+	            		Ext.MessageBox.alert('提示', '必须填写一个联系电话！');
+	            	}else if((_spare1 == _spare2 && _spare1 != '' && _spare2 != '') | (_spare1 == _contact && _spare1 != '' && _contact != '') | (_spare2 == _contact && _spare2 != '' && _contact != '')){
+	            		Ext.MessageBox.alert('提示', '联系电话不能相同！');
+	            	}else{
+	            		clientForm.getForm().submit({
+		                    url: '<%=path%>/client/saveOrUpdateClient.do',
+		                    params: {
+		                        _opp: _opp,
+		                        _sign: _sign
+		                    },
+		                    waitTitle: '请等待',
+		                    waitMsg: '正在处理数据...',
+		                    timeout: 10,
+		                    success: function(aForm, aAction){
+		                    	form1Window.hide();
+		                    	Ext.MessageBox.alert('提示', aAction.result.msg); 
+		                        clientStore.reload({callback: myGridUpdateAction});
+		                    },
+		                    failure: function(aForm, aAction) {
+		                    	clientStore.reload({callback: myGridUpdateAction});
+		                        Ext.MessageBox.alert('提示', aAction.result.msg);                           
+		                    }
+	                	});
+	            	}
+	            }
+	        }
+	    });
+	    
+	    var form1ReturnAction = new Ext.Action({
+	        text: '返回',
+	        iconCls:'returns',
+	        handler: function(){
+	           form1Window.hide();
+	        }
+	    });
+	    //--------手动分配的返回按钮--------------
+	    var assignReturnAction = new Ext.Action({
+	        text: '返回',
+	        iconCls:'returns',
+	        handler: function(){
+	            assignWindow.hide();
+	        }
+	    });
+	    //------手动分配的保存按钮-----------
+	    var assignSaveAction = new Ext.Action({
+	        text: '分配',
+	        iconCls:'saves',
+	        handler: function(){
+	        	var _emp = Ext.getCmp('employeeComboBOx').getValue();
+	        	if (myGrid.getSelectionModel().hasSelection()) {
+	        		if(_emp == '' | _emp == null){
+	        			Ext.MessageBox.alert('提示', '必须选择员工!');
+	        		}else{
+	        			Ext.Msg.confirm('分配确认', '是否分配选择的记录?', function(aButton){
+	                    if (aButton == 'yes'){
+	                        var id = '';
+	                        var flag = '';
+	                        var records = myGrid.getSelectionModel().getSelections();
+	                        for(var i = 0, len = records.length; i < len; i ++) {
+	                          id = id + records[i].id + ',';
+	                          if(records[i].get('assignTime') != null && records[i].get('assignTime') != ''){
+	                          	flag = 1;
+	                          	break;
+	                          }
+	                        }
+	                        if(flag == 1){
+	                        	Ext.MessageBox.alert('提示', '选中的记录存在已经分配的客户信息，无法分配！');
+	                        }else{
+	                        	Ext.Ajax.request({
+		                            url: '<%=path%>/client/assignClient.do',
+		                            params: {
+		                                id: id,
+		                                _emp: _emp
+		                            },
+		                            success: function(aResponse, aOptions){
+		                            	assignWindow.hide();
+		                            	clientStore.reload({callback: myGridUpdateAction});
+		                                var result = Ext.decode(aResponse.responseText);
+					                    Ext.MessageBox.alert('提示', result.msg);
+		                            },
+		                            failure: function(aResponse, aOptions){
+		                            	assignWindow.hide();
+		                                Ext.MessageBox.alert('提示', result.msg);
+		                            }
+		                        })
+	                        }
+	                    }
+	                	});
+	        		}
+	            }
+	        }
+	    });
+	    
+	    // ------------------ clientForm -------------------------    
+	    var clientForm = new Ext.form.FormPanel({
+	        id: 'clientForm',
+	        bodyStyle: 'padding:5px',
+	        labelAlign: 'right',
+	        labelWidth: 90,
+	        frame: true,
+	        items: [{
+	            layout: 'column',
+	            items: [
+	                {
+	                    columnWidth: .5,
+	                    layout: 'form',
+	                    labelWidth: 90,
+	                    defaultType: 'textfield',
+	                    defaults: {
+	                        anchor: '95%'
+	                    },
+	                    items: [
+	                        {
+								inputType: 'hidden',
+	                            fieldLabel: '*编号',
+	                            id: 'id'
+	                        },
+	                        {
+	                        	xtype: 'datefield',
+	                        	format: 'Y-m-d',
+	                            fieldLabel: '录入日期',
+	                            allowBlank: true,
+	                            editable: false,
+	                            id: 'assignDate'
+	                        },
+	                        oppTypeCombox,
+	                        {
+	                            fieldLabel: '*客户联系方式',
+	                            allowBlank: false,
+	                            id: 'contactTel',
+	                            regex:/^[0-9]*[1-9][0-9]*$/,
+	                            enableKeyEvents: true,
+	                            listeners: {
+	                            	'keyup': function(){
+	                            		var _con = Ext.getCmp('contactTel');
+	                            		var _value = _con.getValue();
+	                            		if(_value != ''){
+	                            			_value = _value.substring(0,1);
+	                            			if(_value == 1){
+	                            				_con.regex = /^\d{11}$/;
+	                            			}else{
+	                            				_con.regex = /^[0-9]*[1-9][0-9]*$/;
+	                            			}
+	                            		}
+	                            		
+	                            	}
+	                            }
+	                        },
+	                        {
+	                            fieldLabel: '备用电话1',
+	                            allowBlank: true,
+	                            id: 'spareTel1',
+	                            enableKeyEvents: true,
+	                            regex:/^[0-9]*[1-9][0-9]*$/,
+	                            listeners: {
+	                            	'keyup': function(){
+	                            		var _con = Ext.getCmp('spareTel1');
+	                            		var _value = _con.getValue();
+	                            		if(_value != ''){
+	                            			_value = _value.substring(0,1);
+	                            			if(_value == 1){
+	                            				_con.regex = /^\d{11}$/;
+	                            			}else{
+	                            				_con.regex = /^[0-9]*[1-9][0-9]*$/;
+	                            			}
+	                            		}
+	                            		
+	                            	}
+	                            }
+	                        },
+	                        signPossibleCombox
+	                    ]
+	                },
+	                {
+	                    columnWidth: .5,
+	                    layout: 'form',
+	                    labelWidth: 80,
+	                    defaultType: 'textfield',
+	                    defaults: {
+	                        anchor: '95%'
+	                    },
+	                    items: [
+	                    	{
+	                            fieldLabel: '客户名称',
+	                            allowBlank: true,
+	                            id: 'clientName'
+	                        },
+	                        {
+	                            fieldLabel: '贷款金额(万)',
+	                            allowBlank: true,
+	                            id: 'loanAmount',
+	                            regex:/^[0-9].*$/
+	                        },
+	                        {
+	                            fieldLabel: '客户地址',
+	                            allowBlank: true,
+	                            id: 'clientAdd'
+	                        },
+	                        {
+	                            fieldLabel: '备用电话2',
+	                            allowBlank: true,
+	                            id: 'spareTel2',
+	                            enableKeyEvents: true,
+	                            regex:/^[0-9]*[1-9][0-9]*$/,
+	                            listeners: {
+	                            	'keyup': function(){
+	                            		var _con = Ext.getCmp('spareTel2');
+	                            		var _value = _con.getValue();
+	                            		if(_value != ''){
+	                            			_value = _value.substring(0,1);
+	                            			if(_value == 1){
+	                            				_con.regex = /^\d{11}$/;
+	                            			}else{
+	                            				_con.regex = /^[0-9]*[1-9][0-9]*$/;
+	                            			}
+	                            		}
+	                            	}
+	                            }
+	                        }
+	                    ]
+	                }
+	            ]
+	        },
+            {
+            	xtype: 'textarea',
+                fieldLabel: '*备注',
+                anchor: '98%',
+                allowBlank: true,
+                id: 'remark'
+            }]
+	    });
+		//---------------手动分配form---------------
+		var assignForm = new Ext.form.FormPanel({
+			id: 'assignForm',
+	        bodyStyle: 'padding:5px',
+	        frame: true,
+	        items:[
+	        	{
+	        		layout: 'column',
+	        		items:[
+	        			{
+	        				columnWidth: .5,
+	        				layout: 'form',
+	        				labelWidth: 50,
+	        				defaults: {
+	        					anchor: '95%',
+		                        msgTarget: 'side'
+	        				},
+	        				items:[
+	        					departComboBox
+	        				]
+	        			},
+	        			{
+	        				columnWidth: .5,
+	        				layout: 'form',
+	        				labelWidth: 75,
+	        				defaults: {
+	        					anchor: '95%',
+	        					msgTarget: 'side'
+	        				},
+	        				items:[
+	        					employeeComboBOx
+	        				]
+	        			}
+	        		]
+	        	}
+	        ]
+		});
+		
+	    var form1Window = new Ext.Window({
+	    	title: '新增客户信息',
+	        width: 650,
+	        height: 350,
+	        modal: true,
+	        layout: 'fit',
+	        plain: true,
+	        bodyStyle: 'padding:5px;',
+	        buttonAlign: 'center',
+	        items: clientForm,
+	        closable: true,
+	        closeAction: 'hide',
+	        buttons: [
+	                form1SaveAction,
+	                form1ReturnAction
+	            ]
+	    });
+	    //-------------手动分配客户信息window----------
+	    var assignWindow = new Ext.Window({
+	    	title: '手动分配客户信息',
+	        width: 500,
+	        height: 130,
+	        modal: true,
+	        layout: 'fit',
+	        plain: true,
+	        bodyStyle: 'padding:5px;',
+	        buttonAlign: 'center',
+	        items: assignForm,
+	        closable: false,
+	        closeAction: 'hide',
+	        buttons: [
+	        	assignSaveAction,
+	            assignReturnAction
+	        ]
+	    });
+	    //-------------------导入form-------------
+	    var importForm = new Ext.form.FormPanel({
+			id: 'importForm',
+	        bodyStyle: 'padding:5px',
+	        labelWidth: 60,
+	        frame: true,
+	        layout: 'fit',
+	        fileUpload: true,
+	        items:[
+	        	{
+                    xtype: 'fileuploadfield',
+		            name:'uploadFilePath',
+		            id: 'uploadFilePath',
+		            bodyStyle:'padding:0 0 4px 0',
+		            width:250,
+		            height: 18,
+		            emptyText: '请选择要导入的Excel',
+		            buttonText: '选择'
+                }
+	        ]
+		});
+		//-------------导入的返回按钮-----------
+		var importReturnAction = new Ext.Action({
+	        text: '返回',
+	        iconCls:'returns',
+	        handler: function(){
+	        	importWindow.hide();
+	        }
+	    });
+	    
+	    var sendForm = new Ext.form.FormPanel({
+	        id: 'sendForm',
+	        bodyStyle: 'padding:5px',
+	        layout: 'form',
+	        labelWidth: 60,
+	        frame: true,
+	        items: [
+		        {
+	                fieldLabel: '内容',
+	                xtype:'textarea',
+	                anchor: '98%',
+	                allowBlank: false,
+	                id: 'sendContent'
+		        }
+	        ]
+	    });
+	
+		var sendSure = new Ext.Action({
+	        text: '确定',
+	        iconCls: 'check',
+	        scale: 'small',
+	        handler: function(){
+	            if (myGrid.getSelectionModel().hasSelection()) {
+	            	 var record = myGrid.getSelectionModel().getSelected();
+	            	 <%--发送短信，选择的客户ID ，短信内容，客户姓名，电话号码--%>
+                     var _tempId='';
+	                 var _contents = Ext.getCmp('sendContent').getValue();
+	                 var _clieName = record.get('clientName');
+	                 var _numbers = record.get('contactTel');
+                     Ext.Ajax.request({
+                         url: '<%=path%>/sendMassage/sendMessages.do',
+                         params: {
+                            _tempId: _tempId,
+                            _contents:_contents,
+                            _clieName:_clieName,
+                            _numbers:_numbers
+                         },
+                         success: function(aResponse, aOptions){
+                         	 form7Window.hide();
+				    		 myGridLoadAction.execute();
+                             var result = Ext.decode(aResponse.responseText);
+                    		 Ext.MessageBox.alert('提示', result.msg);
+                         },
+                         failure: function(aResponse, aOptions){
+				    		myGridLoadAction.execute();
+                            var result = Ext.decode(aResponse.responseText);
+                    		Ext.MessageBox.alert('提示', result.msg);
+                         }
+                     })
+	            }
+	        }
+	    });
+	    
+	     var form7ReturnAction = new Ext.Action({
+		       text: '返回',
+		       iconCls:'returns',
+		       handler: function(){
+		          form7Window.hide();
+		       }
+	    });
+	    
+	    var form7Window = new Ext.Window({
+	    	title: '发送短信',
+	        width: 420,
+	        height: 180,
+	        modal: true,
+	        layout: 'fit',
+	        plain: true,
+	        bodyStyle: 'padding:5px;',
+	        buttonAlign: 'center',
+	        items: sendForm,
+	        closable: false,
+	        buttons: [
+        		sendSure,
+                form7ReturnAction
+	        ]
+	    });
+	    
+	    //---------------导入的分配按钮------------
+	    var importSaveAction = new Ext.Action({
+	        text: '导入',
+	        iconCls:'saves',
+	        handler: function(){
+	        	var _value = Ext.getCmp('uploadFilePath').getValue();
+	        	if(_value == '' | _value == null){
+	        		Ext.MessageBox.alert('提示', '请选择需要导入的Excel文件!');
+	        	}else{
+	        		var _values = _value.split('\.');
+	        		if(_values[_values.length - 1].substring(0, 2) == 'xl'){
+	        			importForm.getForm().submit({
+		                    url: '<%=path%>/client/importClient.do',
+		                    params: {
+		                    },
+		                    waitTitle: '请等待',
+		                    waitMsg: '正在处理数据...',
+		                    timeout: 10,
+		                   	success: function(aForm, aAction){
+		                        clientStore.reload({callback: myGridUpdateAction});
+                            	importWindow.hide();
+                                Ext.MessageBox.alert('提示', aAction.result.msg); 
+		                    },
+		                    failure: function(aForm, aAction) {
+		                        var result = Ext.decode(aAction.response.responseText);
+                                Ext.MessageBox.alert('提示', result.msg);
+                                clientStore.reload({callback: myGridUpdateAction});                           
+		                    }
+		                });
+	        		}else{
+	        			Ext.MessageBox.alert('提示', '只能导入Excel文件, 请重新选择!');
+	        		}
+	        	}
+	        }
+	    });
+	    //-------------导入客户信息window----------
+	    var importWindow = new Ext.Window({
+	    	title: '导入客户信息',
+	        width: 350,
+	        height: 130,
+	        modal: true,
+	        layout: 'fit',
+	        plain: true,
+	        bodyStyle: 'padding:5px;',
+	        buttonAlign: 'center',
+	        items: importForm,
+	        closable: false,
+	        closeAction: 'hide',
+	        buttons: [
+	        	importSaveAction,
+	            importReturnAction
+	        ]
+	    });
+	    
+	    // --------------- viewport --------------------
+	    var viewport = new Ext.Viewport({
+	        layout: 'fit',
+	        border: false,
+	        autoScroll: true,
+	        items: [
+	            myGrid
+	        ]
+	    });
+	    // --------------- load data -------------------
+	    myGridLoadAction.execute();
+		});
+		</script>
+<%@ include file="/WEB-INF/views/common/footer.jsp"%>

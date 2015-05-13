@@ -1,0 +1,470 @@
+package cn.dgg.CRM365.web.resource;
+
+import java.text.DecimalFormat;
+import java.text.SimpleDateFormat;
+import java.util.ArrayList;
+import java.util.Calendar;
+import java.util.Collection;
+import java.util.Date;
+import java.util.HashMap;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Map;
+
+import javax.servlet.http.HttpServletRequest;
+
+import net.sf.ehcache.constructs.web.PageInfo;
+import net.sf.json.JSONArray;
+import net.sf.json.JSONObject;
+
+import org.hibernate.cache.ReadWriteCache.Item;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.stereotype.Controller;
+import org.springframework.web.bind.annotation.ModelAttribute;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.servlet.ModelAndView;
+
+import cn.dgg.CRM365.domain.authority.User;
+import cn.dgg.CRM365.domain.resourcesManage.Client;
+import cn.dgg.CRM365.domain.resourcesManage.ClientUser;
+import cn.dgg.CRM365.util.commonUtil.StaticValues;
+import cn.dgg.CRM365.util.mvc.MvcUtil;
+import cn.dgg.CRM365.util.orm.ICommonDAO;
+import cn.dgg.CRM365.util.page.GridLoadParams;
+import cn.dgg.CRM365.util.page.Pagination;
+
+/**
+ * 客户信息报表管理
+  * <功能简述>
+  * <功能详细描述>
+  * 
+  * @author  黄剑锋
+  * @version  [版本号, Dec 25, 2012]
+  * @see  [相关类/方法]
+  * @since  [产品/模块版本]
+ */
+@SuppressWarnings("all")
+@RequestMapping("/statements")
+@Controller
+public class StatementsController {
+	
+	@Autowired
+	@Qualifier("commonDAOProxy")
+	ICommonDAO<Object[]> odao;
+	
+	@Autowired
+	@Qualifier("commonDAOProxy")
+	ICommonDAO<Client> dao;
+	
+	@Autowired
+	@Qualifier("commonDAOProxy")
+	ICommonDAO<ClientUser> cudao;
+	
+	@RequestMapping("/jumpPage.do")
+	public ModelAndView jumpPage(){
+		return new ModelAndView("resource/clientStaInfo");
+	}
+	/**
+	 * 查找所有客户信息
+	 * @param gridLoadParams
+	 * @param request
+	 * @param _condition 查询条件
+	 * @return
+	 * 黄剑锋
+	 * 2012-12-17 16:53第一次新建
+	 */
+	@RequestMapping("/loadClient.do")
+	public ModelAndView loadClient(HttpServletRequest req, @RequestParam("conditions") String _condition){
+		JSONObject jsonObject = new JSONObject();
+		String hql = "select c.signPossible, c.oppType, COUNT(*) from Client c";
+		StringBuffer sb = new StringBuffer(" where 1=1");
+		String flag = "";//标志位
+		List<Object[]> dList = new ArrayList<Object[]>();//存放展示到页面的数据的容器
+		DecimalFormat df = new DecimalFormat("0.000");
+		Map<String, String> map = null;
+		String nowTime = StaticValues.sdf.format(new Date());
+		User user = null;
+		try {
+			if(req.getSession() != null){
+				user = (User)req.getSession().getAttribute(StaticValues.USER_SESSION);
+				String roleCode = user.getRole().getRoleCode();
+				if(_condition != null && !"".equals(_condition)){//查询条件
+					JSONObject json = JSONObject.fromObject(_condition);
+					String _time = json.getString("_time");
+					String _assign = json.getString("_assign");//分配日期
+					String _endAssignDate = json.getString("_endAssignDate");//结束日期
+					String _depComboBox = String.valueOf(json.get("_depComboBox"));//跟踪部门
+					String _empComboBox = String.valueOf(json.get("_empComboBox"));//跟踪人
+					String client_source = String.valueOf(json.get("client_source"));//客户来源
+					if("".equals(_time) && "".equals(_assign) && "".equals(_endAssignDate)){
+						sb.append(" and c.assignTime like '").append(nowTime).append("%'");
+					}else{
+						judgeConditions(_time, _assign, _endAssignDate, sb);//判断条件
+					}
+					if(!"".equals(_empComboBox) && _empComboBox != null){
+						sb.append(" and c.follower.id = ").append(Long.parseLong(_empComboBox));
+					}else{
+						if(!"".equals(_depComboBox) && _depComboBox!= null){
+							sb.append(" and c.follower.department.id = ").append(Long.parseLong(_depComboBox));
+						}
+					}
+					if(!"".equals(client_source)){
+						sb.append(" and c.clientSourse.id =").append(Long.parseLong(client_source));
+					}
+				}else{
+					sb.append(" and c.assignTime like '").append(nowTime).append("%'");
+				}
+				if("201203".equals(roleCode)){//员工只能看分配给自己的资源
+					sb.append(" and c.follower.id = ").append(user.getId()).append(" and c.clientStatus <> '3'");
+				}else if("201202".equals(roleCode)){//部门经理能够看他所在的部门的所有资源
+					sb.append(" and c.follower.department.id = ").append(user.getDepartment().getId()).append(" and c.clientStatus <> '3'");
+				}else if("201208".equals(roleCode)){
+					sb.append(" and c.follower.department.superId = ").append(user.getDepartment().getSuperId());
+				}
+				sb.append("  GROUP BY c.signPossible, c.oppType");
+				List<Object[]> dataList = odao.findAll(hql + sb);
+				if (dataList.size() > 0) {
+					flag = dataList.get(0)[0].toString();//通过签单可能性区分
+					map = new HashMap<String, String>();
+					Object[] o = null;
+					for (int i = 0; i < dataList.size(); i++) {
+						o = dataList.get(i);
+						if(!flag.equals(o[0].toString())){
+							dList.add(new Object[]{dataList.get(i - 1)[0], map});//将上一签单可能性保存起来
+							map = new HashMap<String, String>();//开始统计下一签单可能性
+							map.put(o[1].toString(), o[2].toString());
+							if(i == dataList.size() - 1){
+								dList.add(new Object[]{o[0], map});
+							}else{
+								flag = dataList.get(i)[0].toString();
+							}
+						}else{
+							map.put(o[1].toString(), o[2].toString());
+							if(i == dataList.size() - 1){
+								dList.add(new Object[]{o[0], map});
+							}
+						}
+					}
+				}
+				JSONArray data = new JSONArray();
+				Iterator<String> it = null;
+				String location = "";//标识map遍历的位置
+				if (dList.size() > 0) {
+					for (Object[] obj : dList) {
+						JSONObject item = new JSONObject();
+						String sign = obj[0].toString();
+						map = (Map)obj[1];
+						it = map.keySet().iterator();
+						if("1".equals(sign)){//签单可能性(1为100%、2为80%、3为50%、4为0%)
+							item.element("signPossible", "100%");
+						}else if("2".equals(sign)){
+							item.element("signPossible", "80%");
+						}else if("3".equals(sign)){
+							item.element("signPossible", "50%");
+						}else if("4".equals(sign)){
+							item.element("signPossible", "10%");
+						}else if("5".equals(sign)){
+							item.element("signPossible", "0%");
+						}else{
+							item.element("signPossible", "未知");
+						}
+						while(it.hasNext()){
+							location = it.next();
+							if("1".equals(location)){
+								item.element("count1", MvcUtil.toJsonString(map.get(location)));
+								continue;
+							}
+							if("2".equals(location)){
+								item.element("count2", MvcUtil.toJsonString(map.get(location)));
+								continue;
+							}
+							if("3".equals(location)){
+								item.element("count3", MvcUtil.toJsonString(map.get(location)));
+								continue;
+							}
+							if("4".equals(location)){
+								item.element("count4", MvcUtil.toJsonString(map.get(location)));
+								continue;
+							}
+							if("5".equals(location)){
+								item.element("count5", MvcUtil.toJsonString(map.get(location)));
+								continue;
+							}
+						}
+						data.add(item);
+					}
+				}
+				jsonObject.element("data", data);
+			}
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+		return MvcUtil.jsonObjectModelAndView(jsonObject);
+	}
+	/**
+	 * 查看统计的客户信息数据
+	  *<功能简述>
+	  *<功能详细描述>
+	  * @param gridLoadParams
+	  * @param request
+	  * @param _condition
+	  * @return [参数说明]
+	  * 
+	  * @return ModelAndView [返回类型说明]
+	  * @exception throws [异常类型] [异常说明]
+	  * @see [类、类#方法、类#成员]
+	 */
+	@RequestMapping("/loadNewClient.do")
+	public ModelAndView loadNewClient(@ModelAttribute("params") GridLoadParams gridLoadParams,
+			HttpServletRequest request, @RequestParam("conditions") String _condition){
+		JSONObject job = new JSONObject();
+		String hql = "select c.signPossible, count(c.signPossible) from Client c";
+		String nowTime =  StaticValues.sdf.format(new Date());
+		StringBuffer sb = new StringBuffer(" where 1=1");
+		if(_condition != null && !"".equals(_condition)){//查询条件
+			JSONObject json = JSONObject.fromObject(_condition);
+			String _time = String.valueOf(json.get("_time"));
+			String _assign = String.valueOf(json.get("_assign"));//分配日期
+			String _endAssignDate = String.valueOf(json.get("_endAssignDate"));//结束日期
+			if("".equals(_time) && "".equals(_assign) && "".equals(_endAssignDate)){
+				sb.append(" and c.assignTime like '").append(nowTime).append("%'");
+			}else{
+				judgeConditions(_time, _assign, _endAssignDate, sb);//判断条件
+			}
+		}else{
+			sb.append(" and c.assignTime like '").append(nowTime).append("%'");
+		}
+		sb.append(" group BY c.signPossible");
+		List<Object[]> olist = odao.findAll(hql + sb);
+		if(olist.size() > 0){
+			JSONArray data = new JSONArray();
+			for(Object[] o : olist){
+				JSONObject item = new JSONObject();
+				if("1".equals(o[0].toString())){//签单可能性(1为100%、2为80%、3为50%、4为0%)
+					item.element("signPossible", MvcUtil.toJsonString("100%"));
+				}else if("2".equals(o[0].toString())){
+					item.element("signPossible", MvcUtil.toJsonString("80%"));
+				}else if("3".equals(o[0].toString())){
+					item.element("signPossible", MvcUtil.toJsonString("50%"));
+				}else if("4".equals(o[0].toString())){
+					item.element("signPossible", MvcUtil.toJsonString("10%"));
+				}else if("5".equals(o[0].toString())){
+					item.element("signPossible", MvcUtil.toJsonString("0%"));
+				}
+				item.element("count", MvcUtil.toJsonString(o[1]));//计数
+				data.add(item);
+			}
+			job.element("data", data);
+		}
+		return MvcUtil.jsonObjectModelAndView(job);
+	}
+	/**
+	 * 获取当前时间所在的本周时间
+	  *<功能简述>
+	  *<功能详细描述>
+	  * @param format [参数说明]
+	  * 
+	  * @return void [返回类型说明]
+	  * @exception throws [异常类型] [异常说明]
+	  * @see [类、类#方法、类#成员]
+	 */
+	public static String getWeekTime(String format) {
+		String[] dates = format.split("-");
+		Calendar cal = Calendar.getInstance();
+		cal.set(Calendar.DAY_OF_WEEK, Calendar.SUNDAY);
+		int monday = 0;
+		if(dates[2].equals(String.valueOf(cal.get(Calendar.DATE)))){
+			cal.set(Calendar.DAY_OF_WEEK, Calendar.MONDAY);
+			cal.add(Calendar.DAY_OF_WEEK_IN_MONTH, -1);
+			monday = cal.get(Calendar.DATE);
+			if(monday < 10){
+				return dates[0] + "-" + dates[1] + "-0" + monday;
+			}else{
+				return dates[0] + "-" + dates[1] + "-" + monday;
+			}
+		}else{
+			cal.set(Calendar.DAY_OF_WEEK, Calendar.MONDAY);
+			monday = cal.get(Calendar.DATE);
+			if(monday < 10){
+				return dates[0] + "-" + dates[1] + "-0" + monday;
+			}else{
+				return dates[0] + "-" + dates[1] + "-" + monday;
+			}
+		}
+	}
+	/**
+	 * 判断条件
+	  *<功能简述>
+	  *<功能详细描述>
+	  * @param _time
+	  * @param _assign
+	  * @param assignDate
+	  * @param sb
+	  * @return [参数说明]
+	  * 
+	  * @return String [返回类型说明]
+	  * @exception throws [异常类型] [异常说明]
+	  * @see [类、类#方法、类#成员]
+	 */
+	public static void judgeConditions(String _time, String _assign, String _endAssignDate, StringBuffer sb){
+		if(!"".equals(_assign) && _assign != null && (_endAssignDate == null || "".equals(_endAssignDate))){
+			sb.append(" and c.assignTime like '").append(_assign).append("%'");
+		}else if(!"".equals(_endAssignDate) && _endAssignDate != null && (_assign == null || "".equals(_assign))){
+			sb.append(" and c.assignTime like '").append(_endAssignDate).append("%'");
+		}else if(!"".equals(_assign) && _assign != null && !"".equals(_endAssignDate) && _endAssignDate != null){
+			sb.append(" and c.assignTime between '").append(_assign).append(" 00:00:00").append("'").append(" and '").append(_endAssignDate).append(" 23:59:59").append("'");
+		}
+		if(_time != null && !"".equals(_time)){
+			String nowTime = StaticValues.sdf.format(new Date());
+			String[] times = nowTime.split("-");
+			if("1".equals(_time)){//查询本周的记录
+				String monday = getWeekTime(nowTime);//星期一对应的日期
+				sb.append(" and c.assignTime between '").append(monday).append(" 00:00:00").append("'").append(" and '").append(nowTime).append(" 23:59:59").append("'");
+			}else if("2".equals(_time)){//查询本月的记录
+				sb.append(" and c.assignTime like '").append(times[0] + "-" + times[1]).append("%'");
+			}else{//查询本年的记录
+				sb.append(" and c.assignTime like '").append(times[0]).append("%'");
+			}
+		}
+	}
+	/**
+	 * 加载每条记录对应的客户信息
+	  *<功能简述>
+	  *<功能详细描述>
+	  * @param gridLoadParams
+	  * @param request
+	  * @param conditions
+	  * @return [参数说明]
+	  * 
+	  * @return ModelAndView [返回类型说明]
+	  * @exception throws [异常类型] [异常说明]
+	  * @see [类、类#方法、类#成员]
+	  * 黄剑锋
+	 */
+	@RequestMapping("/loadShowClientMsg.do")
+	public ModelAndView loadShowClientMsg(@ModelAttribute("params") GridLoadParams gridLoadParams, HttpServletRequest request,
+			@RequestParam("conditions1") String conditions){
+		JSONObject json = new JSONObject();
+		Pagination page = new Pagination();
+		page.set(gridLoadParams.getStart(), gridLoadParams.getLimit());
+		String hql = "from Client c";
+		StringBuffer sb = new StringBuffer(" where 1=1");
+		User userSession = (User) request.getSession().getAttribute("userSession");
+		Long lDepartment = null;	//得到当前登录人的部门信息
+		String ruleDe = null;	//得到当前登录人的角色代码 
+		Long thisUserId = null;	//	得到当前登录人的Id
+		try {
+			ruleDe = userSession.getRole().getRoleCode();
+			thisUserId = userSession.getId();
+			if(ruleDe.equals("201203")){
+				sb.append(" and c.follower.id = ").append(userSession.getId()).append(" and c.clientStatus <> '3'");
+			}else if(ruleDe.equals("201202")){
+				lDepartment = userSession.getDepartment().getId();
+				sb.append(" and c.follower.department.id =").append(lDepartment).append(" and c.clientStatus <> '3'");
+			}else if("201208".equals(ruleDe)){
+				sb.append(" and c.follower.department.superId = ").append(userSession.getDepartment().getSuperId());
+			}
+			if(!"".equals(conditions) && conditions != null){
+				JSONObject job = JSONObject.fromObject(conditions);  
+				String date = job.getString("_assigns");//分配日期
+				String signPoss = job.getString("signPoss");
+				String _end = job.getString("_ends");//分配的结束日期
+				String _time = job.getString("_times");//按周月年查询
+				String _manaDes = job.getString("_manaDes");//跟踪部门
+				String _manaEmp = job.getString("_manaEmp");//跟踪人
+				String source = job.getString("client_source");
+				judgeBasicConditions(sb, signPoss, _manaDes, _manaEmp, _time, date, _end, source);
+				List<Client> list = dao.findAll(hql + sb, page);
+				json.element("totalCount", page.getTotalResults());
+				JSONArray data = new JSONArray();
+				for(Client c : list){
+					JSONObject item = new JSONObject();
+					item.element("id", MvcUtil.toJsonString(c.getId()));//id
+					item.element("assignDate", MvcUtil.toJsonString(c.getAssignDate()));//录入日期
+					item.element("clientName", MvcUtil.toJsonString(c.getClientName()));//客户名称
+					if("1".equals(c.getOppType())){//商机类型(1为房贷、2为信贷、3为短借、4为企贷)
+						item.element("showOppType", MvcUtil.toJsonString("房贷"));
+					}else if("2".equals(c.getOppType())){
+						item.element("showOppType", MvcUtil.toJsonString("信贷"));
+					}else if("3".equals(c.getOppType())){
+						item.element("showOppType", MvcUtil.toJsonString("短借"));
+					}else if("4".equals(c.getOppType())){	
+						item.element("showOppType", MvcUtil.toJsonString("企贷"));
+					}
+					item.element("loanAmount", MvcUtil.toJsonString(c.getLoanAmount()));//贷款金额
+					if("1".equals(c.getClientStatus())){
+						item.element("clientStatus", MvcUtil.toJsonString("已签单"));
+					}else if("2".equals(c.getClientStatus())){
+						item.element("clientStatus", MvcUtil.toJsonString("未签单"));
+					}else if("3".equals(c.getClientStatus())){
+						item.element("clientStatus", MvcUtil.toJsonString("淘汰"));
+					}
+					if("1".equals(c.getSignPossible())){//签单可能性(1为100%、2为80%、3为50%、4为0%)
+						item.element("signPossible", MvcUtil.toJsonString("100%"));
+					}else if("2".equals(c.getSignPossible())){
+						item.element("signPossible", MvcUtil.toJsonString("80%"));
+					}else if("3".equals(c.getSignPossible())){
+						item.element("signPossible", MvcUtil.toJsonString("50%"));
+					}else if("4".equals(c.getSignPossible())){
+						item.element("signPossible", MvcUtil.toJsonString("10%"));
+					}else if("5".equals(c.getSignPossible())){
+						item.element("signPossible", MvcUtil.toJsonString("0%"));
+					}
+					item.element("assignTime", MvcUtil.toJsonString(c.getAssignTime()));//分配时间
+					if(c.getFollower() != null){
+						item.element("empName", MvcUtil.toJsonString(c.getFollower().getUserName()));
+					}
+					item.element("remark", MvcUtil.toJsonString(c.getRemark()));//备注
+					data.add(item);
+				}
+				json.element("data", data);
+			}
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+		return MvcUtil.jsonObjectModelAndView(json);
+	}
+	/**
+	 * 判断报表条件
+	  *<功能简述>
+	  *<功能详细描述>
+	  * @param sb
+	  * @param signPoss 签单可能性
+	  * @param _manaDes 部门
+	  * @param _manaEmp 员工
+	  * @param _time 开始分配日期
+	  * @param date 周月年分配时间
+	  * @param _end 结束分配时间
+	  * @return
+	  * @throws Exception [参数说明]
+	  * 
+	  * @return StringBuffer [返回类型说明]
+	  * @exception throws [异常类型] [异常说明]
+	  * @see [类、类#方法、类#成员]
+	 */
+	public static void judgeBasicConditions(StringBuffer sb, String signPoss,
+			String _manaDes, String _manaEmp, String _time, String date, String _end, String source) throws Exception {
+		String nowTime = StaticValues.sdf.format(new Date());
+		judgeConditions(_time, date, _end, sb);//根据条件判断查询条件
+		if("".equals(_time) && "".equals(date) && "".equals(_end)){
+			sb.append(" and c.assignTime like '").append(nowTime).append("%'");
+		}
+		if(" where 1=1".equals(sb.toString())){
+			sb.append(" and c.assignTime like '").append(nowTime).append("%'");
+		}
+		if(signPoss != null && !"".equals(signPoss)){
+			sb.append(" and c.signPossible = ").append(signPoss);
+		}
+		if(!"".equals(_manaDes) && _manaDes != null){
+			sb.append(" and c.follower.department.id = ").append(Long.parseLong(_manaDes));
+		}
+		if(!"".equals(_manaEmp) && _manaEmp != null){
+			sb.append(" and c.follower.id = ").append(Long.parseLong(_manaEmp));
+		}
+		if(source != null && !"".equals(source)){
+			sb.append(" and c.clientSourse = ").append(source);
+		}
+	}
+}

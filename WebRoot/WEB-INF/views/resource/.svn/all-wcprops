@@ -1,0 +1,41 @@
+K 25
+svn:wc:ra_dav:version-url
+V 63
+/svn/crm/!svn/ver/105/NEW_CRM365/WebRoot/WEB-INF/views/resource
+END
+client_statements.jsp
+K 25
+svn:wc:ra_dav:version-url
+V 85
+/svn/crm/!svn/ver/105/NEW_CRM365/WebRoot/WEB-INF/views/resource/client_statements.jsp
+END
+messages.jsp
+K 25
+svn:wc:ra_dav:version-url
+V 76
+/svn/crm/!svn/ver/105/NEW_CRM365/WebRoot/WEB-INF/views/resource/messages.jsp
+END
+template.jsp
+K 25
+svn:wc:ra_dav:version-url
+V 76
+/svn/crm/!svn/ver/105/NEW_CRM365/WebRoot/WEB-INF/views/resource/template.jsp
+END
+client.jsp
+K 25
+svn:wc:ra_dav:version-url
+V 74
+/svn/crm/!svn/ver/105/NEW_CRM365/WebRoot/WEB-INF/views/resource/client.jsp
+END
+clientsource.jsp
+K 25
+svn:wc:ra_dav:version-url
+V 80
+/svn/crm/!svn/ver/120/NEW_CRM365/WebRoot/WEB-INF/views/resource/clientsource.jsp
+END
+clientStaInfo.jsp
+K 25
+svn:wc:ra_dav:version-url
+V 81
+/svn/crm/!svn/ver/105/NEW_CRM365/WebRoot/WEB-INF/views/resource/clientStaInfo.jsp
+END

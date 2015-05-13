@@ -1,0 +1,35 @@
+K 25
+svn:wc:ra_dav:version-url
+V 67
+/svn/crm/!svn/ver/105/NEW_CRM365/src/cn/dgg/CRM365/domain/resources
+END
+ResourcesTrack.java
+K 25
+svn:wc:ra_dav:version-url
+V 87
+/svn/crm/!svn/ver/110/NEW_CRM365/src/cn/dgg/CRM365/domain/resources/ResourcesTrack.java
+END
+SignClient.java
+K 25
+svn:wc:ra_dav:version-url
+V 83
+/svn/crm/!svn/ver/130/NEW_CRM365/src/cn/dgg/CRM365/domain/resources/SignClient.java
+END
+EliminateClient.java
+K 25
+svn:wc:ra_dav:version-url
+V 88
+/svn/crm/!svn/ver/130/NEW_CRM365/src/cn/dgg/CRM365/domain/resources/EliminateClient.java
+END
+AddClient.java
+K 25
+svn:wc:ra_dav:version-url
+V 82
+/svn/crm/!svn/ver/130/NEW_CRM365/src/cn/dgg/CRM365/domain/resources/AddClient.java
+END
+Eliminate.java
+K 25
+svn:wc:ra_dav:version-url
+V 82
+/svn/crm/!svn/ver/130/NEW_CRM365/src/cn/dgg/CRM365/domain/resources/Eliminate.java
+END

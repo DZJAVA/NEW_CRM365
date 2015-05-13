@@ -1,0 +1,56 @@
+package cn.dgg.CRM365.domain.resourcesManage;
+
+import javax.persistence.Column;
+import javax.persistence.Entity;
+import javax.persistence.GeneratedValue;
+import javax.persistence.Id;
+import javax.persistence.Table;
+/**
+ * 记录自动分配时没有分配完的信息
+  * <功能简述>
+  * <功能详细描述>
+  * 
+  * @author  黄剑锋
+  * @version  [版本号, Dec 19, 2012]
+  * @see  [相关类/方法]
+  * @since  [产品/模块版本]
+ */
+@Entity
+@Table(name="dgg_clientDifRecord")
+public class ClientDifRecord {
+	private Long id;//id
+	private String userid;//用户id
+	private String clientDif;//客户资源差数
+	private String remark;//备注
+	
+	@Id
+	@Column(name = "id")
+	@GeneratedValue
+	public Long getId() {
+		return id;
+	}
+	public void setId(Long id) {
+		this.id = id;
+	}
+	@Column(name = "userid")
+	public String getUserid() {
+		return userid;
+	}
+	public void setUserid(String userid) {
+		this.userid = userid;
+	}
+	@Column(name = "clientDif")
+	public String getClientDif() {
+		return clientDif;
+	}
+	public void setClientDif(String clientDif) {
+		this.clientDif = clientDif;
+	}
+	@Column(name = "remark")
+	public String getRemark() {
+		return remark;
+	}
+	public void setRemark(String remark) {
+		this.remark = remark;
+	}
+}

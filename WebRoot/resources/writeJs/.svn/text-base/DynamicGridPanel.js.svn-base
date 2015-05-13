@@ -1,0 +1,113 @@
+
+Ext.namespace('Com.kingviker.dynamicgrid');
+
+/**
+ * 动态列实例
+ *
+ * @class Com.kingviker.dynamicgrid.DynamicGridPanel
+ * @extends Ext.grid.GridPanel
+ * @constructor
+ *
+ * @param {Object} config The configuration options
+ */
+Com.kingviker.dynamicgrid.DynamicGridPanel = function(config){
+	var data = {roots: [], totalCount: 0};
+	var ds = new Ext.data.Store({
+        proxy: new Ext.data.MemoryProxy(data),
+        reader: new Ext.data.JsonReader({
+            root: 'roots',
+            totalProperty: 'totalCount'
+        }, []),
+        remoteSort: false
+    });
+    
+    // 设置表格样式 
+	var cm = new Ext.grid.ColumnModel([{
+		header: '列一',
+		width: 60
+    }]);
+		
+    // 初始化
+    Com.kingviker.dynamicgrid.DynamicGridPanel.superclass.constructor.call(this, Ext.applyIf(config, {
+        border: true,
+        store: ds,
+        height: 88,
+        width: 676,
+        autoScoll: true,
+        loadMask: true,
+        cm: cm
+    }));
+}
+
+Ext.extend(Com.kingviker.dynamicgrid.DynamicGridPanel, Ext.grid.EditorGridPanel, {
+	
+    // 加载数据
+    load: function(param){
+		var buf = new Array();
+		if (param == "一列") {
+			buf.push("var data = {roots: [")
+			buf.push("{field01: '动态列一'}")
+			buf.push("],totalCount:1};")
+			buf.push("var ds = new Ext.data.Store({proxy: new Ext.data.MemoryProxy(data");
+			buf.push("),reader: new Ext.data.JsonReader({root: 'roots',totalProperty: 'totalCount'}, [");
+			buf.push("{name:'field01',mapping:'field01'}")
+			buf.push("]),remoteSort: false}); ds.load(); ");
+			buf.push(" var cm = new Ext.grid.ColumnModel([");
+			buf.push("{sortable:false,header:'列一',width:60}])")
+			window.eval(buf.join(''));
+			var directionGrid = Ext.getCmp('dynamicGridPanel');
+			directionGrid.reconfigure(ds, cm);
+		}else if (param == "二列") {
+			buf.push("var data = {roots: [")
+			buf.push("{field01: '动态列一',field02: '动态列二'},")
+			buf.push("{field01: '动态列一',field02: '动态列二'}")
+			buf.push("],totalCount:2};")
+			buf.push("var ds = new Ext.data.Store({proxy: new Ext.data.MemoryProxy(data");
+			buf.push("),reader: new Ext.data.JsonReader({root: 'roots',totalProperty: 'totalCount'}, [");
+			buf.push("{name:'field01',mapping:'field01'},{name:'field02',mapping:'field02'}")
+			buf.push("]),remoteSort: false}); ds.load(); ");
+			buf.push(" var cm = new Ext.grid.ColumnModel([");
+			buf.push("{sortable:false,header:'列一',width:60},")
+			buf.push("{sortable:false,header:'列二',width:60}])")
+			window.eval(buf.join(''));
+			var directionGrid = Ext.getCmp('dynamicGridPanel');
+			directionGrid.reconfigure(ds, cm);
+		}else if (param == "三列") {
+			
+			buf.push("var data = {roots: [")
+			buf.push("{field01: '动态列一',field02: '动态列二',field03:'动态列三'},")
+			buf.push("{field01: '动态列一',field02: '动态列二',field03:'动态列三'},")
+			buf.push("{field01: '动态列一',field02: '动态列二',field03:'动态列三'}")
+			buf.push("],totalCount:3};")
+			buf.push("var ds = new Ext.data.Store({proxy: new Ext.data.MemoryProxy(data");
+			buf.push("),reader: new Ext.data.JsonReader({root: 'roots',totalProperty: 'totalCount'}, [");
+			buf.push("{name:'field01',mapping:'field01'},{name:'field02',mapping:'field02'},{name:'field03',mapping:'field03'}")
+			buf.push("]),remoteSort: false}); ds.load(); ");
+			buf.push(" var cm = new Ext.grid.ColumnModel([");
+			buf.push("{sortable:false,header:'列一',width:60},")
+			buf.push("{sortable:false,header:'列二',width:60},")
+			buf.push("{sortable:false,header:'列三',width:60}])")
+			window.eval(buf.join(''));
+			var directionGrid = Ext.getCmp('dynamicGridPanel');
+			directionGrid.reconfigure(ds, cm);
+		}else if (param == "四列") {
+			buf.push("var data = {roots: [")
+			buf.push("{field01: '动态列一',field02: '动态列二',field03:'动态列三',field04:'动态列四'},")
+			buf.push("{field01: '动态列一',field02: '动态列二',field03:'动态列三',field04:'动态列四'},")
+			buf.push("{field01: '动态列一',field02: '动态列二',field03:'动态列三',field04:'动态列四'}")
+			buf.push("],totalCount:3};")
+			buf.push("var ds = new Ext.data.Store({proxy: new Ext.data.MemoryProxy(data");
+			buf.push("),reader: new Ext.data.JsonReader({root: 'roots',totalProperty: 'totalCount'}, [");
+			buf.push("{name:'field01',mapping:'field01'},{name:'field02',mapping:'field02'},{name:'field03',mapping:'field03'},{name:'field04',mapping:'field04'}")
+			buf.push("]),remoteSort: false}); ds.load(); ");
+			buf.push(" var cm = new Ext.grid.ColumnModel([");
+			buf.push("{sortable:false,header:'列一',width:60},")
+			buf.push("{sortable:false,header:'列二',width:60},")
+			buf.push("{sortable:false,header:'列三',width:60},")
+			buf.push("{sortable:false,header:'列四',width:60}])")
+			window.eval(buf.join(''));
+			var directionGrid = Ext.getCmp('dynamicGridPanel');
+			directionGrid.reconfigure(ds, cm);
+		}
+	}
+});

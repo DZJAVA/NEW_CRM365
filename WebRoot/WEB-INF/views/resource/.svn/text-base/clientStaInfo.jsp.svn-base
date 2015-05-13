@@ -1,0 +1,22 @@
+<%@ page language="java" import="java.util.*" pageEncoding="UTF-8"%>
+<%@ include file="/WEB-INF/views/common/header.jsp"%>
+		<script type="text/javascript">
+			Ext.chart.Chart.CHART_URL = '<%=path%>/resources/charts.swf';
+			var roleCode = '${userSession.role.roleCode}';
+		</script>
+		<script type="text/javascript" src="resources/writeJs/stat_info.js"></script>
+		<script type="text/javascript">
+			Ext.onReady(function(){
+				Ext.QuickTips.init();// 浮动信息提示
+    			Ext.BLANK_IMAGE_URL = '<%=path%>/resources/images/default/s.gif';// 替换图片文件地址为本地
+				var viewport = new Ext.Viewport({
+			        border: false,
+					layout:'fit',
+			        items: [
+			        	mainPanels
+			        ]
+			    });
+			    myGridLoadAction.execute();
+			});
+		</script>
+<%@ include file="/WEB-INF/views/common/footer.jsp"%>

@@ -1,0 +1,4 @@
+uploadFile = empUpLoadFiles
+openFile = D\:\\files
+downLoadFile = D\:\\downloadFile
+upload=image

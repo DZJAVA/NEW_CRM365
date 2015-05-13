@@ -1,0 +1,59 @@
+K 25
+svn:wc:ra_dav:version-url
+V 61
+/svn/crm/!svn/ver/105/NEW_CRM365/WebRoot/WEB-INF/views/common
+END
+main.jsp
+K 25
+svn:wc:ra_dav:version-url
+V 70
+/svn/crm/!svn/ver/105/NEW_CRM365/WebRoot/WEB-INF/views/common/main.jsp
+END
+jscss.jsp
+K 25
+svn:wc:ra_dav:version-url
+V 71
+/svn/crm/!svn/ver/105/NEW_CRM365/WebRoot/WEB-INF/views/common/jscss.jsp
+END
+index.jsp
+K 25
+svn:wc:ra_dav:version-url
+V 71
+/svn/crm/!svn/ver/105/NEW_CRM365/WebRoot/WEB-INF/views/common/index.jsp
+END
+header.jsp
+K 25
+svn:wc:ra_dav:version-url
+V 72
+/svn/crm/!svn/ver/105/NEW_CRM365/WebRoot/WEB-INF/views/common/header.jsp
+END
+welcome.jsp
+K 25
+svn:wc:ra_dav:version-url
+V 73
+/svn/crm/!svn/ver/123/NEW_CRM365/WebRoot/WEB-INF/views/common/welcome.jsp
+END
+footer.jsp
+K 25
+svn:wc:ra_dav:version-url
+V 72
+/svn/crm/!svn/ver/105/NEW_CRM365/WebRoot/WEB-INF/views/common/footer.jsp
+END
+MyJsp.jsp
+K 25
+svn:wc:ra_dav:version-url
+V 71
+/svn/crm/!svn/ver/105/NEW_CRM365/WebRoot/WEB-INF/views/common/MyJsp.jsp
+END
+main_old.jsp
+K 25
+svn:wc:ra_dav:version-url
+V 74
+/svn/crm/!svn/ver/105/NEW_CRM365/WebRoot/WEB-INF/views/common/main_old.jsp
+END
+include.jsp
+K 25
+svn:wc:ra_dav:version-url
+V 73
+/svn/crm/!svn/ver/105/NEW_CRM365/WebRoot/WEB-INF/views/common/include.jsp
+END

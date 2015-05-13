@@ -1,0 +1,232 @@
+package cn.dgg.CRM365.domain.authority;
+
+import javax.persistence.Column;
+import javax.persistence.Entity;
+import javax.persistence.GeneratedValue;
+import javax.persistence.Id;
+import javax.persistence.JoinColumn;
+import javax.persistence.ManyToOne;
+import javax.persistence.Table;
+
+import cn.dgg.CRM365.domain.owners.Employee;
+
+/**
+ * 用户信息
+ * 
+ * @author chenqin
+ * 
+ */
+@Entity
+@Table(name = "dgg_user")
+public class User {
+
+	private Long id;
+	private String userName;// 员工姓名（预留字段）
+	private String sex;// 性别 0 男 1 女（预留字段）
+	private String loginId;// 登录账号
+	private String password;// 密码
+	private String customerName;// 客户姓名（预留字段）
+	private String userType;// 用户类型 1 员工 2 客户 3 （预留字段）
+	private String endEditTime;// 最后修改时间
+	private String telPhone;// 用户电话号码（预留字段）
+	private String createUser;// 创建人
+	private Employee employee;// 员工对象
+	private String isOrNotEnable;// 用户是否停用 1 停用 2 启用
+	private String remark;
+	private Role role;// 角色对象
+	private String loginType;//登录类型,1:登录三个月,2:登录20次，不限制时间
+	private String recordLogin;//记录登录次数
+	private String loginCount;//登录次数
+	private String startTime;//开始时间
+	private String endTime;//使用多少月
+	private String userDelState;//删除状态,0未删除,1已删除
+	private String logionFlag;//标识是否修改过密码(1为修改过)
+
+	@ManyToOne
+	@JoinColumn(name = "role")
+	public Role getRole() {
+		return role;
+	}
+
+	public void setRole(Role role) {
+		this.role = role;
+	}
+
+	@Id
+	@Column(name = "id")
+	@GeneratedValue
+	public Long getId() {
+		return id;
+	}
+
+	public void setId(Long id) {
+		this.id = id;
+	}
+
+	@Column(name = "userName")
+	public String getUserName() {
+		return userName;
+	}
+
+	public void setUserName(String userName) {
+		this.userName = userName;
+	}
+
+	@Column(name = "password")
+	public String getPassword() {
+		return password;
+	}
+
+	public void setPassword(String password) {
+		this.password = password;
+	}
+
+	@Column(name = "remark")
+	public String getRemark() {
+		return remark;
+	}
+
+	public void setRemark(String remark) {
+		this.remark = remark;
+	}
+
+	@Column(name = "loginId")
+	public String getLoginId() {
+		return loginId;
+	}
+
+	public void setLoginId(String loginId) {
+		this.loginId = loginId;
+	}
+
+	@Column(name = "customerName")
+	public String getCustomerName() {
+		return customerName;
+	}
+
+	public void setCustomerName(String customerName) {
+		this.customerName = customerName;
+	}
+
+	@Column(name = "userType")
+	public String getUserType() {
+		return userType;
+	}
+
+	public void setUserType(String userType) {
+		this.userType = userType;
+	}
+
+	@Column(name = "endEditTime")
+	public String getEndEditTime() {
+		return endEditTime;
+	}
+
+	public void setEndEditTime(String endEditTime) {
+		this.endEditTime = endEditTime;
+	}
+
+	@Column(name = "createUser")
+	public String getCreateUser() {
+		return createUser;
+	}
+
+	public void setCreateUser(String createUser) {
+		this.createUser = createUser;
+	}
+
+	@Column(name = "userSex")
+	public String getSex() {
+		return sex;
+	}
+
+	public void setSex(String sex) {
+		this.sex = sex;
+	}
+
+	@ManyToOne
+	@JoinColumn(name = "empid")
+	public Employee getEmployee() {
+		return employee;
+	}
+
+	public void setEmployee(Employee employee) {
+		this.employee = employee;
+	}
+
+	@Column(name = "isOrNotEnable")
+	public String getIsOrNotEnable() {
+		return isOrNotEnable;
+	}
+
+	public void setIsOrNotEnable(String isOrNotEnable) {
+		this.isOrNotEnable = isOrNotEnable;
+	}
+
+	@Column(name = "telPhone")
+	public String getTelPhone() {
+		return telPhone;
+	}
+
+	public void setTelPhone(String telPhone) {
+		this.telPhone = telPhone;
+	}
+	@Column(name = "loginType")
+	public String getLoginType() {
+		return loginType;
+	}
+
+	public void setLoginType(String loginType) {
+		this.loginType = loginType;
+	}
+	@Column(name = "recordLogin")
+	public String getRecordLogin() {
+		return recordLogin;
+	}
+
+	public void setRecordLogin(String recordLogin) {
+		this.recordLogin = recordLogin;
+	}
+	@Column(name = "startTime")
+	public String getStartTime() {
+		return startTime;
+	}
+
+	public void setStartTime(String startTime) {
+		this.startTime = startTime;
+	}
+	@Column(name = "endTime")
+	public String getEndTime() {
+		return endTime;
+	}
+
+	public void setEndTime(String endTime) {
+		this.endTime = endTime;
+	}
+	@Column(name = "loginCount")
+	public String getLoginCount() {
+		return loginCount;
+	}
+
+	public void setLoginCount(String loginCount) {
+		this.loginCount = loginCount;
+	}
+	@Column(name = "userDelState")
+	public String getUserDelState() {
+		return userDelState;
+	}
+
+	public void setUserDelState(String userDelState) {
+		this.userDelState = userDelState;
+	}
+	
+	@Column(name = "logionFlag")
+	public String getLogionFlag() {
+		return logionFlag;
+	}
+
+	public void setLogionFlag(String logionFlag) {
+		this.logionFlag = logionFlag;
+	}
+
+}

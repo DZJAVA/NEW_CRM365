@@ -1,0 +1,41 @@
+K 25
+svn:wc:ra_dav:version-url
+V 59
+/svn/crm/!svn/ver/105/NEW_CRM365/src/cn/dgg/CRM365/util/orm
+END
+PageHibernateDaoSupport.java
+K 25
+svn:wc:ra_dav:version-url
+V 88
+/svn/crm/!svn/ver/105/NEW_CRM365/src/cn/dgg/CRM365/util/orm/PageHibernateDaoSupport.java
+END
+ICommonDAO.java
+K 25
+svn:wc:ra_dav:version-url
+V 75
+/svn/crm/!svn/ver/105/NEW_CRM365/src/cn/dgg/CRM365/util/orm/ICommonDAO.java
+END
+SqlBuilder.java
+K 25
+svn:wc:ra_dav:version-url
+V 75
+/svn/crm/!svn/ver/105/NEW_CRM365/src/cn/dgg/CRM365/util/orm/SqlBuilder.java
+END
+IDaoAction.java
+K 25
+svn:wc:ra_dav:version-url
+V 75
+/svn/crm/!svn/ver/105/NEW_CRM365/src/cn/dgg/CRM365/util/orm/IDaoAction.java
+END
+PageHibernateTemplate.java
+K 25
+svn:wc:ra_dav:version-url
+V 86
+/svn/crm/!svn/ver/127/NEW_CRM365/src/cn/dgg/CRM365/util/orm/PageHibernateTemplate.java
+END
+CommonDAO.java
+K 25
+svn:wc:ra_dav:version-url
+V 74
+/svn/crm/!svn/ver/105/NEW_CRM365/src/cn/dgg/CRM365/util/orm/CommonDAO.java
+END

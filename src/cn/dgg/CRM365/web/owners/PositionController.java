@@ -1,0 +1,202 @@
+package cn.dgg.CRM365.web.owners;
+
+import java.io.UnsupportedEncodingException;
+import java.text.SimpleDateFormat;
+import java.util.ArrayList;
+import java.util.Date;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+
+import javax.servlet.http.HttpServletRequest;
+
+import net.sf.json.JSONArray;
+import net.sf.json.JSONObject;
+
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.stereotype.Controller;
+import org.springframework.web.bind.annotation.ModelAttribute;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.servlet.ModelAndView;
+
+import cn.dgg.CRM365.domain.owners.Position;
+import cn.dgg.CRM365.util.mvc.MvcUtil;
+import cn.dgg.CRM365.util.orm.ICommonDAO;
+import cn.dgg.CRM365.util.orm.SqlBuilder;
+import cn.dgg.CRM365.util.page.GridLoadParams;
+import cn.dgg.CRM365.util.page.Pagination;
+
+/**
+ * 员工公司管理 <功能简述> <功能详细描述>
+ * 
+ * @author chenqin
+ * @version [版本号, Aug 10, 2012]
+ * @see [相关类/方法]
+ * @since [产品/模块版本]
+ */
+@SuppressWarnings("all")
+@RequestMapping("/position")
+@Controller
+public class PositionController {
+
+	@Autowired
+	@Qualifier("commonDAOProxy")
+	ICommonDAO<Position> dao;
+
+	@RequestMapping("/jumpPage.do")
+	public ModelAndView jumpPage() {
+		return new ModelAndView("owners/positionInfo");
+	}
+
+	/**
+	 * 查找所有公司信息 <功能简述> <功能详细描述>
+	 * 
+	 * @param gridLoadParams
+	 * @param request
+	 * @return [参数说明]
+	 * 
+	 * @return ModelAndView [返回类型说明]
+	 * @exception throws
+	 *                [异常类型] [异常说明]
+	 * @see [类、类#方法、类#成员]
+	 */
+	@RequestMapping("/loadPosition.do")
+	public ModelAndView loadPosition(@ModelAttribute("params")
+	GridLoadParams gridLoadParams, HttpServletRequest request,
+			@RequestParam("conditions")
+			String conditions) {
+		JSONObject jsonObject = new JSONObject();
+		Pagination pagination = new Pagination();
+		pagination.set(gridLoadParams.getStart(), gridLoadParams.getLimit());
+		String name = null;// 职位名称
+		try {
+			String hql = "from Position p";
+			StringBuffer wherehql = new StringBuffer(" where 1=1");
+			if (conditions != null && !"".equals(conditions.trim())) {
+				JSONObject jsonObject2 = jsonObject.fromObject(conditions);
+				name = String.valueOf(jsonObject2.get("_name"));
+				if (!name.equals("") || !"".equals(name)) {
+					wherehql.append(" and p.name='").append(name).append("'");
+				}
+			}
+			List<Position> dataList = dao.findAll(hql + wherehql);
+			jsonObject.element("totalCount", pagination.getTotalResults());
+			JSONArray data = new JSONArray();
+			if (dataList.size() > 0) {
+				for (Position field : dataList) {
+					JSONObject item = new JSONObject();
+					item.element("id", MvcUtil.toJsonString(field.getId()));
+					item.element("name", MvcUtil.toJsonString(field.getName()));
+					item.element("remark", MvcUtil.toJsonString(field
+							.getRemark()));
+					data.add(item);
+				}
+			}
+			jsonObject.element("data", data);
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+		return MvcUtil.jsonObjectModelAndView(jsonObject);
+	}
+
+	/**
+	 * 添加和修改员工公司信息 <功能简述> <功能详细描述>
+	 * 
+	 * @param position
+	 * @param request
+	 * @return [参数说明]
+	 * 
+	 * @return ModelAndView [返回类型说明]
+	 * @exception throws
+	 *                [异常类型] [异常说明]
+	 * @see [类、类#方法、类#成员]
+	 */
+	@SuppressWarnings("all")
+	@RequestMapping("/saveOrUpdatePosition.do")
+	public ModelAndView saveOrUpdatePosition(Position position,
+			HttpServletRequest request) {
+		JSONObject jsonObject = new JSONObject();
+		try {
+			if (request.getSession() != null) {
+				String hql1 = "from Position p where p.name=?";
+				List<Position> posis = dao.findByHql(hql1,
+						new Object[] { position.getName() });
+				if ("".equals(position.getId()) || position.getId() == null) {
+					if (posis.size() > 0 && posis != null) {
+						jsonObject.element("failure", true);
+						jsonObject.element("msg", "保存员工职位信息失败，该职位信息已存在！");
+						return MvcUtil.jsonObjectModelAndView(jsonObject);
+					} else {
+						dao.save(position);
+						jsonObject.element("success", true);
+						jsonObject.element("msg", "添加员工职位信息成功！");
+						return MvcUtil.jsonObjectModelAndView(jsonObject);
+					}
+				} else {
+					String hqls = "from Position p where p.name=? and p.id != ?";
+					List<Position> pos = dao.findByHql(hqls, new Object[] {
+							position.getName(), position.getId() });
+					if (pos.size() > 0 && pos != null) {
+						jsonObject.element("failure", true);
+						jsonObject.element("msg", " 修改员工职位信息失败，该职位信息已存在！");
+						return MvcUtil.jsonObjectModelAndView(jsonObject);
+					}
+					SqlBuilder sqlBuilder = new SqlBuilder("Position",
+							SqlBuilder.TYPE_UPDATE);
+					sqlBuilder.addField("name", position.getName());
+					sqlBuilder.addField("remark", position.getRemark());
+					sqlBuilder.addWhere("id", position.getId());
+					dao
+							.updateByHQL(sqlBuilder.getSql(), sqlBuilder
+									.getParams());
+					jsonObject.element("success", true);
+					jsonObject.element("msg", " 修改员工职位信息成功！");
+					return MvcUtil.jsonObjectModelAndView(jsonObject);
+
+				}
+			}
+		} catch (Exception e) {
+			e.printStackTrace();
+			jsonObject.element("failure", true);
+			jsonObject.element("msg", " 保存员工职位信息失败！");
+			return MvcUtil.jsonObjectModelAndView(jsonObject);
+		}
+		return MvcUtil.jsonObjectModelAndView(jsonObject);
+	}
+
+	/**
+	 * 删除员工公司信息 <功能简述> <功能详细描述>
+	 * 
+	 * @param id
+	 * @return [参数说明]
+	 * 
+	 * @return ModelAndView [返回类型说明]
+	 * @exception throws
+	 *                [异常类型] [异常说明]
+	 * @see [类、类#方法、类#成员]
+	 */
+	@RequestMapping("/deletePosition.do")
+	public ModelAndView deletePosition(@RequestParam("id")
+	String id) {
+		JSONObject jsonObject = new JSONObject();
+		String[] ids = id.split(",");
+		int sum = 0;
+		for (String i : ids) {
+			try {
+			} catch (Exception e) {
+				e.printStackTrace();
+				continue;
+			}
+		}
+		if (sum > 0) {
+			jsonObject.element("success", true);
+			jsonObject.element("msg", "删除成功，删除了" + sum + "条数据!!!");
+		} else {
+			jsonObject.element("failure", true);
+			jsonObject.element("msg", "删除员工职位信息出错,该职位信息已被使用！");
+		}
+		return MvcUtil.jsonObjectModelAndView(jsonObject);
+	}
+}

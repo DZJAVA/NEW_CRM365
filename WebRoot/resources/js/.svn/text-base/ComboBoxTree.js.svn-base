@@ -1,0 +1,91 @@
+Ext.ns("OECP.ui");
+/**
+ * 下拉列表选择树 <br>
+ * 依赖EXTJS3版本
+ * 
+ * @class OECP.ui.ComboBoxTree
+ * @extends Ext.form.ComboBox
+ * @author yongtree
+ */
+OECP.ui.ComboBoxTree = Ext.extend(Ext.form.ComboBox, {
+	/**
+	 * 回调函数,用于传递选择的id，text属性
+	 * 
+	 * @type
+	 */
+	callback : Ext.emptyFn,
+	store : new Ext.data.SimpleStore({
+				fields : [],
+				data : [[]]
+			}),
+	editable : this.editable || false,
+	mode : 'local',
+	emptyText : this.emptyText || "请选择...",
+	allowBlank : this.allowBlank || true,
+	blankText : this.blankText || "必须输入!",
+	triggerAction : 'all',
+	maxHeight : 200,
+	anchor : '95%',
+	displayField : 'text',
+	valueField : 'id',
+	tpl : "<tpl for='.'><div style='height:200px'><div id='tree'></div></div></tpl>",
+	selectedClass : '',
+	onSelect : Ext.emptyFn,
+	/**
+	 * 根的名字
+	 * 
+	 * @type String
+	 */
+	rootText : this.rootText || 'root',
+	/**
+	 * 树的请求地址
+	 * 
+	 * @type String
+	 */
+	treeUrl : this.treeUrl,
+	tree : null,
+	initComponent : function() {
+		this.tree = new Ext.tree.TreePanel({
+					height : 200,
+					scope : this,
+					autoScroll : true,
+					split : true,
+					root : new Ext.tree.AsyncTreeNode({
+								expanded : true,
+								id : '-1',
+								text : this.rootText
+							}),
+
+					loader : new Ext.tree.TreeLoader({
+								url : this.treeUrl
+
+							}),
+					rootVisible : true
+				});
+		var c = this;
+		/**
+		 * 点击选中节点并回调传值
+		 */
+		this.tree.on('click', function(node) {
+					if (node.id != null && node.id != '') {
+						if (node.id != '-1') {
+							c.setValue(node.id);
+							c.setRawValue(node.text);
+							c.callback.call(this, node.id, node.text);
+							c.collapse();
+						} else {
+							Ext.Msg.alert("提示", "此节点无效，请重新选择!")
+						}
+
+					}
+				})
+
+		this.on('expand', function() {
+					this.tree.render('tree');
+					this.tree.expandAll();
+				});
+
+		OECP.ui.ComboBoxTree.superclass.initComponent.call(this);
+	}
+
+})

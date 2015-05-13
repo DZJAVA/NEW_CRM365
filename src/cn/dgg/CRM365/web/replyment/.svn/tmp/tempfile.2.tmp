@@ -1,0 +1,1323 @@
+package cn.dgg.CRM365.web.replyment;
+
+import java.text.DecimalFormat;
+import java.text.Format;
+import java.text.ParseException;
+import java.text.SimpleDateFormat;
+import java.util.Calendar;
+import java.util.Date;
+import java.util.GregorianCalendar;
+import java.util.List;
+
+import javax.servlet.http.HttpServletRequest;
+
+import net.sf.json.JSONArray;
+import net.sf.json.JSONObject;
+
+import org.apache.poi.hssf.record.formula.functions.Count;
+import org.hibernate.cache.ReadWriteCache.Item;
+import org.junit.runner.Request;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.stereotype.Controller;
+import org.springframework.web.bind.annotation.ModelAttribute;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.servlet.ModelAndView;
+
+import cn.dgg.CRM365.domain.authority.User;
+import cn.dgg.CRM365.domain.owners.Employee;
+import cn.dgg.CRM365.domain.owners.Position;
+import cn.dgg.CRM365.domain.replyment.LoanDetail;
+import cn.dgg.CRM365.domain.replyment.Rcount;
+import cn.dgg.CRM365.domain.resources.ResourcesTrack;
+import cn.dgg.CRM365.domain.resourcesManage.Client;
+import cn.dgg.CRM365.domain.resourcesManage.ClientUser;
+import cn.dgg.CRM365.domain.resourcesManage.Messages;
+import cn.dgg.CRM365.util.SendMessage;
+import cn.dgg.CRM365.util.commonUtil.StaticValues;
+import cn.dgg.CRM365.util.commonUtil.StringUtil;
+import cn.dgg.CRM365.util.mvc.MvcUtil;
+import cn.dgg.CRM365.util.orm.ICommonDAO;
+import cn.dgg.CRM365.util.orm.IDaoAction;
+import cn.dgg.CRM365.util.orm.PageHibernateTemplate;
+import cn.dgg.CRM365.util.orm.SqlBuilder;
+import cn.dgg.CRM365.util.page.GridLoadParams;
+import cn.dgg.CRM365.util.page.Pagination;
+import cn.dgg.CRM365.web.resource.StatementsController;
+
+/**
+ * 
+ * 借款管理(已成功签单数据)（主要管理借款给与方式）
+  * <功能简述>
+  * <功能详细描述>
+  * 
+  * @author  chenqin
+  * @version  [版本号, Dec 17, 2012]
+  * @see  [相关类/方法]
+  * @since  [产品/模块版本]
+ */
+@SuppressWarnings("all")
+@RequestMapping("/loan")
+@Controller
+public class LoanController {
+	
+		@Autowired
+		@Qualifier("commonDAOProxy")
+		ICommonDAO<LoanDetail> dao;
+		
+		@Autowired
+		@Qualifier("commonDAOProxy")
+		ICommonDAO<Client> cdao;
+		
+		@Autowired
+		@Qualifier("commonDAOProxy")
+		ICommonDAO<Rcount> rdao;
+		
+		@Autowired
+		@Qualifier("commonDAOProxy")
+		ICommonDAO<ClientUser> cudao;
+		
+		@Autowired
+		@Qualifier("commonDAOProxy")
+		ICommonDAO<Messages> mdao;
+		
+		@Autowired
+		@Qualifier("commonDAOProxy")
+		ICommonDAO<ResourcesTrack> rtdao;
+		
+		@Autowired
+		@Qualifier("commonDAOProxy")
+		ICommonDAO<Object[]> odao;
+
+//		public ICommonDAO<Object[]> getOdao() {
+//			return odao;
+//		}
+//		@Autowired
+//		public void setOdao(@Qualifier("commonDAOProxy") ICommonDAO<Object[]> odao) {
+//			this.odao = odao;
+//		}
+
+		@RequestMapping("/jumpPage.do")
+		public ModelAndView jumpPage() {
+			return new ModelAndView("replyment/loanDetailInfo");
+		}
+		
+		/**
+		 * 查找该登录用户下所有签单成功的资源
+		  *<功能简述>
+		  *<功能详细描述>
+		  * @return [参数说明]
+		  * params
+		  * 
+		  * @return ModelAndView [返回类型说明]
+		  * @exception throws [异常类型] [异常说明]
+		  * @see [类、类#方法、类#成员]
+		 */
+		@RequestMapping("/loadSuccessClient")
+		private ModelAndView loadSuccessClient(@ModelAttribute("params")
+				GridLoadParams gridLoadParams, HttpServletRequest request,@RequestParam("conditions") String conditions,@RequestParam("_fid") String fid){
+			JSONObject jsonObject = new JSONObject();
+			Pagination pagination = new Pagination();
+			pagination.set(gridLoadParams.getStart(), gridLoadParams.getLimit());
+			User userSession = (User) request.getSession().getAttribute("userSession");
+			StringBuffer wherehql = new StringBuffer(" and 1=1");
+			Long lDepartment = null;	//得到当前登录人的部门信息
+			String ruleDe = null;	//得到当前登录人的角色代码 
+			List<ClientUser> clients = null;
+			String hql = null;
+			try{
+				//如果从首页传过来的值不为空  则直接查询这条记录
+				if(!fid.equals("")){
+					wherehql.append(" and cu.id = ").append(Long.parseLong(fid));
+					String hql2 = "from ClientUser cu where 1=1 and cu.client_id.clientStatus != '4'";
+					clients = cudao.findAll(hql2 + wherehql);
+				}else{
+					if (conditions != null && !"".equals(conditions.trim())) {
+						JSONObject jsonObject2 = jsonObject.fromObject(conditions);
+						String name = String.valueOf(jsonObject2.get("_name"));	//客户名字
+						String tel = String.valueOf(jsonObject2.get("_tel"));	//客户电话
+						String _lstartTime = String.valueOf(jsonObject2.get("_lstartTime"));
+						String _lendTime = String.valueOf(jsonObject2.get("_lendTime"));	
+						String _oType = String.valueOf(jsonObject2.get("_oType"));	//商机类型
+						String _res = String.valueOf(jsonObject2.get("_res"));	//管理人
+						if (!name.equals("") || !"".equals(name)) {
+							wherehql.append(" and cu.client_id.clientName like '%").append(name).append("%'");
+						}if(!tel.equals("") || !"".equals(tel)){
+							wherehql.append(" and cu.client_id.contactTel  like '%").append(tel).append("%'");
+						}if(!_lstartTime.equals("")){
+							wherehql.append(" and cu.client_id.assignDate >= '").append(_lstartTime).append("'");
+						}if(!_lendTime.equals("")){
+							wherehql.append(" and cu.client_id.assignDate <= '").append(_lendTime).append("'");
+						}if(!_oType.equals("")){
+							wherehql.append(" and cu.client_id.oppType ='").append(_oType).append("'");
+						}if(!_res.equals("")){
+							wherehql.append(" and cu.user_id.employee.name like '%").append(_res).append("%'").append(" and  cu.status= '0'");
+						} 
+					}           
+					if(userSession.getEmployee() != null){
+						lDepartment = userSession.getEmployee().getDepartment().getId();
+						ruleDe = userSession.getRole().getRoleCode();//得到角色代码
+						if("201202".equals(ruleDe)){ 	//部门经理
+							 hql = "from ClientUser cu where cu.client_id.clientStatus = '1' and cu.status != '2' and cu.user_id.employee.department.id = "+lDepartment;
+						}
+						if("201203".equals(ruleDe)){	//员工
+							hql = "from ClientUser cu where cu.client_id.clientStatus = '1' and cu.status != '2' and cu.user_id.id = "+userSession.getId();
+						}
+						if("201201".equals(ruleDe) || "201207".equals(ruleDe)){
+							hql = "from ClientUser cu where cu.client_id.clientStatus='1' and cu.status != '2'";
+						}
+						clients = cudao.findAll(hql+wherehql, pagination);
+					}else{
+						//管理员查看所有信息
+						hql = "from ClientUser cu where cu.client_id.clientStatus='1' and cu.status != '2'";
+						clients = cudao.findAll(hql+wherehql,pagination);
+					}                                                    
+				}
+				jsonObject.element("totalCount", pagination.getTotalResults());
+				JSONArray data = new JSONArray();
+				if (clients.size() > 0) {
+					for (ClientUser field : clients) {
+						JSONObject item = new JSONObject();
+						item.element("id", MvcUtil.toJsonString(field.getId()));
+						item.element("clientId", MvcUtil.toJsonString(field.getClient_id().getId()));
+						item.element("clientAdd", MvcUtil.toJsonString(field.getClient_id().getClientAdd()));
+						item.element("clientName", MvcUtil.toJsonString(field.getClient_id().getClientName()));
+						item.element("assignDate", MvcUtil.toJsonString(field.getClient_id().getAssignDate()));
+						if("1".equals(field.getClient_id().getClientStatus())){
+							item.element("clientStatus", MvcUtil.toJsonString("已签单"));
+						}else if("2".equals(field.getClient_id().getClientStatus())){
+							item.element("clientStatus", MvcUtil.toJsonString("未签单"));
+						}else if("3".equals(field.getClient_id().getClientStatus())){
+							item.element("clientStatus", MvcUtil.toJsonString("淘汰"));
+						}else if("4".equals(field.getClient_id().getClientStatus())){
+							item.element("clientStatus", MvcUtil.toJsonString("退单"));
+						}
+						item.element("contactTel", MvcUtil.toJsonString(field.getClient_id().getContactTel()));
+						if(field.getUser_id().getEmployee() != null){
+							item.element("emp_id", MvcUtil.toJsonString(field.getUser_id().getEmployee().getId()));
+							item.element("emp_Name", MvcUtil.toJsonString(field.getUser_id().getEmployee().getDepartment().getDepaName()+"："+field.getUser_id().getEmployee().getName()));
+						}else{
+							item.element("emp_id", MvcUtil.toJsonString(""));
+							item.element("emp_Name", MvcUtil.toJsonString(""));
+						}
+						item.element("loanAmount", MvcUtil.toJsonString(field.getClient_id().getLoanAmount()));
+						if("1".equals(field.getClient_id().getOppType())){//商机类型(1为房贷、2为信贷、3为短借、4为企贷)
+							item.element("oppType", MvcUtil.toJsonString("房贷"));
+						}else if("2".equals(field.getClient_id().getOppType())){
+							item.element("oppType", MvcUtil.toJsonString("信贷"));
+						}else if("3".equals(field.getClient_id().getOppType())){
+							item.element("oppType", MvcUtil.toJsonString("短借"));
+						}else if("4".equals(field.getClient_id().getOppType())){	
+							item.element("oppType", MvcUtil.toJsonString("企贷"));
+						}
+						if("1".equals(field.getClient_id().getSignPossible())){//签单可能性(1为100%、2为80%、3为50%、4为0%)
+							item.element("signPossible", MvcUtil.toJsonString("100%"));
+						}else if("2".equals(field.getClient_id().getSignPossible())){
+							item.element("signPossible", MvcUtil.toJsonString("80%"));
+						}else if("3".equals(field.getClient_id().getSignPossible())){
+							item.element("signPossible", MvcUtil.toJsonString("50%"));
+						}else if("4".equals(field.getClient_id().getSignPossible())){
+							item.element("signPossible", MvcUtil.toJsonString("10%"));
+						}else if("5".equals(field.getClient_id().getSignPossible())){
+							item.element("signPossible", MvcUtil.toJsonString("0%"));
+						}
+						item.element("spareTel1", MvcUtil.toJsonString(field.getClient_id().getSpareTel1()));
+						item.element("spareTel2", MvcUtil.toJsonString(field.getClient_id().getSpareTel2()));
+						item.element("remark", MvcUtil.toJsonString(field.getClient_id().getRemark()));
+						item.element("assignTime", MvcUtil.toJsonString(field.getClient_id().getAssignTime()));
+						item.element("loanAmount", MvcUtil.toJsonString(field.getClient_id().getLoanAmount()));
+						
+						String oppTypes = null;//贷款类型
+						String dkje = null;//贷款金额
+						String khmz = null;//客户名字
+						if("1".equals(field.getClient_id().getOppType())){//商机类型(1为房贷、2为信贷、3为短借、4为企贷)
+							oppTypes="房贷";
+						}else if("2".equals(field.getClient_id().getOppType())){
+							oppTypes="信贷";
+						}else if("3".equals(field.getClient_id().getOppType())){
+							oppTypes="短借";
+						}else if("4".equals(field.getClient_id().getOppType())){	
+							oppTypes="企贷";
+						}else if("".equals(field.getClient_id().getOppType())||field.getClient_id().getOppType()==null){	
+							oppTypes=" ";
+						}
+						if("".equals(field.getClient_id().getLoanAmount()) || field.getClient_id().getLoanAmount()==null)
+						{
+							dkje=" ";
+						}else{
+							dkje=field.getClient_id().getLoanAmount() + "万";
+						}
+						if("".equals(field.getClient_id().getClientName()) || field.getClient_id().getClientName()==null)
+						{
+							khmz=" ";
+						}else{
+							khmz=field.getClient_id().getClientName();
+						}
+						item.element("khxinx", MvcUtil.toJsonString(khmz+oppTypes+dkje));//客户信息
+						data.add(item);
+					}
+				}
+				jsonObject.element("data", data);
+			}
+			catch (Exception e) {
+				e.printStackTrace();
+			}
+			return MvcUtil.jsonObjectModelAndView(jsonObject);
+		}
+		
+		/**
+		 * 根据签单成功查询该订单下的贷款详细信息
+		  *<功能简述>
+		  *<功能详细描述>
+		  * @param cid
+		  * @param gridLoadParams
+		  * @param request
+		  * @return [参数说明]
+		  * 
+		  * @return ModelAndView [返回类型说明]
+		  * @exception throws [异常类型] [异常说明]
+		  * @see [类、类#方法、类#成员]
+		 */
+		@RequestMapping("/findByClient")
+		private ModelAndView findByClient(@ModelAttribute("params")
+				GridLoadParams gridLoadParams, HttpServletRequest request,@RequestParam("cid") String cid){
+			JSONObject jsonObject = new JSONObject();
+			Pagination pagination = new Pagination();
+			pagination.set(gridLoadParams.getStart(), gridLoadParams.getLimit());
+			String hql = "from LoanDetail ld where ld.client.id = ?";
+			try{
+				List<LoanDetail> loanDetails = dao.findByHql(hql,  new Object[]{Long.parseLong(cid)}, pagination);
+				jsonObject.element("totalCount", pagination.getTotalResults());
+				JSONArray data = new JSONArray();
+				if (loanDetails.size() > 0) {
+					for (LoanDetail field : loanDetails) {
+						JSONObject item = new JSONObject();
+						item.element("id", MvcUtil.toJsonString(field.getId()));
+						item.element("type", MvcUtil.toJsonString(field.getType()));
+						item.element("sum", MvcUtil.toJsonString(field.getSum()));
+						item.element("refundTotal", MvcUtil.toJsonString(field.getRefundTotal()));
+						item.element("monthMoney", MvcUtil.toJsonString(field.getMonthMoney()));
+						item.element("rcount", MvcUtil.toJsonString(field.getRcount()));
+						item.element("rremark", MvcUtil.toJsonString(field.getRremark()));
+						data.add(item);
+					}
+				}
+				jsonObject.element("data", data);
+			}
+			catch (Exception e) {
+				e.printStackTrace();
+			}
+			return MvcUtil.jsonObjectModelAndView(jsonObject);
+		}
+		
+		/**
+		 * 根据贷款明细查找还款明细表中是否有数据
+		 * 如果有数据，则return false  不能进行编辑修改了
+		 * 没有数据时，则可以对贷款明细表中数据进行编辑
+		  *<功能简述>
+		  *<功能详细描述>
+		  * @param lid
+		  * @return [参数说明]
+		  * 
+		  * @return ModelAndView [返回类型说明]
+		  * @exception throws [异常类型] [异常说明]
+		  * @see [类、类#方法、类#成员]
+		 */
+		@RequestMapping("/findbyL")
+		public ModelAndView findbyL(HttpServletRequest request,@RequestParam("llid") String llid){
+			JSONObject jsonObject = new JSONObject();
+			String hql = "from Rcount r where r.loanDetail.id=?";
+			try {
+				List<Rcount> rcounts = rdao.findByHql(hql, new Object[]{Long.parseLong(llid)});
+				if(rcounts.size()>0){
+					jsonObject.element("success", false);
+				}else{
+					jsonObject.element("success", true);
+				}
+			} catch (Exception e) {
+				e.printStackTrace();
+			}
+			return MvcUtil.jsonObjectModelAndView(jsonObject);
+		}
+		/**
+		 * 新增贷款明细时判断是否金额超出
+		  *<功能简述>
+		  *<功能详细描述>
+		  * @param request
+		  * @param llid
+		  * @param thissum
+		  * @param cid
+		  * @return [参数说明]
+		  * 
+		  * @return ModelAndView [返回类型说明]
+		  * @exception throws [异常类型] [异常说明]
+		  * @see [类、类#方法、类#成员]
+		 */
+		@RequestMapping("/findbyL1")
+		public ModelAndView findbyL1(HttpServletRequest request
+				,@RequestParam("thissum") String thissum,@RequestParam("cid") String cid){
+			JSONObject jsonObject = new JSONObject();
+			Double totalThis = 0.0;
+			try {
+				//判断贷款明细中的全部金额是否和客户资源表中的金额一样
+				String hql3 = "select sum(ld.sum) from LoanDetail ld where ld.client.id = ?";
+				List<LoanDetail> lds = dao.findByHql(hql3, new Object[]{Long.parseLong(cid)});
+				if(lds.size() > 0 && lds.get(0) != null){
+					totalThis = Double.parseDouble(String.valueOf(lds.get(0)));
+				}
+				if(totalThis >= Double.parseDouble(thissum)){
+					jsonObject.element("success", false);
+				}else{
+					jsonObject.element("success", true);
+				}
+			} catch (Exception e) {
+				e.printStackTrace();
+			}
+			return MvcUtil.jsonObjectModelAndView(jsonObject);
+		}
+		/**
+		 * 测试
+		 * @param args
+		 * @throws ParseException 
+		 */
+	/*	public static void main(String[] args) throws ParseException {
+		
+			//	SimpleDateFormat aSimpleDateFormat = new SimpleDateFormat("yyyy-MM-dd");
+			//Date time =	aSimpleDateFormat.parse("2013-09-10");
+			//GregorianCalendar aGregorianCalendar = new GregorianCalendar();
+			//aGregorianCalendar.setTime(time);
+		//	for(int i=1;i <= 10;i++){
+		//	aGregorianCalendar.set(Calendar.MONTH, aGregorianCalendar.get(Calendar.MONTH) + 1);
+			
+			//String nowOfLastMonth = aSimpleDateFormat.format(aGregorianCalendar.getTime());
+		//	System.out.println(aSimpleDateFormat.format(aGregorianCalendar.getTime()));
+		//	}
+			SimpleDateFormat aSimpleDateFormat = new SimpleDateFormat("yyyy-MM-dd");
+			Date time =	aSimpleDateFormat.parse("2013-09-08");
+			GregorianCalendar aGregorianCalendar = new GregorianCalendar();
+			aGregorianCalendar.setTime(time);
+			aGregorianCalendar.set(Calendar.DATE, aGregorianCalendar.get(Calendar.DATE) - 1);
+			String nowOfLastMonth = aSimpleDateFormat.format(aGregorianCalendar.getTime());
+			aGregorianCalendar.setTime(aGregorianCalendar.getTime());
+			int  dayForWeek = 0 ; 
+			 if (aGregorianCalendar.get(Calendar.DAY_OF_WEEK) == 1 ){  
+				 dayForWeek = 7 ;  
+				 aGregorianCalendar.set(Calendar.DATE, aGregorianCalendar.get(Calendar.DATE) - 2);
+				 String nowOfLastMonth1 = aSimpleDateFormat.format(aGregorianCalendar.getTime());
+				 System.out.println(nowOfLastMonth1);
+			 }else {  
+				// dayForWeek = aGregorianCalendar.get(Calendar.DAY_OF_WEEK) - 1 ;  
+				 aGregorianCalendar.set(Calendar.DATE, aGregorianCalendar.get(Calendar.DATE) - 1);
+				 String nowOfLastMonth2 = aSimpleDateFormat.format(aGregorianCalendar.getTime());
+				 System.out.println(nowOfLastMonth2);
+			 }  
+			 System.out.println(nowOfLastMonth);
+			
+		}*/
+		
+		/*public static void main(String[] args) throws ParseException {
+
+			SimpleDateFormat df = new SimpleDateFormat("yyyy-MM-dd ");
+			Date d = df.parse("2013-09-08 ");
+			Calendar cal = Calendar.getInstance();
+			cal.setTime(d);
+			cal.add(Calendar.DATE, -1); // 减1天
+			String c =null;
+			 c = df.format(cal.getTime());
+		//	System.out.println(c);
+			Date date = df.parse(c);
+			cal.setTime(date);
+			Format f = new SimpleDateFormat("E");
+			if("星期日".equals(f.format(cal.getTime()))){
+				cal.add(Calendar.DATE, -2); // 减1天
+				c = df.format(cal.getTime());
+				System.out.println(c+":"+0000);
+				Date e = df.parse(b);
+				cal.setTime(e);
+				System.out.println(b+":"+f.format(cal.getTime()));
+			}else if("星期六".equals(f.format(cal.getTime()))){
+				cal.add(Calendar.DATE, -1); // 减1天
+				c = df.format(cal.getTime());
+				System.out.println(c+":"+11111111);
+				Date e = df.parse(b);
+				cal.setTime(e);
+				System.out.println(b+":"+f.format(cal.getTime()));
+			}
+			else{
+				System.out.println(c+":"+f.format(cal.getTime()));
+			}
+		}*/
+		/**
+		 * 添加或修改贷款详细
+		  *<功能简述>
+		  *<功能详细描述>
+		  * @return [参数说明]
+		  * 
+		  * @return ModelAndView [返回类型说明]
+		  * @exception throws [异常类型] [异常说明]
+		  * @see [类、类#方法、类#成员]
+		 */
+		@RequestMapping("/saveOrUpdateLoanD")
+		public ModelAndView saveOrUpdateLoanD(HttpServletRequest request,LoanDetail loanDetail
+				,@RequestParam("cid") String cid,@RequestParam("thissum") String thissum,@RequestParam("_payTime") String _payTime ){
+			JSONObject jsonObject = new JSONObject();
+			Double totalThis = 0.0;
+			try{
+				if(request.getSession() != null){
+					//保存还款期数
+					Rcount rcount = new Rcount();
+					//得到所需还款期数
+					int count = Integer.parseInt(loanDetail.getRcount());
+					//得到小数点后两位
+					DecimalFormat dt=(DecimalFormat) DecimalFormat.getInstance(); 
+					dt.applyPattern("0.00");
+					SimpleDateFormat aSimpleDateFormat = new SimpleDateFormat("yyyy-MM-dd");
+					Date time =	aSimpleDateFormat.parse(_payTime);
+				//	Long a = time.getTime();
+					GregorianCalendar aGregorianCalendar = new GregorianCalendar();
+					aGregorianCalendar.setTime(time);
+					
+					if ("".equals(loanDetail.getId()) || loanDetail.getId() == null) {
+						Client client = new Client();
+						client.setId(Long.parseLong(cid));
+						loanDetail.setClient(client);
+						dao.save(loanDetail);
+						//第一期保存 
+						LoanDetail loanDetail1 = new LoanDetail();
+						loanDetail.setId(loanDetail.getId());
+						rcount.setLoanDetail(loanDetail);
+						rcount.setNumber("1");
+						rcount.setStatus("0");
+				        rcount.setPayTime(_payTime);
+				        rdao.save(rcount);
+				        //-------- 在跟踪记录表保存 数据
+				        ResourcesTrack rtrack = new ResourcesTrack();
+				        rtrack.setResourcescontent("提醒客户还款");//跟踪内容
+				        rtrack.setClient_name(client);//客户ID
+				    	User userSession = (User)request.getSession().getAttribute(StaticValues.USER_SESSION);
+						rtrack.setResourcespeople(userSession);//管理人
+						rtrack.setResourcestime(_payTime);//跟踪时间
+				        rtrack.setWorkplan("提醒客户还款!还款日期："+_payTime);
+				    	SimpleDateFormat df = new SimpleDateFormat("yyyy-MM-dd");
+						Date d = df.parse(_payTime);
+						Calendar cal = Calendar.getInstance();
+						cal.setTime(d);
+						cal.add(Calendar.DATE, -1); // 减1天
+						String c =null;
+						 c = df.format(cal.getTime());
+						Date date = df.parse(c);
+						cal.setTime(date);
+						Format f = new SimpleDateFormat("E");
+						if("星期日".equals(f.format(cal.getTime()))){
+							cal.add(Calendar.DATE, -2); // 减1天
+							c = df.format(cal.getTime());
+						}else if("星期六".equals(f.format(cal.getTime()))){
+							cal.add(Calendar.DATE, -1); // 减1天
+							c = df.format(cal.getTime());
+						}
+				        rtrack.setPlantime(c);//计划工作时间
+				        rtrack.setBiaoshi(String.valueOf(loanDetail.getId()));
+				        rtdao.save(rtrack);//保存到根据记录
+				        
+						//通过循环保存关于期数的几条还款记录
+						for(int i=2;i <= count;i++){
+							//LoanDetail loanDetail1 = new LoanDetail();
+							loanDetail.setId(loanDetail.getId());
+							rcount.setLoanDetail(loanDetail);
+							rcount.setNumber(String.valueOf(i));
+							rcount.setStatus("0");
+							aGregorianCalendar.set(Calendar.MONTH, aGregorianCalendar.get(Calendar.MONTH) + 1);
+					        String nowOfLastMonth = aSimpleDateFormat.format(aGregorianCalendar.getTime());
+					        rcount.setPayTime(nowOfLastMonth);
+					        rdao.save(rcount);
+					        //-------- 在跟踪记录表保存 数据
+					        rtrack.setResourcescontent("提醒客户还款");//跟踪内容
+					        rtrack.setClient_name(client);//客户ID
+							rtrack.setResourcespeople(userSession);//管理人
+							rtrack.setResourcestime(nowOfLastMonth);//跟踪时间
+					        rtrack.setWorkplan("提醒客户还款!还款日期："+nowOfLastMonth);
+					    	SimpleDateFormat df1 = new SimpleDateFormat("yyyy-MM-dd");
+							Date d1 = df1.parse(nowOfLastMonth);
+							Calendar cal1 = Calendar.getInstance();
+							cal1.setTime(d1);
+							cal1.add(Calendar.DATE, -1); // 减1天
+							String c1 =null;
+							 c1 = df1.format(cal1.getTime());
+							Date date1 = df1.parse(c1);
+							cal1.setTime(date1);
+							Format f1 = new SimpleDateFormat("E");
+							if("星期日".equals(f1.format(cal1.getTime()))){
+								cal1.add(Calendar.DATE, -2); // 减1天
+								c1 = df1.format(cal1.getTime());
+							}else if("星期六".equals(f1.format(cal1.getTime()))){
+								cal1.add(Calendar.DATE, -1); // 减1天
+								c1 = df1.format(cal1.getTime());
+							}
+					        rtrack.setPlantime(c1);//计划工作时间
+					        rtrack.setBiaoshi(String.valueOf(loanDetail.getId()));
+					        rtdao.save(rtrack);//保存到根据记录
+						}
+						jsonObject.element("success", true);
+						jsonObject.element("msg", " 添加贷款明细成功!");
+						return MvcUtil.jsonObjectModelAndView(jsonObject);
+					}else{
+						String hql5 = "from Rcount r where r.loanDetail.id = ?";
+						List<Rcount> counts = rdao.findByHql(hql5, new Object[]{loanDetail.getId()});
+						if(counts.size() > 0){
+							rdao.deleteAll(counts);
+						}
+						String hql6 = "from ResourcesTrack r where r.biaoshi = ?";
+						List<ResourcesTrack> rt = rtdao.findByHql(hql6, new Object[]{String.valueOf(loanDetail.getId())});
+						if(rt.size() > 0){
+							rtdao.deleteAll(rt);
+						}
+						SqlBuilder sqlBuilder = new SqlBuilder("LoanDetail",SqlBuilder.TYPE_UPDATE);
+						sqlBuilder.addField("rcount", loanDetail.getRcount());
+						sqlBuilder.addField("sum", loanDetail.getSum());
+						sqlBuilder.addField("type", loanDetail.getType());
+						sqlBuilder.addField("monthMoney", loanDetail.getMonthMoney());
+						sqlBuilder.addField("refundTotal", loanDetail.getRefundTotal());
+						sqlBuilder.addField("rremark", loanDetail.getRremark());
+						sqlBuilder.addWhere("id", loanDetail.getId());
+						dao.updateByHQL(sqlBuilder.getSql(), sqlBuilder.getParams());
+						//第一期保存 
+						LoanDetail loanDetail1 = new LoanDetail();
+						loanDetail.setId(loanDetail.getId());
+						rcount.setLoanDetail(loanDetail);
+						rcount.setNumber("1");
+						rcount.setStatus("0");
+				        rcount.setPayTime(_payTime);
+				        rdao.save(rcount);
+				        
+				        //-------- 在跟踪记录表保存 数据
+				        ResourcesTrack rtrack = new ResourcesTrack();
+				        rtrack.setResourcescontent("提醒客户还款");//跟踪内容
+				        Client client = new Client();
+						client.setId(Long.parseLong(cid));
+				        rtrack.setClient_name(client);//客户ID
+				    	User userSession = (User)request.getSession().getAttribute(StaticValues.USER_SESSION);
+						rtrack.setResourcespeople(userSession);//管理人
+						rtrack.setResourcestime(_payTime);//跟踪时间
+				        rtrack.setWorkplan("提醒客户还款!还款日期："+_payTime);
+				    	SimpleDateFormat df = new SimpleDateFormat("yyyy-MM-dd");
+						Date d = df.parse(_payTime);
+						Calendar cal = Calendar.getInstance();
+						cal.setTime(d);
+						cal.add(Calendar.DATE, -1); // 减1天
+						String c =null;
+						 c = df.format(cal.getTime());
+						Date date = df.parse(c);
+						cal.setTime(date);
+						Format f = new SimpleDateFormat("E");
+						if("星期日".equals(f.format(cal.getTime()))){
+							cal.add(Calendar.DATE, -2); // 减1天
+							c = df.format(cal.getTime());
+						}else if("星期六".equals(f.format(cal.getTime()))){
+							cal.add(Calendar.DATE, -1); // 减1天
+							c = df.format(cal.getTime());
+						}
+				        rtrack.setPlantime(c);//计划工作时间
+				        rtrack.setBiaoshi(String.valueOf(loanDetail.getId()));
+				        rtdao.save(rtrack);//保存到根据记录
+						
+						//通过循环保存关于期数的几条还款记录
+						for(int i=2;i <= count;i++){
+							//LoanDetail loanDetail1 = new LoanDetail();
+							loanDetail.setId(loanDetail.getId());
+							rcount.setLoanDetail(loanDetail);
+							rcount.setNumber(String.valueOf(i));
+							rcount.setStatus("0");
+							aGregorianCalendar.set(Calendar.MONTH, aGregorianCalendar.get(Calendar.MONTH) + 1);
+					        String nowOfLastMonth = aSimpleDateFormat.format(aGregorianCalendar.getTime());
+					        rcount.setPayTime(nowOfLastMonth);
+					        rdao.save(rcount);
+					        
+					        //-------- 在跟踪记录表保存 数据
+					        rtrack.setResourcescontent("提醒客户还款");//跟踪内容
+					        rtrack.setClient_name(client);//客户ID
+							rtrack.setResourcespeople(userSession);//管理人
+							rtrack.setResourcestime(nowOfLastMonth);//跟踪时间
+					        rtrack.setWorkplan("提醒客户还款!还款日期："+nowOfLastMonth);
+					    	SimpleDateFormat df1 = new SimpleDateFormat("yyyy-MM-dd");
+							Date d1 = df1.parse(nowOfLastMonth);
+							Calendar cal1 = Calendar.getInstance();
+							cal1.setTime(d1);
+							cal1.add(Calendar.DATE, -1); // 减1天
+							String c1 =null;
+							 c1 = df1.format(cal1.getTime());
+							Date date1 = df1.parse(c1);
+							cal1.setTime(date1);
+							Format f1 = new SimpleDateFormat("E");
+							if("星期日".equals(f1.format(cal1.getTime()))){
+								cal1.add(Calendar.DATE, -2); // 减1天
+								c1 = df1.format(cal1.getTime());
+							}else if("星期六".equals(f1.format(cal1.getTime()))){
+								cal1.add(Calendar.DATE, -1); // 减1天
+								c1 = df1.format(cal1.getTime());
+							}
+					        rtrack.setPlantime(c1);//计划工作时间
+					        rtrack.setBiaoshi(String.valueOf(loanDetail.getId()));
+					        rtdao.save(rtrack);//保存到根据记录
+						}
+						jsonObject.element("success", true);
+						jsonObject.element("msg", " 修改贷款明细成功！");
+						return MvcUtil.jsonObjectModelAndView(jsonObject);
+					}
+				}
+			}catch (Exception e) {
+				e.printStackTrace();
+				jsonObject.element("failure", true); 
+				jsonObject.element("msg", "保存贷款明细失败！");
+				return MvcUtil.jsonObjectModelAndView(jsonObject);
+			}
+			return MvcUtil.jsonObjectModelAndView(jsonObject);
+		}
+		/**
+		 * 根据当前贷款明细id查找还款明细中是否有已还款信息 
+		 * 如果有已还款信息，则不能进行编辑
+		  *<功能简述>
+		  *<功能详细描述>
+		  * @param request
+		  * @param loid
+		  * @return [参数说明]
+		  * 
+		  * @return ModelAndView [返回类型说明]
+		  * @exception throws [异常类型] [异常说明]
+		  * @see [类、类#方法、类#成员]
+		 */
+		@RequestMapping("/findByTime")
+		public  ModelAndView findByTime(HttpServletRequest request,@RequestParam("loid") String loid){
+			JSONObject jsonObject = new JSONObject();
+			try {
+				//判断该贷款明细下的还款明细是否有已还款信息
+				String hql3 = "select count(*) from Rcount r where r.loanDetail.id = ? and r.factRTime != ' '";
+				List<Rcount> rs = rdao.findByHql(hql3, new Object[]{Long.parseLong(loid)});
+				if(rs.size() > 0){
+				int count = Integer.parseInt(String.valueOf(rs.get(0)));
+				if(count > 0){
+					jsonObject.element("success", false);
+				}else{
+					jsonObject.element("success", true);
+				}
+				}else{
+					jsonObject.element("success", true);
+				}
+			} catch (Exception e) {
+				e.printStackTrace();
+			}
+			return MvcUtil.jsonObjectModelAndView(jsonObject);
+		}
+		
+		/**
+		 * 新增一个还款明细
+		  *<功能简述>
+		  *<功能详细描述>
+		  * @param lid
+		  * @return [参数说明]
+		  * 
+		  * @return ModelAndView [返回类型说明]
+		  * @exception throws [异常类型] [异常说明]
+		  * @see [类、类#方法、类#成员]
+		 */
+		@RequestMapping("/saveRefund")
+		public ModelAndView saveRefund(Rcount rcount,@RequestParam("lid") String lid,@RequestParam("coun") String coun){
+			JSONObject jsonObject = new JSONObject();
+			try{
+			//得到所需还款期数
+			int count = Integer.parseInt(coun);
+			//得到小数点后两位
+			DecimalFormat dt=(DecimalFormat) DecimalFormat.getInstance(); 
+			dt.applyPattern("0.00"); 
+			
+			SimpleDateFormat aSimpleDateFormat = new SimpleDateFormat("yyyy-MM-dd");
+	        GregorianCalendar aGregorianCalendar = new GregorianCalendar();
+			
+			//通过循环保存关于期数的几条还款记录
+			for(int i=1;i <= count;i++){
+				LoanDetail loanDetail = new LoanDetail();
+				loanDetail.setId(Long.parseLong(lid));
+				rcount.setLoanDetail(loanDetail);
+				rcount.setNumber(String.valueOf(i));
+				rcount.setStatus("0");
+				aGregorianCalendar.set(Calendar.MONTH, aGregorianCalendar.get(Calendar.MONTH) + 1);
+		        String nowOfLastMonth = aSimpleDateFormat.format(aGregorianCalendar.getTime());
+		        //如果下月最后一天有当月号数时间，那么直接增加数据
+		        rcount.setPayTime(nowOfLastMonth);
+		        //如果下月最后一天小于当前月份的最后一天号数，则增加下月的最后一天
+		        rdao.save(rcount);
+			}
+				jsonObject.element("success", true);
+				jsonObject.element("msg", "保存还款明细成功！");
+			}catch (Exception e) {
+				e.printStackTrace();
+				jsonObject.element("failure", true);
+				jsonObject.element("msg", "保存还款明细失败！");
+				return MvcUtil.jsonObjectModelAndView(jsonObject);
+			}
+			return MvcUtil.jsonObjectModelAndView(jsonObject);
+		}
+		
+		/**
+		 * 删除贷款详细信息
+		  *<功能简述>
+		  *<功能详细描述>
+		  * @param id
+		  * @return [参数说明]
+		  * 
+		  * @return ModelAndView [返回类型说明]
+		  * @exception throws [异常类型] [异常说明]
+		  * @see [类、类#方法、类#成员]
+		 */
+		
+		@RequestMapping("/deleteLoanDetail.do")
+		public ModelAndView deleteLoanDetail(@RequestParam("id")
+		final String id, HttpServletRequest request) {
+			JSONObject jsonObject = new JSONObject();
+			if (id != null) {
+				Object result = dao.updateAction(new IDaoAction() {
+					public Object execute(PageHibernateTemplate template) {
+						try { 
+								template.updateByHQL("delete ResourcesTrack rt where rt.biaoshi = ?" ,new Object[]{String.valueOf(id)});
+								template.updateByHQL("delete Rcount r where r.loanDetail.id = ?" ,new Object[]{Long.parseLong(id)});
+								//删除还款记录
+								template.updateByHQL("delete LoanDetail l where l.id=?" ,new Object[]{Long.parseLong(id)});
+							return 1;
+						} catch (Exception e) {
+							e.printStackTrace();
+							return 0;
+						}
+					}
+				});
+				jsonObject.element("success", true);
+				jsonObject.element("msg", "删除成功!");
+			} else {
+				jsonObject.element("failure", false);
+				jsonObject.element("msg", "删除出错!");
+			}
+			return MvcUtil.jsonObjectModelAndView(jsonObject);
+		}
+		/*@RequestMapping("/deleteLoanDetail.do")
+		public ModelAndView deleteLoanDetail(@RequestParam("id") String id) {
+			JSONObject jsonObject = new JSONObject();
+			String hql = "from Rcount r where r.loanDetail.id = ?";
+			int sum = 0;
+				try {
+						List<Rcount> rcounts = rdao.findByHql(hql, new Object[]{Long.parseLong(id)});
+						if(rcounts.size() > 0){
+							rdao.deleteAll(rcounts);
+						}
+						sum++;
+				} catch (Exception e) {
+					e.printStackTrace();
+			}
+			if (sum > 0) {
+				jsonObject.element("success", true);
+				jsonObject.element("msg", "删除成功，删除了" + sum + "条数据!");
+			} else {
+				jsonObject.element("failure", true);
+				jsonObject.element("msg", "删除出错，该记录中包含还款详细信息!");
+			}
+			return MvcUtil.jsonObjectModelAndView(jsonObject);
+		}*/
+		/**
+		 * 根据贷款明细查找还款记录信息
+		  *<功能简述>
+		  *<功能详细描述>
+		  * @param gridLoadParams
+		  * @param request
+		  * @return [参数说明]
+		  * 
+		  * @return ModelAndView [返回类型说明]
+		  * @exception throws [异常类型] [异常说明]
+		  * @see [类、类#方法、类#成员]
+		 */
+		@RequestMapping("/findByLoanD")
+		public ModelAndView findByLoanD(@ModelAttribute("params")
+				GridLoadParams gridLoadParams, HttpServletRequest request,@RequestParam("lid") String lid){
+			JSONObject jsonObject = new JSONObject();
+			Pagination pagination = new Pagination();
+			pagination.set(gridLoadParams.getStart(), gridLoadParams.getLimit());
+			String hql = "from Rcount r where r.loanDetail.id ="+Long.parseLong(lid);
+			try {
+				List<Rcount> rcounts = rdao.findAll(hql,pagination);
+				jsonObject.element("totalCount", pagination.getTotalResults());
+				JSONArray data = new JSONArray();
+				if (rcounts.size() > 0) {
+					for (Rcount field : rcounts) {
+						JSONObject item = new JSONObject();
+						item.element("id", MvcUtil.toJsonString(field.getId()));  
+						item.element("number", MvcUtil.toJsonString(field.getNumber()));  
+						item.element("rSum", MvcUtil.toJsonString(field.getLoanDetail().getMonthMoney()));  
+						item.element("rTime", MvcUtil.toJsonString(field.getPayTime()));  
+						item.element("factRTime", MvcUtil.toJsonString(field.getFactRTime()));  
+						if(field.getStatus().equals("0")){
+							item.element("status", "未还款");
+						}if(field.getStatus().equals("1")){
+							item.element("status", "已还款");
+						}
+						data.add(item);
+					}
+				}
+				jsonObject.element("data", data);
+			} catch (Exception e) {
+				e.printStackTrace();
+			}
+			return MvcUtil.jsonObjectModelAndView(jsonObject);
+		}
+		
+		/**
+		 * 修改状态为已还款
+		  *<功能简述>
+		  *<功能详细描述>
+		  * @return [参数说明]
+		  * 
+		  * @return ModelAndView [返回类型说明]
+		  * @exception throws [异常类型] [异常说明]
+		  * @see [类、类#方法、类#成员]
+		 */
+		@RequestMapping("/updateRefund")
+		public ModelAndView updateRefund(HttpServletRequest request,@RequestParam("id") String id,@RequestParam("_factRTime") String _factRTime){
+			JSONObject jsonObject = new JSONObject();
+			String hql = "from Rcount r where r.id = ?";
+			try {
+				List<Rcount> rcounts = rdao.findByHql(hql,new Object[]{Long.parseLong(id)});
+				if(rcounts.size()>0){
+					Rcount rcount = rcounts.get(0);
+					rcount.setStatus("1");
+					rcount.setFactRTime(_factRTime);
+					rdao.update(rcount);
+					jsonObject.element("success", true);
+					jsonObject.element("msg", "修改还款状态成功！");
+					return MvcUtil.jsonObjectModelAndView(jsonObject);
+				}
+			} catch (Exception e) {
+				e.printStackTrace();
+				jsonObject.element("failure", true);
+				jsonObject.element("msg", "修改失败！");
+				return MvcUtil.jsonObjectModelAndView(jsonObject);
+			}
+			return MvcUtil.jsonObjectModelAndView(jsonObject);
+		} 
+		
+		/**
+		 * 客户退单
+		  *<功能简述>
+		  *<功能详细描述>
+		  * @param request
+		  * @param id
+		  * @param eremark
+		  * @return [参数说明]
+		  * 
+		  * @return ModelAndView [返回类型说明]
+		  * @exception throws [异常类型] [异常说明]
+		  * @see [类、类#方法、类#成员]
+		 */
+		@RequestMapping("/exitSure")
+		public ModelAndView exitSure(HttpServletRequest request,@RequestParam("tuid_id") String tuid_id,@RequestParam("eremark") String eremark){
+			JSONObject jsonObject = new JSONObject();
+			String hql = "from Client c where c.id = ?";
+			String hql1 = "from ClientUser cu where cu.client_id.id = ?";
+			String hql2 = "from Rcount r where r.loanDetail.client.id = ?";
+			try {
+				List<Rcount> rs = rdao.findByHql(hql2, new Object[]{Long.parseLong(tuid_id)});
+				if(rs.size() > 0){
+					for(Rcount rr:rs){
+						if(rr.getStatus().equals("1")){
+							jsonObject.element("failure", true);
+							jsonObject.element("msg", "退单失败，该记录已有还款记录!");
+							return MvcUtil.jsonObjectModelAndView(jsonObject);
+						}
+					}
+				}
+				//	如果中间表中有关于这条记录的信息  则修改为2
+				List<ClientUser> cliUsers = cudao.findByHql(hql1, new Object[]{Long.parseLong(tuid_id)});
+				if(cliUsers.size() > 0){
+					for(ClientUser cl:cliUsers){
+						cl.setStatus("2");	//中间表状态修改为2
+						cudao.update(cl);
+					}
+				}
+				List<Client> clients = cdao.findByHql(hql,new Object[]{Long.parseLong(tuid_id)});
+				if(!"".equals(tuid_id) && tuid_id != null){
+					Client client = clients.get(0);
+					SqlBuilder sb = new SqlBuilder("Client", SqlBuilder.TYPE_UPDATE);
+					sb.addField("clientStatus", "4");
+					sb.addField("assignTime", "");//已退单的客户修改分配时间为空
+					sb.addField("signTime", "");
+					sb.addField("remark", client.getRemark() + "，退单备注为：" + eremark);
+					sb.addWhere("id", Long.parseLong(tuid_id));
+					cdao.updateByHQL(sb.getSql(), sb.getParams());
+					jsonObject.element("success", true);
+					jsonObject.element("msg", "已退单!");
+					return MvcUtil.jsonObjectModelAndView(jsonObject);
+				}
+			} catch (Exception e) {
+				e.printStackTrace();
+				jsonObject.element("failure", true);
+				jsonObject.element("msg", "退单失败！");
+				return MvcUtil.jsonObjectModelAndView(jsonObject);
+			}
+			return MvcUtil.jsonObjectModelAndView(jsonObject);
+		} 
+		
+		/**
+		 *  修改客户信息
+		  *<功能简述>
+		  *<功能详细描述>
+		  * @param lid
+		  * @return [参数说明]
+		  * 
+		  * @return ModelAndView [返回类型说明]
+		 * @throws Exception 
+		  * @exception throws [异常类型] [异常说明]
+		  * @see [类、类#方法、类#成员]
+		 */
+		@RequestMapping("updateClient")
+		public  ModelAndView updateClient(@RequestParam("clid") String clid
+				,@RequestParam("_opp") String _opp,@RequestParam("_sign") String _sign
+				,Client clien){
+			JSONObject jsonObject = new JSONObject();
+			try{
+			String hql = "from Client c where c.id = "+ Long.parseLong(clid);
+			List<Client> cli = cdao.findAll(hql);
+			if(cli.size() > 0){
+				Client client = cli.get(0);
+				client.setAssignDate(clien.getAssignDate());
+				client.setAssignTime(client.getAssignTime());
+				client.setClientAdd(clien.getClientAdd());
+				client.setClientName(clien.getClientName());
+				client.setLoanAmount(clien.getLoanAmount());
+				if("房贷".equals(_opp)|| "1".equals(_opp)){//商机类型(1为房贷、2为信贷、3为短借、4为企贷)
+					client.setOppType("1");
+				}else if("信贷".equals(_opp)|| "2".equals(_opp)){
+					client.setOppType("2");
+				}else if("短借".equals(_opp)|| "3".equals(_opp)){
+					client.setOppType("3");
+				}else if("企贷".equals(_opp)|| "4".equals(_opp)){	
+					client.setOppType("4");
+				}
+				client.setRemark(clien.getRemark());
+				if("100%".equals(_sign)||"1".equals(_sign)){//签单可能性(1为100%、2为80%、3为50%、4为0%)
+					client.setSignPossible("1");
+				}else if("80%".equals(_sign)||"2".equals(_sign)){
+					client.setSignPossible("2");
+				}else if("50%".equals(_sign)||"3".equals(_sign)){
+					client.setSignPossible("3");
+				}else if("10%".equals(_sign)||"4".equals(_sign)){
+					client.setSignPossible("4");
+				}else if("0%".equals(_sign)||"5".equals(_sign)){
+					client.setSignPossible("5");
+				}
+				client.setContactTel(clien.getContactTel());
+				client.setSpareTel1(clien.getSpareTel1());
+				client.setSpareTel2(clien.getSpareTel2());
+				cdao.update(client);
+				jsonObject.element("success", true);
+				jsonObject.element("msg", "修改客户信息成功！");
+				return MvcUtil.jsonObjectModelAndView(jsonObject);
+			}
+			}catch (Exception e) {
+				e.printStackTrace();
+				jsonObject.element("failure", true);
+				jsonObject.element("msg", "修改失败！");
+				return MvcUtil.jsonObjectModelAndView(jsonObject);
+			}
+			return MvcUtil.jsonObjectModelAndView(jsonObject);
+		}
+		
+		/**
+		 * 发送短信
+		  *<功能简述>
+		  *<功能详细描述>
+		  * @param _sendContent
+		  * @param id
+		  * @return [参数说明]
+		  * 
+		  * @return ModelAndView [返回类型说明]
+		  * @exception throws [异常类型] [异常说明]
+		  * @see [类、类#方法、类#成员]
+		 */
+		@RequestMapping("sendSure")
+		public ModelAndView sendSure(HttpServletRequest request,@RequestParam("_sendContent") String _sendContent
+				,@RequestParam("id") String id,@RequestParam("_sendNumber") String _sendNumber,@RequestParam("_clientName") String _clientName){
+			JSONObject jsonObject = new JSONObject();
+			try{
+			String sendtime =StringUtil.getSystemDate("yyyyMMddhhmmss");
+			SimpleDateFormat df = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
+			String now = df.format(new Date());
+			String sd = SendMessage.infoSend(_sendNumber, _sendContent, sendtime);
+			User userSession = (User) request.getSession().getAttribute("userSession");
+			if(sd.split(",")[0].equals("0")){
+				Messages messages = new Messages();
+				messages.setContent(_sendContent);
+				messages.setSendtime(now);
+				if(userSession != null){
+					messages.setSender(userSession.getLoginId());
+				}
+				messages.setReceivedBy(_clientName);
+				mdao.save(messages);
+				jsonObject.element("success", true);
+				jsonObject.element("msg", "短信发送成功");
+			}else if(sd.split(",")[0].equals("-1")){
+				jsonObject.element("failure", true);
+				jsonObject.element("msg", "账号不存在");
+			}else if(sd.split(",")[0].equals("-2")){
+				jsonObject.element("failure", true);
+				jsonObject.element("msg", "密码错误");
+			}else if(sd.split(",")[0].equals("-3")){
+				jsonObject.element("failure", true);
+				jsonObject.element("msg", "账号被锁");
+			}else if(sd.split(",")[0].equals("-4")){
+				jsonObject.element("failure", true);
+				jsonObject.element("msg", "账号余额为0");
+			}else if(sd.split(",")[0].equals("-5")){
+				jsonObject.element("failure", true);
+				jsonObject.element("msg", "短信内容含有关键字");
+			}else if(sd.split(",")[0].equals("-6")){
+				jsonObject.element("failure", true);
+				jsonObject.element("msg", "标示号taskId有误");
+			}
+			}catch (Exception e) {
+				e.printStackTrace();
+				jsonObject.element("failure", true);
+				jsonObject.element("msg", "保存出错！");
+			}
+			return MvcUtil.jsonObjectModelAndView(jsonObject);
+		}
+		
+		/**
+		 * 高级搜索
+		 * 管理部门、管理人、创建日期（今天、本周、本月、本年）、起止日期
+		 * 、签单状态（已签单、未签单）
+		 *、签单可能性（100%、80%、50%、10%、0%）
+		 *、上次联系日期（今天、本周、本月）、起止日期
+		 *、贷款金额（起止金额）、贷款类型（房贷、信贷、短借、企贷）
+		  *<功能简述>
+		  *<功能详细描述> 
+		  * @return [参数说明]
+		  * 
+		  * @return ModelAndView [返回类型说明]
+		  * @exception throws [异常类型] [异常说明]
+		  * @see [类、类#方法、类#成员]
+		 */
+		@RequestMapping("search")
+		public ModelAndView search(HttpServletRequest request){
+			JSONObject jsonObject = new JSONObject();
+			SimpleDateFormat df = new SimpleDateFormat("yyyy-MM-dd");
+			String now = df.format(new Date());	//得到今天日期时间
+			//得到本周时间
+			Calendar cal =Calendar.getInstance();
+	        cal.set(Calendar.DAY_OF_WEEK, Calendar.MONDAY); //获取本周一的日期
+	        String start = df.format(cal.getTime());	//本周星期一
+	        //这种输出的是上个星期周日的日期，因为老外那边把周日当成第一天
+	        cal.set(Calendar.DAY_OF_WEEK, Calendar.SUNDAY);
+	        //增加一个星期，才是中国人理解的本周日的日期
+	        cal.add(Calendar.WEEK_OF_YEAR, 1);	
+	        String end = df.format(cal.getTime());	//本周星期天
+	        String thisMonth = now.substring(0,7);	//得到2013-XX月份
+	        String thisYear = now.substring(0, 4);	//得到XXXX年
+	        
+ 			String department = request.getParameter("_department");	//管理部门
+			String manager = request.getParameter("_manager");	//管理人
+			String createDate = request.getParameter("_createDate");	//创建日期
+			String createStart = request.getParameter("_createStart");	//客户信息创建开始时间
+			String createEnd = request.getParameter("_createEnd");	//客户信息创建结束时间
+			String signStatus = request.getParameter("_signStatus");	//签单状态
+			String signPoss = request.getParameter("_signPoss");	//签单可能性
+			String lastDate = request.getParameter("_lastDate");	//上次联系日期
+			String startLastDate = request.getParameter("_startLastDate");	//上次联系开始日期
+			String endLastDate = request.getParameter("_endLastDate");	//上次联系结束日期
+			String startLoanTotal = request.getParameter("_startLoanTotal");	//起始贷款金额
+			String endLoanTotal = request.getParameter("_endLoanTotal");	//截止贷款金额
+			String loanType = request.getParameter("_loanType");	//贷款类型
+			String hql = "from ClientUser cu";
+			StringBuffer wherehql = new StringBuffer(" where 1=1");
+				//得到记录中最后一次跟踪时间的所有记录
+			String hql1 = "select * from ResourcesTrack rt where rt.calltime in (" +
+					"select rt1.calltime from ResourcesTrack rt1 order by rt1.calltime desc) group by rt.client_name.clientName desc";
+			List<ResourcesTrack> resources = rtdao.findAll(hql1);
+				//管理部门
+			if(!"".equals(department)){
+				wherehql.append(" and cu.user_id.employee.department.id = ").append(Long.parseLong(department));
+			}
+				//	管理人（接收人）
+			if(!"".equals(manager)){
+				wherehql.append(" and cu.user_id.employee.id = ").append(Long.parseLong(manager));
+			}
+				//创建时间
+			if(!"".equals(createDate)){
+				//1今天、2本周、3本月、4本年
+				if(createDate.equals("1")){
+					wherehql.append(" and cu.client_id.assignTime = '").append(now).append("'");
+				}if(createDate.equals("2")){
+					wherehql.append(" and cu.client_id.assignTime >= '").append(start).append("' and cu.client_id.assignTime <= '").append(end).append("'");
+				}if(createDate.equals("3")){
+					wherehql.append(" and cu.client_id.assignTime like '").append(thisMonth).append("%'");
+				}if(createDate.equals("4")){
+					wherehql.append(" and cu.client_id.assignTime like '").append(thisYear).append("%'");
+				}
+				//客户信息创建时间（自己选择） 
+			}if(!"".equals(createStart)){
+				wherehql.append(" and cu.client_id.assignDate like '").append(createStart).append("%'");
+			}if(!"".equals(createEnd)){
+				wherehql.append(" and cu.client_id.assignDate like '").append(createEnd).append("%'");
+			}
+				//签单状态
+			if(!"".equals(signStatus)){
+				wherehql.append(" and cu.client_id.clientStatus = '").append(signStatus).append("'");
+			}
+				//签单可能性
+			if(!"".equals(signPoss)){
+				wherehql.append(" and cu.client_id.signPossible = '").append(signPoss).append("'");
+			}
+				//上次联系日期
+			if(!"".equals(lastDate) || !"".equals(startLastDate) || !"".equals(endLastDate)){
+				//查询：1为今天、2本周、3本月  上次时间的开始时间、结束时间
+				hql = "select cu from ClientUser cu, ResourcesTrack rt2 and cu.client_id.id in (select rt.client_name.id from ResourcesTrack rt where rt.resourcestime in (" +
+					"select rt1.resourcestime from ResourcesTrack rt1 order by rt1.resourcestime desc) group by rt.client_name.clientName desc)";
+				if(lastDate.equals("1")){
+					wherehql.append(" and rt2.resourcestime = '").append(lastDate).append("'");
+				}if(lastDate.equals("2")){
+					wherehql.append(" and rt2.resourcestime  >= '").append(start).append("' and rt2.resourcestime <= '").append(end).append("'");
+				}if(lastDate.equals("3")){
+					wherehql.append(" and rt2.resourcestime like '").append(thisMonth).append("%'");
+				}if(!"".equals(startLastDate)){
+					wherehql.append(" and rt2.resourcestime like '").append(thisYear).append("%'");
+				}if(!"".equals(endLastDate)){
+					wherehql.append(" and rt2.resourcestime like '").append(thisYear).append("%'");
+				}
+			}
+				//贷款金额
+			if(!"".equals(startLoanTotal)){
+				wherehql.append(" and cu.client_id.loanAmount >='").append(startLoanTotal).append("'");
+			}if(!"".equals(endLoanTotal)){
+				wherehql.append(" and cu.client_id.loanAmount <='").append(endLoanTotal).append("'");
+			}
+				//贷款类型
+			if(!"".equals(loanType)){
+				wherehql.append(" and cu.client_id.oppType = '").append(loanType).append("'");
+			}
+			try {
+				JSONObject item = new JSONObject();
+				JSONArray data = new JSONArray();
+					List<ClientUser> clientUsers = cudao.findAll(hql + wherehql);
+					for(ClientUser field:clientUsers){
+						item.element("id", MvcUtil.toJsonString(field.getId()));
+						item.element("clientId", MvcUtil.toJsonString(field.getClient_id().getId()));
+						item.element("clientAdd", MvcUtil.toJsonString(field.getClient_id().getClientAdd()));
+						item.element("clientName", MvcUtil.toJsonString(field.getClient_id().getClientName()));
+						item.element("assignDate", MvcUtil.toJsonString(field.getClient_id().getAssignDate()));
+						if("1".equals(field.getClient_id().getClientStatus())){
+							item.element("clientStatus", MvcUtil.toJsonString("已签单"));
+						}else if("2".equals(field.getClient_id().getClientStatus())){
+							item.element("clientStatus", MvcUtil.toJsonString("未签单"));
+						}else if("3".equals(field.getClient_id().getClientStatus())){
+							item.element("clientStatus", MvcUtil.toJsonString("淘汰"));
+						}else if("4".equals(field.getClient_id().getClientStatus())){
+							item.element("clientStatus", MvcUtil.toJsonString("退单"));
+						}
+						item.element("contactTel", MvcUtil.toJsonString(field.getClient_id().getContactTel()));
+						if(field.getUser_id().getEmployee() != null){
+							item.element("emp_id", MvcUtil.toJsonString(field.getUser_id().getEmployee().getId()));
+							item.element("emp_Name", MvcUtil.toJsonString(field.getUser_id().getEmployee().getName()));
+						}else
+						{
+							item.element("emp_id", MvcUtil.toJsonString(""));
+							item.element("emp_Name", MvcUtil.toJsonString(""));
+						}
+						item.element("loanAmount", MvcUtil.toJsonString(field.getClient_id().getLoanAmount()));
+						if("1".equals(field.getClient_id().getOppType())){//商机类型(1为房贷、2为信贷、3为短借、4为企贷)
+							item.element("oppType", MvcUtil.toJsonString("房贷"));
+						}else if("2".equals(field.getClient_id().getOppType())){
+							item.element("oppType", MvcUtil.toJsonString("信贷"));
+						}else if("3".equals(field.getClient_id().getOppType())){
+							item.element("oppType", MvcUtil.toJsonString("短借"));
+						}else if("4".equals(field.getClient_id().getOppType())){	
+							item.element("oppType", MvcUtil.toJsonString("企贷"));
+						}
+						if("1".equals(field.getClient_id().getSignPossible())){//签单可能性(1为100%、2为80%、3为50%、4为0%)
+							item.element("signPossible", MvcUtil.toJsonString("100%"));
+						}else if("2".equals(field.getClient_id().getSignPossible())){
+							item.element("signPossible", MvcUtil.toJsonString("80%"));
+						}else if("3".equals(field.getClient_id().getSignPossible())){
+							item.element("signPossible", MvcUtil.toJsonString("50%"));
+						}else if("4".equals(field.getClient_id().getSignPossible())){
+							item.element("signPossible", MvcUtil.toJsonString("10%"));
+						}else if("5".equals(field.getClient_id().getSignPossible())){
+							item.element("signPossible", MvcUtil.toJsonString("0%"));
+						}
+						item.element("spareTel1", MvcUtil.toJsonString(field.getClient_id().getSpareTel1()));
+						item.element("spareTel2", MvcUtil.toJsonString(field.getClient_id().getSpareTel2()));
+						item.element("remark", MvcUtil.toJsonString(field.getClient_id().getRemark()));
+						item.element("assignTime", MvcUtil.toJsonString(field.getClient_id().getAssignTime()));
+						item.element("loanAmount", MvcUtil.toJsonString(field.getClient_id().getLoanAmount()));
+						data.add(item);
+				}
+				jsonObject.element("data", data);
+			} catch (Exception e) {
+				e.printStackTrace();
+			}
+			return MvcUtil.jsonObjectModelAndView(jsonObject);
+		}
+		
+	/*	//得到下月的最后一天
+		public static void main(String[] args) {
+			Calendar calendar = Calendar.getInstance();
+			SimpleDateFormat aSimpleDateFormat = new SimpleDateFormat("yyyy-MM-dd");
+			//当前月份加两个月
+			calendar.set(Calendar.MONTH, calendar.get(Calendar.MONTH) + 2);
+			//两个月后的第一天
+			calendar.set(Calendar.DAY_OF_MONTH, 1);
+			calendar.add(Calendar.DAY_OF_MONTH, - 1);
+			//两个月后的第一天减一天，上月最后一天
+			System.out.println(aSimpleDateFormat.format(calendar.getTime())); 
+			GregorianCalendar aGregorianCalendar = new GregorianCalendar();
+			aGregorianCalendar.set(Calendar.MONTH, aGregorianCalendar.get(Calendar.MONTH) + 2);
+			aGregorianCalendar.set(Calendar.DAY_OF_MONTH, 1);
+			aGregorianCalendar.add(Calendar.DAY_OF_MONTH, - 1);
+			System.out.println(aSimpleDateFormat.format(aGregorianCalendar.getTime()));
+		}*/
+		/**
+		 * 查出还款时间即将到期的id
+		  *<功能简述>
+		  *<功能详细描述>
+		  * @param req
+		  * @return [参数说明]
+		  * 
+		  * @return ModelAndView [返回类型说明]
+		  * @exception throws [异常类型] [异常说明]
+		  * @see [类、类#方法、类#成员]
+		 */
+		@RequestMapping("/findNoRepay.do")
+		public ModelAndView findNoRepay(HttpServletRequest req){
+			JSONObject json = new JSONObject();
+			String id = req.getParameter("id");
+			SimpleDateFormat sdf = new SimpleDateFormat("yyyyMMdd");
+			try {
+				if(!"".equals(id) && id != null){
+					StringBuffer sb = new StringBuffer();
+					Calendar cal = Calendar.getInstance();
+					cal.add(Calendar.DAY_OF_WEEK_IN_MONTH, 1);
+					Integer time = Integer.parseInt(sdf.format(cal.getTime()));//当前时间+7
+					String hql = "select ld.id, MIN(r.payTime) from Rcount r, LoanDetail ld where ld.id = r.loanDetail.id and ld.client.id = "+
+						Long.parseLong(id) +" group by ld.id";
+					List<Object[]> list = odao.findAll(hql);
+					if(list.size() > 0){
+						for(Object[] obj : list){
+							String[] times = obj[1].toString().split("-");
+							Integer minTime = Integer.parseInt(times[0] + times[1] + times[2]);//还款的最迟时间
+							if(time >= minTime){
+								sb.append(obj[0]).append(",");
+							}
+						}
+					}
+					json.element("success", true);
+					json.element("ids", sb.toString());
+				}
+			} catch (Exception e) {
+				e.printStackTrace();
+			}
+			return MvcUtil.jsonObjectModelAndView(json);
+		}
+}
