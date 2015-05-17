@@ -61,6 +61,7 @@
 			</list>
 		</property>
 	</bean>
+	
 	<context:component-scan base-package="cn.dgg.CRM365.web">
 		<context:exclude-filter type="annotation"
 			expression="org.springframework.stereotype.Controller" />
@@ -93,7 +94,7 @@
 		</property>
 	</bean>
 	<context:annotation-config />
-	<tx:annotation-driven />
+	<tx:annotation-driven transaction-manager="transactionManager" />
 	
 	
 	<!-- 定时器 -->

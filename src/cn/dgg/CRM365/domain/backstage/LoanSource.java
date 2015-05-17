@@ -31,7 +31,15 @@ public class LoanSource {
 	private String loanAmount;
 	private int status;
 	private String receiveAmount;
+	private String sourceAmount;
 	
+	@Column(name = "sourceAmount")
+	public String getSourceAmount() {
+		return sourceAmount;
+	}
+	public void setSourceAmount(String sourceAmount) {
+		this.sourceAmount = sourceAmount;
+	}
 	@Id
 	@Column(name = "id")
 	@GeneratedValue
