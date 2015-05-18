@@ -76,8 +76,8 @@ public class BackController {
 	 * @return
 	 */
 	@RequestMapping("/loadSignClient")
-	public ModelAndView loadSignClient(@ModelAttribute("params")GridLoadParams gridLoadParams,
-			HttpServletRequest request) {
+	public ModelAndView loadSignClient(@ModelAttribute("params")GridLoadParams gridLoadParams, HttpServletRequest request,
+			@RequestParam("condition") String condition) {
 		JSONObject jsonObject = new JSONObject();
 		Pagination pagination = new Pagination();
 		pagination.set(gridLoadParams.getStart(), gridLoadParams.getLimit());
