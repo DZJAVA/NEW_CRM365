@@ -13,28 +13,31 @@
 	        {
 	        	fieldLabel: '*跟踪日志',
                 allowBlank: false,
+                anchor: '95%',
                 xtype: 'textarea',
                 name: 'logInfo'
 	        },
 	        {
 	        	fieldLabel: '跟踪时间',
+	        	xtype: 'datetimefield',
 	        	format: 'Y-m-d H:i',
+	        	anchor: '95%',
                 allowBlank: false,
                 editable: false,
-                name: 'logInfo'
+                name: 'logDate'
 	        }
        	]
     });
 	var logWindow = new Ext.Window({
     	title: '新增渠道日志',
         width: 450,
-        height: 350,
+        height: 200,
         modal: true,
         layout: 'fit',
         plain: true,
         bodyStyle: 'padding:5px;',
         buttonAlign: 'center',
-        items: clientForm,
+        items: logForm,
         closable: true,
         closeAction: 'hide',
         buttons: [

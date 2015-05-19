@@ -1280,7 +1280,7 @@ public class ClientController {
 				conn = DBManager.getConnection();
 				autoFlag = conn.getAutoCommit();
 				conn.setAutoCommit(false);//禁止自动提交
-				ps = conn.prepareStatement("update dgg_client set follower=?,assignTime=?,clientStatus=?,editTime=? where id=?");
+				ps = conn.prepareStatement("update dgg_client set follower=?,assignTime=?,editTime=? where id=?");
 				if(num > 0){
 					Pagination page = new Pagination();
 					page.set(0, num);
@@ -1288,9 +1288,8 @@ public class ClientController {
 					for(int i = 0, len = clientList.size(); i < len; i++){
 						ps.setInt(1, _emp);
 						ps.setString(2, now);
-						ps.setString(3, "2");
-						ps.setNull(4, Types.VARCHAR);
-						ps.setInt(5, Integer.parseInt(clientList.get(i).toString()));
+						ps.setNull(3, Types.VARCHAR);
+						ps.setInt(4, Integer.parseInt(clientList.get(i).toString()));
 						ps.addBatch();
 						ps.clearParameters();
 					}
@@ -1299,9 +1298,8 @@ public class ClientController {
 					for(int i = 0, len = id.length; i < len; i++){
 						ps.setInt(1, _emp);
 						ps.setString(2, now);
-						ps.setString(3, "2");
-						ps.setNull(4, Types.VARCHAR);
-						ps.setInt(5, Integer.parseInt(id[i]));
+						ps.setNull(3, Types.VARCHAR);
+						ps.setInt(4, Integer.parseInt(id[i]));
 						ps.addBatch();
 						ps.clearParameters();
 					}

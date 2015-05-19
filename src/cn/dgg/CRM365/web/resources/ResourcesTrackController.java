@@ -467,38 +467,8 @@ public class ResourcesTrackController {
 		try{
 			if(req.getSession() != null){
 				User user = (User)req.getSession().getAttribute(StaticValues.USER_SESSION);
-				String hql = "select e.id from Eliminate e where e.client.id= "+ Long.parseLong(cid);//得到当前资源是不是已经被淘汰过一次
-				List<Object> clientUsers = odao.findAll(hql);
-				//如果size>0则表示该条信息被淘汰过
-				if(clientUsers.size() >0){
-					hql = "select max(a.addTime) from AddClient a where a.client.id = " + Long.parseLong(cid);//查出添加时间
-					List<Object> addList = odao.findAll(hql);
-					if(addList.size() > 0){
-						Object o = addList.get(0);
-						if(o != null){//添加的客户淘汰
-							String addTime = addList.get(0).toString();//得到添加为自己的时间
-							String nowTime = StaticValues.sForomat.format(new Date());//当前时间
-							String[] dates = addTime.split(" +");
-							Calendar cal = Calendar.getInstance();
-							cal.setTime(StaticValues.sdf.parse(dates[0]));
-							cal.add(Calendar.DATE, 15);
-							addTime = StaticValues.sForomat.format(cal.getTime());//领取15天之后的时间
-							if(Long.parseLong(nowTime) <Long.parseLong(addTime)){//领取时间没有超过15天
-								jsonObject.element("success", true);
-								jsonObject.element("msg", "该客户已被淘汰过，并且离领取时间没有达到15天，不能淘汰！");
-								return MvcUtil.jsonObjectModelAndView(jsonObject);
-							}else{//超过15天
-								eliminateClient(jsonObject, cid, user, remark);
-								return MvcUtil.jsonObjectModelAndView(jsonObject);
-							}
-						}else{//将淘汰的客户分配出去后的淘汰
-							eliminateClient(jsonObject, cid, user, remark);
-						}
-					}
-				}else{
-					eliminateClient(jsonObject, cid, user, remark);
-					return MvcUtil.jsonObjectModelAndView(jsonObject);
-				}
+				eliminateClient(jsonObject, cid, user, remark);
+				return MvcUtil.jsonObjectModelAndView(jsonObject);
 			}
 		}catch (Exception e) {
 			e.printStackTrace();
@@ -558,13 +528,7 @@ public class ResourcesTrackController {
 		try{
 			if(req.getSession() != null){
 				userSession = (User)req.getSession().getAttribute(StaticValues.USER_SESSION);
-				lostTime = getTime(req.getParameter("eli").split(" +")[0]);
-				if(Long.parseLong(lostTime) > Long.parseLong(now)){
-					jsonObject.element("failure", true);
-					jsonObject.element("msg", "添加失败,改淘汰资源还未过三个月！");
-				}else{
-					addSourse(jsonObject, userSession.getId(), id, addRemark);
-				}
+				addSourse(jsonObject, userSession.getId(), id, addRemark);
 			}
 		}
 		catch (Exception e) {

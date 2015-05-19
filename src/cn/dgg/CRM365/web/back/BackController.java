@@ -117,6 +117,7 @@ public class BackController {
 		try{
 			if(request.getSession() != null){
 				if(sc.getId() == null){
+					sc.setClient(cid);
 					scDao.save(sc);
 				}else{
 					SqlBuilder sb = new SqlBuilder("SignClientEntity", SqlBuilder.TYPE_UPDATE);
@@ -353,6 +354,11 @@ public class BackController {
 		try {
 			sb.append(" and ls.source = ").append(sourceId);
 			data = slDao.findAll(hql, pagination);
+			String[] date = null;
+			for(SourceLog sl : data){
+				date = sl.getLogDate().split(":");
+				sl.setLogDate(date[0] + ":" + date[1]);
+			}
 			jsonObject.element("totalCount", pagination.getTotalResults());
 		} catch (Exception e) {
 			e.printStackTrace();

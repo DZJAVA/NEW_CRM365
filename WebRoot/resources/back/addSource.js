@@ -58,14 +58,14 @@
     });
 	var sourceWindow = new Ext.Window({
     	title: '新增渠道信息',
-        width: 450,
-        height: 250,
+        width: 600,
+        height: 200,
         modal: true,
         layout: 'fit',
         plain: true,
         bodyStyle: 'padding:5px;',
         buttonAlign: 'center',
-        items: clientForm,
+        items: sourceForm,
         closable: true,
         closeAction: 'hide',
         buttons: [

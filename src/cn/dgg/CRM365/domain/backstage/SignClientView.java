@@ -74,7 +74,7 @@ public class SignClientView {
 		this.loanType = loanType;
 	}
 	
-	@Column(name = "userid")
+	@Column(name = "loanBank")
 	public String getLoanBank() {
 		return loanBank;
 	}
