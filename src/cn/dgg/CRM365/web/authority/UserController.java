@@ -549,13 +549,7 @@ public class UserController {
 				List<Object> objList = objDao.findAll("select c.id from Client c where c.follower.id="+Long.parseLong(i)+" and c.clientStatus<>'3'");
 				User userSet = new User();
 				if (objList.size()==0) {
-					SqlBuilder sb = new SqlBuilder("User", SqlBuilder.TYPE_UPDATE);
-					sb.addField("userDelState", "1");
-					sb.addWhere("id", Long.parseLong(i));
-					dao.updateByHQL(sb.getSql(), sb.getParams());
-					cddao.updateByHQL("delete from ClientDifRecord cd where cd.userid = ?", new Object[]{i});
-					autoDao.updateByHQL("delete from AutoAssign where user.id = ?", new Object[]{Long.parseLong(i)});
-					xaDao.updateByHQL("delete from XzAllocation where userid.id = ?", new Object[]{Long.parseLong(i)});
+					dao.updateByHQL("delete from User u where u.id = ?", new Object[]{Long.parseLong(i)});
 					sum++;
 				}
 			}

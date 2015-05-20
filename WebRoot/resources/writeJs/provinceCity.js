@@ -124,7 +124,7 @@ var cityData = new Ext.data.SimpleStore({
 	//--------------部门下拉列表-----------------	  
     var departmentStore = new Ext.data.Store({
           proxy: new Ext.data.HttpProxy({
-              url: path+'/client/loadDepartment.do'
+              url: path+'/client/loadDepartment.do?flag='+1
           }),
           reader: new Ext.data.JsonReader({
                   root: 'data',
@@ -136,7 +136,7 @@ var cityData = new Ext.data.SimpleStore({
 	//--------员工下拉列表 
 	var employeeData = new Ext.data.Store({
    		proxy: new Ext.data.HttpProxy({
-	          url: path+'/client/loadEmployee.do'
+	          url: path+'/client/loadEmployee.do?flag='+1
 	    }),
 	    reader: new Ext.data.JsonReader({
 	           root: 'data',

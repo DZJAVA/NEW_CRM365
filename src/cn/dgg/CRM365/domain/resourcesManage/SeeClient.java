@@ -21,9 +21,9 @@ import javax.persistence.Table;
 public class SeeClient {
 	
 	private Long id;
-	private String c_id;	//客户表ID
+	private int c_id;	//客户表ID
 	private String c_name;	//客户名称
-	private String u_id;	//用户ID
+	private int u_id;	//用户ID
 	@Id
 	@GeneratedValue
 	@Column(name = "id")
@@ -34,10 +34,10 @@ public class SeeClient {
 		this.id = id;
 	}
 	@Column(name = "c_id")
-	public String getC_id() {
+	public int getC_id() {
 		return c_id;
 	}
-	public void setC_id(String c_id) {
+	public void setC_id(int c_id) {
 		this.c_id = c_id;
 	}
 	@Column(name = "c_name")
@@ -48,10 +48,10 @@ public class SeeClient {
 		this.c_name = c_name;
 	}
 	@Column(name = "u_id")
-	public String getU_id() {
+	public int getU_id() {
 		return u_id;
 	}
-	public void setU_id(String u_id) {
+	public void setU_id(int u_id) {
 		this.u_id = u_id;
 	}
 	

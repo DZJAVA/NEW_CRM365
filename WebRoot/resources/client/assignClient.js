@@ -1,6 +1,6 @@
 	var departmentAssignStore = new Ext.data.Store({
           proxy: new Ext.data.HttpProxy({
-              url: path+'/client/loadDepartment.do?flag='+0
+              url: path+'/client/loadDepartment.do?flag='+1
           }),
           reader: new Ext.data.JsonReader({
                   root: 'data',

@@ -118,7 +118,7 @@ public class BackController {
 				if(right == 6){
 					sb.append(" and sc.follower = ").append(user.getId());
 				}
-				data = dao.findAll(hql, pagination);
+				data = dao.findAll(hql+sb, pagination);
 			}
 			jsonObject.element("totalCount", pagination.getTotalResults());
 		} catch (Exception e) {
@@ -150,6 +150,7 @@ public class BackController {
 				}else{
 					SqlBuilder sb = new SqlBuilder("SignClientEntity", SqlBuilder.TYPE_UPDATE);
 					sb.addField("clientCode", sc.getClientCode());
+					sb.addField("signDate", sc.getSignDate());
 					sb.addField("loanType", sc.getLoanType());
 					sb.addField("loanBank", sc.getLoanBank());
 					sb.addField("loanSource", sc.getLoanSource());

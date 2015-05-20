@@ -1,16 +1,18 @@
 var path = '/CRM';
+var clientWidth = document.body.clientWidth;
 var SIGN = {sign:{store: null, grid:null}, source:{store: null, grid:null}, log:{store: null, grid:null}};
 Ext.onReady(function(){
 	Ext.QuickTips.init();// 浮动信息提示
 	Ext.BLANK_IMAGE_URL = path+'/resources/images/default/s.gif';// 替换图片文件地址为本地
     
-    SIGN.role = '${userSession.role.roleCode}';
     
    	initSignGrid();
    	initSourceGrid();
    	initLogGrid();
    	
     initLayout();//布局
+    
+    hideBtn();
     
 	SIGN.sign.store.load({
     	params:{start:0, limit:20}
@@ -73,9 +75,10 @@ var initSignGrid = function(){
    			});
     	}
     };
-    var editAction = new Ext.Action({
+    SIGN.sign.edit = new Ext.Action({
         text: '编辑信息',
         iconCls: 'vcard_add',
+        disabled: true,
         handler: function(){
         	var record = SIGN.sign.grid.getSelectionModel().getSelected();
             if(record){
@@ -88,7 +91,7 @@ var initSignGrid = function(){
             }
         }
     });
-    var delAction = new Ext.Action({
+    SIGN.sign.del = new Ext.Action({
         text: '删除签单',
         iconCls: 'vcard_delete',
         disabled: true,
@@ -153,7 +156,7 @@ var initSignGrid = function(){
     	}
     }
     //------------手动分配客户信息--------------
-    var assignAction = new Ext.Action({
+    SIGN.sign.assign = new Ext.Action({
         text: '手动分配',
         iconCls: 'shoudong',
         disabled: true,
@@ -167,7 +170,7 @@ var initSignGrid = function(){
         }
     });
     //------------手动分配客户信息--------------
-    var exitAction = new Ext.Action({
+    SIGN.sign.exit = new Ext.Action({
         text: '退单',
         iconCls: 'drop-no',
         disabled: true,
@@ -202,6 +205,7 @@ var initSignGrid = function(){
         sm: new Ext.grid.CheckboxSelectionModel ({singleSelect : false}),
         region: 'north',
         height: 350,
+        width: clientWidth-20,
         frame:true,
         trackMouseOver: false,
         disableSelection: false,
@@ -236,7 +240,7 @@ var initSignGrid = function(){
             {header: '退单时间', width:90,dataIndex: 'backDate'}
         ],
         tbar: [
-        	editAction, delAction, assignAction, exitAction
+        	SIGN.sign.edit, SIGN.sign.del, SIGN.sign.assign, SIGN.sign.exit
         ],
         listeners: {
         	'rowdblclick': function(grid){
@@ -266,13 +270,15 @@ var initSignGrid = function(){
        			params: {start:0, limit:20}
          	});
          	SIGN.source.add.enable();
-         	delAction.enable();
-         	assignAction.enable();
-         	exitAction.enable();
+         	SIGN.sign.del.enable();
+         	SIGN.sign.assign.enable();
+         	SIGN.sign.exit.enable();
+         	SIGN.sign.edit.enable();
         }else{
-         	delAction.disable();
-         	exitAction.disable();
-         	assignAction.disable();
+         	SIGN.sign.del.disable();
+         	SIGN.sign.edit.disable();
+         	SIGN.sign.exit.disable();
+         	SIGN.sign.assign.disable();
         	SIGN.source.add.disable();
         	SIGN.source.store.removeAll();
         }
@@ -436,11 +442,20 @@ var initSourceGrid = function(){
         	}
         }
     });
+    SIGN.source.tbar = new Ext.Toolbar({
+    	items:[
+	     	SIGN.source.add,
+	     	editAction,
+	     	delAction,
+	     	makeloanAction
+    	]
+    });
     //-----------------资料追踪-----------------
 	SIGN.source.grid = new Ext.grid.GridPanel({
         store: SIGN.source.store,
         region: 'center',
         height: 250,
+        width: clientWidth-20,
         sm: new Ext.grid.RowSelectionModel(),
         frame:true,
         trackMouseOver: false,
@@ -474,9 +489,11 @@ var initSourceGrid = function(){
             {header:'收款金额', width:130,dataIndex: 'receiveAmount'}
         ],
         tbar: [
-        	SIGN.source.add, editAction, delAction, makeloanAction
         ],
         listeners : {
+        	'render' : function(e){
+				 SIGN.source.tbar.render(this.tbar);
+			 }
 		},
         bbar: new Ext.PagingToolbar({
             pageSize: 20,
@@ -612,11 +629,20 @@ var initLogGrid = function(){
             }
         }
    	});
+   	
+   	SIGN.log.tbar = new Ext.Toolbar({
+    	items:[
+	     	SIGN.log.add,
+	     	editAction,
+	     	delAction
+    	]
+    });
     
     SIGN.log.grid = new Ext.grid.GridPanel({
         store: SIGN.log.store,
         region: 'south',
         height: 240,
+        width: clientWidth-20,
         sm: new Ext.grid.RowSelectionModel(),
         frame: true,
         trackMouseOver: false,
@@ -630,9 +656,11 @@ var initLogGrid = function(){
             {header: '跟踪时间', width: 150, dataIndex: 'logDate'}
         ],
         tbar: [
-        	SIGN.log.add, editAction, delAction
         ],
         listeners : {
+        	'render' : function(e){
+				 SIGN.log.tbar.render(this.tbar);
+			 }
 		},
         bbar: new Ext.PagingToolbar({
             pageSize: 20,
@@ -656,7 +684,7 @@ var initLogGrid = function(){
 //布局
 var initLayout = function(){
 	var viewport = null;
-	if(SIGN.role == '201206'){
+	if(right === 8){
 	    viewport = new Ext.Viewport({
 		      layout:'fit',
 		      border: false,
@@ -685,6 +713,23 @@ var initLayout = function(){
 	     });
     }
 };
+
+var hideBtn = function(){
+	if(right === 1 || right === 2 || right === 3){
+		SIGN.log.tbar.hide();
+		SIGN.source.tbar.hide();
+		SIGN.sign.edit.hide();
+		SIGN.sign.assign.hide();
+		SIGN.sign.del.hide();
+		SIGN.sign.exit.hide();
+	}
+	if(right === 8){
+		SIGN.sign.assign.hide();
+		SIGN.sign.del.hide();
+		SIGN.sign.exit.hide();
+	}
+};
+
 //判断js是否加载
 function judgeJs(id, src){
 	var el = Ext.get(id);
@@ -721,7 +766,7 @@ function IncludeJS(sId, fileUrl, source){
     }
 }
 
-function GetHttpRequest(){ 
+function GetHttpRequest(){
     if (window.XMLHttpRequest) // Gecko 
         return new XMLHttpRequest() ; 
     else if (window.ActiveXObject) // IE 

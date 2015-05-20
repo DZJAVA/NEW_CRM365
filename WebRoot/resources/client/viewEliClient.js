@@ -443,7 +443,7 @@
 	       		if(_dept === '' | _dept === null){
 	       			this.reset();
 		      		employeeSelData.proxy = new Ext.data.HttpProxy({
-		      			url: path+'/client/loadEmployee.do'
+		      			url: path+'/client/loadEmployee.do?flag='+1
 		      		});
 		      		employeeSelData.load();
 	       		}

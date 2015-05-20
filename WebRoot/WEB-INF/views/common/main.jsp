@@ -4,6 +4,7 @@
 <script type="text/javascript" src="resources/js/index.js"></script>
 <script type="text/javascript">
 	var roleCode = '${userSession.role.roleCode}';
+	var right = parseInt('${userSession.counts}');
 	function scode(id){
 		Ext.Ajax.request({
           	url: '<%=path%>/index/findWarnClient.do?id='+id,
@@ -1052,7 +1053,7 @@ Ext.onReady(function() {
 	            tabMainView.setActiveTab(p);
 			}
 	}
-	if(roleCode == '201206' | roleCode == '201207'){
+	if(roleCode == '201206'){
 		Ext.getCmp('btnAlert').html = '<iframe name="centerF" scrolling="auto" frameborder="0" width="100%" height="100%" src="<%=path%>/to_welcome"/>';
 		var viewport = new Ext.Viewport({
 	        layout:'border',

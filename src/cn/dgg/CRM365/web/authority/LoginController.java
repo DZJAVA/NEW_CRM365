@@ -206,7 +206,7 @@ public class LoginController<V> {
 			user.setCounts(7);
 		}
 		if("201207".equals(role)){
-			user.setCounts(7);
+			user.setCounts(8);
 		}
 	}
 

@@ -1114,16 +1114,14 @@ public class ClientController {
 	@RequestMapping("/loadDepartment.do")
 	public ModelAndView loadDepartment(HttpServletRequest req) {
 		JSONObject jsonObject = new JSONObject();
-		String flag = req.getParameter("flag");
+		int flag = Integer.parseInt(req.getParameter("flag"));
 		StringBuffer sb = new StringBuffer();
 		User user =  null;
 		try {
 			user = (User)req.getSession().getAttribute(StaticValues.USER_SESSION);
 			String role = user.getRole().getRoleCode();
-			String hql = "from Department d where 1=1";
-			if("0".equals(flag)){
-				sb.append(" and d.orderStatus = '1'");
-			}
+			String hql = "from Department d where 1=1 and d.orderStatus = '1'";
+			sb.append(" and d.isFront = ").append(flag);
 			if("201203".equals(role)){
 				return MvcUtil.jsonObjectModelAndView(jsonObject);
 			}else if("201202".equals(role)){
@@ -1164,7 +1162,7 @@ public class ClientController {
 	@RequestMapping("/loadEmployee.do")
 	public ModelAndView loadEmployee(HttpServletRequest req){
 		JSONObject jObject = new JSONObject();
-		String flag = req.getParameter("flag");
+		int flag = Integer.parseInt(req.getParameter("flag"));
 		StringBuffer sb = new StringBuffer();
 		String hql = "select u.id, u.userName from User u where u.userDelState = 0 and u.isOrNotEnable = 2";
 		JSONArray data = new JSONArray();
@@ -1182,9 +1180,7 @@ public class ClientController {
 					sb.append(" and u.id = ").append(user.getId());
 				}
 			}
-			if("0".equals(flag)){
-				sb.append(" and u.department.orderStatus = '1' and u.signStatus = 1");
-			}
+			sb.append(" and u.department.isFront = ").append(flag);
 			List<Object[]> list = objDao.findAll(hql+sb);
 			for(Object[] obj : list){
 				JSONObject item = new JSONObject();
@@ -1358,7 +1354,7 @@ public class ClientController {
 		boolean autoFlag = true;
 		PreparedStatement ps = null;
 		String userHql = "select u.id, u.counts from User u where u.signStatus = 1 and u.userDelState = 0 and u.isOrNotEnable = 2 and " +
-			"u.department.orderStatus = '1'";
+			"u.department.orderStatus = '1' and u.department.isFront = 1";
 		int flag = 0;
 		try {
 			if(req.getSession() != null){
@@ -2341,9 +2337,9 @@ public class ClientController {
 					fillClickRec(arr, scList);
 				}else{
 					SeeClient sc = new SeeClient();
-					sc.setC_id(cid);
+					sc.setC_id(Integer.parseInt(cid));
 					sc.setC_name(name+opp);
-					sc.setU_id(user.getId().toString());
+					sc.setU_id(user.getId().intValue());
 					scDao.save(sc);
 					if(scList.size() >= 5){//点击记录大于5时删除一条后再保存点击的客户信息
 						scDao.deleteById(scList.get(0).getId(), SeeClient.class);

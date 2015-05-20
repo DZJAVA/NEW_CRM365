@@ -57,7 +57,7 @@
 			    //--------------部门下拉列表-----------------	  
 			    var departmentSelStore = new Ext.data.Store({
 			          proxy: new Ext.data.HttpProxy({
-			              url: '<%=path%>/client/loadDepartment.do'
+			              url: '<%=path%>/client/loadDepartment.do?flag='+1
 			          }),
 			          reader: new Ext.data.JsonReader({
 			                  root: 'data',
@@ -92,7 +92,7 @@
 				  
 		         var employeeSelData = new Ext.data.Store({
 		     		proxy: new Ext.data.HttpProxy({
-				          url: '<%=path%>/client/loadEmployee.do'
+				          url: '<%=path%>/client/loadEmployee.do?flag='+1
 				    }),
 				    reader: new Ext.data.JsonReader({
 				           root: 'data',
@@ -119,7 +119,7 @@
 				       		if(_dept == '' | _dept == null){
 				       			employeeSelComboBOx.reset();
 					      		employeeSelData.proxy = new Ext.data.HttpProxy({
-					      			url: '/CRM/client/loadEmployee.do'
+					      			url: '/CRM/client/loadEmployee.do?flag='+1
 					      		});
 					      		employeeSelData.load();
 				       		}
