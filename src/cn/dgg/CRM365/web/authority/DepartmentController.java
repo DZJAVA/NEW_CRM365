@@ -111,6 +111,7 @@ public class DepartmentController {
 						item.element("superName", MvcUtil.toJsonString(field.getDepa().getDepaName()));
 					}
 					item.element("remark", MvcUtil.toJsonString(field.getRemark()));
+					item.element("isFront", field.getIsFront());
 					data.add(item);
 				}
 			}

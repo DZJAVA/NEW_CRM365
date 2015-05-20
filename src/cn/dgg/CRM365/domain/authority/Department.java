@@ -27,6 +27,7 @@ public class Department {
 	private String remark;// 备注
 	private Integer superId;
 	private Department depa;
+	private Integer isFront;//前后台标识， 1为前台，2为后台
 	
 	public Department(Long id, String depaName, Integer superId) {
 		this.id = id;
@@ -36,6 +37,15 @@ public class Department {
 
 	public Department() {
 		
+	}
+	
+	@Column(name = "isFront")
+	public Integer getIsFront() {
+		return isFront;
+	}
+
+	public void setIsFront(Integer isFront) {
+		this.isFront = isFront;
 	}
 
 	@Column(name = "superId")

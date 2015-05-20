@@ -31,10 +31,14 @@ public class SignClientView {
 	private String followInfo;
 	private Integer status;
 	private String backDate;
+	private int frontUserId;
+	private int frontDeptId;
+	private int frontSuperId;
 	private String frontUser;
 	private String frontDept;
 	private String userName;
-	private String deptId;
+	private Integer deptId;
+	private Integer backSuperId;
 	private String deptName;
 	private String clientName;//客户名称
 	private String contactTel;//客户联系方式
@@ -155,10 +159,10 @@ public class SignClientView {
 	}
 	
 	@Column(name = "deptId")
-	public String getDeptId() {
+	public Integer getDeptId() {
 		return deptId;
 	}
-	public void setDeptId(String deptId) {
+	public void setDeptId(Integer deptId) {
 		this.deptId = deptId;
 	}
 	
@@ -192,5 +196,37 @@ public class SignClientView {
 	}
 	public void setLoanAmount(String loanAmount) {
 		this.loanAmount = loanAmount;
+	}
+	
+	@Column(name = "frontUserId")
+	public int getFrontUserId() {
+		return frontUserId;
+	}
+	public void setFrontUserId(int frontUserId) {
+		this.frontUserId = frontUserId;
+	}
+	
+	@Column(name = "frontDeptId")
+	public int getFrontDeptId() {
+		return frontDeptId;
+	}
+	public void setFrontDeptId(int frontDeptId) {
+		this.frontDeptId = frontDeptId;
+	}
+	
+	@Column(name = "frontSuperId")
+	public int getFrontSuperId() {
+		return frontSuperId;
+	}
+	public void setFrontSuperId(int frontSuperId) {
+		this.frontSuperId = frontSuperId;
+	}
+	
+	@Column(name = "backSuperId")
+	public Integer getBackSuperId() {
+		return backSuperId;
+	}
+	public void setBackSuperId(Integer backSuperId) {
+		this.backSuperId = backSuperId;
 	}
 }

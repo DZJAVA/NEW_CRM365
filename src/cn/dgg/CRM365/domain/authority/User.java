@@ -37,7 +37,7 @@ public class User {
 	}
 
 	public User(Long id, String userName, String loginId, String password,
-			Role role, Long deptId, String deptname, int superid) {
+			Role role, Long deptId, String deptname, int superid, Integer isFront) {
 		this.id = id;
 		this.userName = userName;
 		this.loginId = loginId;
@@ -47,6 +47,7 @@ public class User {
 		d.setId(deptId);
 		d.setDepaName(deptname);
 		d.setSuperId(superid);
+		d.setIsFront(isFront);
 		this.department = d;
 	}
 

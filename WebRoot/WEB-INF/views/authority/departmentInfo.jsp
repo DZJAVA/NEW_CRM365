@@ -21,6 +21,7 @@
 	            { name: 'orderStatus'},
 	            { name: 'superId'},
 	            { name: 'superName'},
+	            { name: 'isFront'},
 	            { name: 'remark'}
 	        ]
 	    });
@@ -113,6 +114,26 @@
 		      triggerAction : 'all', 
 		      emptyText : '请选择...', // 默认值   selectOnFocus : true,
 		      hiddenName : 'orderStatus'  
+	    });
+	    
+	    var isFrontData = new Ext.data.SimpleStore({
+		      fields:['key', 'value'],
+		      data:[
+	      		[ 1, '前台'],
+			    [ 2, '后台']
+		      ]
+		});
+		var isFrontCombox = new Ext.form.ComboBox({
+		      fieldLabel : '前后台标识',
+		      id : 'isFrontCombox',
+		      store : isFrontData,
+		      editable:false,
+		      displayField : 'value', 
+		      valueField : 'key', 
+		      mode : 'local', 
+		      triggerAction : 'all', 
+		      emptyText : '请选择...', 
+		      hiddenName : 'isFront'  
 	    });
 		var searchButton = {
 			xtype:'button',
@@ -212,6 +233,21 @@
 	            	width:200,
 	                sortable: true,
 	                dataIndex: 'orderStatus'
+	            },
+	            {
+	            	header: '前后台标识',
+	            	width:200,
+	                sortable: true,
+	                dataIndex: 'isFront', renderer: function(val, meda, record){
+		            	if(val === 0){
+		            		record.data.isFront = null;
+		            	}
+		             	switch(val){
+		             		case 1: return '前台';
+		             		case 2: return '后台';
+		             		default: return '';
+		             	}
+		            }
 	            },
 	            {
 	            	header: '备注',
@@ -348,6 +384,7 @@
                           id: 'depaNotes'
                       },
                       departSelComboBox,
+                      isFrontCombox,
                       signStatusCombox,
                       {
                           fieldLabel: '备注',
@@ -362,7 +399,7 @@
 	    var form1Window = new Ext.Window({
 	        id:'formWindow',
 	        width: 350,
-	        height: 280,
+	        height: 300,
 	        modal: true,
 	        layout: 'fit',
 	        plain: true,

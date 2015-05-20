@@ -158,12 +158,14 @@ public class LoginController<V> {
 			return MvcUtil.jsonObjectModelAndView(jsonObject);
 		}
 		List<Object[]> list = objDao.findAll("select u.id, u.userName, u.loginId, u.password, u.role," +
-				"u.department.id, u.department.depaName, u.department.superId from User u where u.loginId='"+user.getLoginId()+"' and u.password='"+user.getPassword()+"' and u.isOrNotEnable=2");
+				"u.department.id, u.department.depaName, u.department.superId, u.department.isFront from User u where u.loginId='"+user.getLoginId()+"' and u.password='"+user.getPassword()+"' and u.isOrNotEnable=2");
 		if (list.size() > 0) {
 			Object[] obj = list.get(0);
 			User loginUser = new User(Long.parseLong(obj[0].toString()), obj[1].toString(), obj[2].toString(),obj[3].toString(),
-					(Role)obj[4], Long.parseLong(obj[5].toString()), obj[6].toString(), obj[7] == null ? 0: Integer.parseInt(obj[7].toString()));
+					(Role)obj[4], Long.parseLong(obj[5].toString()), obj[6].toString(), obj[7] == null ? 0: Integer.parseInt(obj[7].toString()),
+							obj[8] == null ? 0: Integer.parseInt(obj[8].toString()));
 			saveInfoToSession(loginUser, request);
+			judgeRight(loginUser);
 			Log log = new Log();
 		    log.setIp(LoginController.getIpAddress());
 			log.setLoginId(loginUser.getLoginId().toString());
@@ -177,6 +179,35 @@ public class LoginController<V> {
 		jsonObject.element("failure", true);
 		jsonObject.element("msg", "输入错误,请从新输入!");
 		return MvcUtil.jsonObjectModelAndView(jsonObject);
+	}
+	
+	private void judgeRight(User user){
+		int isFront = user.getDepartment().getIsFront();
+		String role = user.getRole().getRoleCode();
+		if("201208".equals(role) && isFront == 1){//前台主管
+			user.setCounts(1);
+		}
+		if("201202".equals(role) && isFront == 1){//前台部门经理
+			user.setCounts(2);
+		}
+		if("201203".equals(role) && isFront == 1){//前台员工
+			user.setCounts(3);
+		}
+		if("201208".equals(role) && isFront == 2){//后台主管
+			user.setCounts(4);
+		}
+		if("201202".equals(role) && isFront == 2){//后台部门经理
+			user.setCounts(5);
+		}
+		if("201203".equals(role) && isFront == 2){//后台员工
+			user.setCounts(6);
+		}
+		if("201201".equals(role)){
+			user.setCounts(7);
+		}
+		if("201207".equals(role)){
+			user.setCounts(7);
+		}
 	}
 
 	/**

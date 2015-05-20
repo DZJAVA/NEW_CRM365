@@ -98,14 +98,28 @@ public class BackController {
 		List<SignClientView> data = new ArrayList<SignClientView>(20);
 		try {
 			user = (User) request.getSession().getAttribute("userSession");
-			roleCode = user.getRole().getRoleCode();
-			if("201202".equals(roleCode)){
-				sb.append(" and sc.deptId = ").append(user.getDepartment().getId());
+			int right = user.getCounts();
+			if(right > 0){
+				if(right == 1){
+					sb.append(" and sc.frontSuperId = ").append(user.getDepartment().getSuperId());
+				}
+				if(right == 2){
+					sb.append(" and sc.frontDeptId = ").append(user.getDepartment().getId());
+				}
+				if(right == 3){
+					sb.append(" and sc.frontUserId = ").append(user.getId());
+				}
+				if(right == 4){
+					sb.append(" and sc.status > 0");
+				}
+				if(right == 5){
+					sb.append(" and sc.status > 0");
+				}
+				if(right == 6){
+					sb.append(" and sc.follower = ").append(user.getId());
+				}
+				data = dao.findAll(hql, pagination);
 			}
-			if("201203".equals(roleCode)){
-				sb.append(" and sc.follower = ").append(user.getId());
-			}
-			data = dao.findAll(hql, pagination);
 			jsonObject.element("totalCount", pagination.getTotalResults());
 		} catch (Exception e) {
 			e.printStackTrace();
