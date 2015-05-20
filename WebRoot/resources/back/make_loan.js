@@ -1,25 +1,24 @@
-	var statusData = new Ext.data.SimpleStore({
+	var interestData = new Ext.data.SimpleStore({
       	fields:['key', 'value'],
       	data:[
-      		[ 0, '资料未齐'],
-		    [ 1, '进件'],
-		    [ 2, '退单']
+      		[ 1, '等额本息'],
+		    [ 2, '先息后本']
       	]
 	});
-	var statusCombox = new Ext.form.ComboBox({
-		id: 'statusCombox',
-	      fieldLabel : '状态',
-	      store : statusData,
+	var interestCombox = new Ext.form.ComboBox({
+	      fieldLabel : '*利息类型',
+	      store : interestData,
 	      editable: false,
+	      allowBlank: false,
 	      displayField : 'value', 
 	      valueField : 'key', 
 	      mode : 'local', 
 	      triggerAction : 'all', 
-	      hiddenName : 'status'  
+	      hiddenName : 'interestType'
     });
 	// ------------------ clientForm -------------------------    
-    var signForm = new Ext.form.FormPanel({
-        id: 'signForm',
+    var makeloanForm = new Ext.form.FormPanel({
+        id: 'makeloanForm',
         bodyStyle: 'padding:5px',
         labelAlign: 'right',
         labelWidth: 90,
@@ -37,24 +36,26 @@
                     },
                     items: [
                         {
-							inputType: 'hidden',
-                            name: 'id'
-                        },
-                        {
                         	xtype: 'datefield',
                         	format: 'Y-m-d',
-                            fieldLabel: '*报单日期',
+                            fieldLabel: '*放款时间',
                             allowBlank: false,
                             editable: false,
-                            name: 'signDate'
+                            name: 'loanDate'
                         },
                         {
-                            fieldLabel: '贷款品种',
-                            name: 'loanType'
+                            fieldLabel: '*服务费',
+                            allowBlank: false,
+                            name: 'serviceFee'
                         },
                         {
-                        	fieldLabel: '来源渠道',
-                        	name: 'loanSource'
+                        	fieldLabel: '*放款利息',
+                        	allowBlank: false,
+                        	name: 'loanInterest'
+                        },
+                        {
+                        	fieldLabel: '收款金额',
+                        	name: 'receiveAmount'
                         }
                     ]
                 },
@@ -68,48 +69,37 @@
                     },
                     items: [
                     	{
-                            fieldLabel: '委托编码',
-                            name: 'clientCode'
+                            fieldLabel: '*放款年限',
+                            allowBlank: false,
+                            name: 'loanYear'
                         },
                         {
                             fieldLabel: '*贷款金额(万)',
                             allowBlank: false,
                             name: 'loanAmount'
                         },
-                        statusCombox
+                        interestCombox
                     ]
                 }
             ]
-        },
-        {
-           	xtype: 'textarea',
-            fieldLabel: '保单银行',
-            anchor: '98%',
-            name:'loanBank'
-       	},
-       	{
-           	xtype: 'textarea',
-            fieldLabel: '前后台接单情况',
-            anchor: '98%',
-            name:'followInfo'
-       	}
+        }																			
 	]
     });
-	var signWindow = new Ext.Window({
-    	title: '编辑签单信息',
-        width: 650,
-        height: 350,
+	var makeloanWindow = new Ext.Window({
+    	title: '放款',
+        width: 600,
+        height: 300,
         modal: true,
         layout: 'fit',
         plain: true,
         bodyStyle: 'padding:5px;',
         buttonAlign: 'center',
-        items: signForm,
+        items: makeloanForm,
         closable: true,
         closeAction: 'hide',
         buttons: [
             {
-            	id: 'saveSign',
+            	id: 'makeloanBtn',
             	text: '保存',
         		iconCls:'saves'
             },
@@ -117,7 +107,7 @@
            		text: '返回',
 	        	iconCls:'returns',
 	       	 	handler: function(){
-	           		signWindow.hide();
+	           		makeloanWindow.hide();
 	        	}
             }
        	]

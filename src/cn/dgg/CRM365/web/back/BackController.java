@@ -1,5 +1,9 @@
 package cn.dgg.CRM365.web.back;
 
+import java.sql.Connection;
+import java.sql.PreparedStatement;
+import java.sql.SQLException;
+import java.sql.Types;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
@@ -21,6 +25,8 @@ import cn.dgg.CRM365.domain.backstage.LoanSource;
 import cn.dgg.CRM365.domain.backstage.SignClientEntity;
 import cn.dgg.CRM365.domain.backstage.SignClientView;
 import cn.dgg.CRM365.domain.backstage.SourceLog;
+import cn.dgg.CRM365.domain.resourcesManage.Client;
+import cn.dgg.CRM365.util.commonUtil.DBManager;
 import cn.dgg.CRM365.util.commonUtil.StaticValues;
 import cn.dgg.CRM365.util.mvc.MvcUtil;
 import cn.dgg.CRM365.util.orm.ICommonDAO;
@@ -64,6 +70,10 @@ public class BackController {
 	@Autowired
 	@Qualifier("commonDAOProxy")
 	ICommonDAO<SourceLog> slDao;
+	
+	@Autowired
+	@Qualifier("commonDAOProxy")
+	ICommonDAO<Client> cDao;
 	
 	@RequestMapping("/jumpPage.do")
 	public ModelAndView jumpPage(){
@@ -119,6 +129,10 @@ public class BackController {
 				if(sc.getId() == null){
 					sc.setClient(cid);
 					scDao.save(sc);
+					SqlBuilder sb = new SqlBuilder("Client", SqlBuilder.TYPE_UPDATE);
+					sb.addField("clientStatus", "1");
+					sb.addWhere("id", Long.parseLong(cid+""));
+					cDao.updateByHQL(sb.getSql(), sb.getParams());
 				}else{
 					SqlBuilder sb = new SqlBuilder("SignClientEntity", SqlBuilder.TYPE_UPDATE);
 					sb.addField("clientCode", sc.getClientCode());
@@ -202,6 +216,84 @@ public class BackController {
 		return MvcUtil.jsonObjectModelAndView(jsonObject);
 	}
 	/**
+	 * 手动分配客户信息
+	  *<功能简述>
+	  *<功能详细描述>
+	  *@param id 客户信息id集合
+	  *@param _emp 用户id
+	  * @return [参数说明]
+	  * 
+	  * @return ModelAndView [返回类型说明]
+	  * @exception throws [异常类型] [异常说明]
+	  * @see [类、类#方法、类#成员]
+	  * 黄剑锋
+	  * 2012-12-18 16:35 第一次新建
+	 */
+	@RequestMapping("/assignClient.do")
+	public ModelAndView assignClient(HttpServletRequest req, @RequestParam("_emp") int _emp,
+			@RequestParam("ids") String ids){
+		JSONObject json = new JSONObject();
+		String hql = "select c.id from Client c where c.follower.id = ? and c.clientStatus <> '3'";
+		User user = null;
+		Connection conn = null;
+		boolean autoFlag = true;
+		PreparedStatement ps = null;
+		try {
+			if("".equals(ids)){
+				json.element("success", true);
+				json.element("msg", "参数异常");
+				return MvcUtil.jsonObjectModelAndView(json);
+			}
+			if(req.getSession() != null){
+				user = (User)req.getSession().getAttribute(StaticValues.USER_SESSION);
+				String now = StaticValues.sdf.format(new Date());
+				conn = DBManager.getConnection();
+				autoFlag = conn.getAutoCommit();
+				conn.setAutoCommit(false);//禁止自动提交
+				ps = conn.prepareStatement("update sign_client set follower=?,followDate=? where id=?");
+				String[] id = ids.split(",");
+				for(int i = 0, len = id.length; i < len; i++){
+					ps.setInt(1, _emp);
+					ps.setString(2, now);
+					ps.setInt(3, Integer.parseInt(id[i]));
+					ps.addBatch();
+					ps.clearParameters();
+				}
+				ps.executeBatch();
+				conn.commit();
+			}
+			json.element("success", true);
+			json.element("msg", "分配成功!");
+			return MvcUtil.jsonObjectModelAndView(json);
+		} catch (Exception e) {
+			try {
+				conn.rollback();//回滚
+			} catch (SQLException e1) {
+				e1.printStackTrace();
+			}
+			e.printStackTrace();
+			json.element("failure", true);
+			json.element("msg", "提交失败,请联系管理员!");
+			return MvcUtil.jsonObjectModelAndView(json);
+		} finally {
+			if(ps != null){
+				try {
+					ps.close();
+				} catch (SQLException e) {
+					e.printStackTrace();
+				}
+			}
+			if(conn != null){
+				try {
+					conn.setAutoCommit(autoFlag);//恢复以前的提交状态
+					conn.close();
+				} catch (SQLException e) {
+					e.printStackTrace();
+				}
+			}
+		}
+	}
+	/**
 	 * 加载渠道
 	 * @param request
 	 * @param response
@@ -221,7 +313,7 @@ public class BackController {
 		}
 		try {
 			sb.append(" and ls.signClient = ").append(signId);
-			data = lsDao.findAll(hql, pagination);
+			data = lsDao.findAll(hql+sb, pagination);
 			jsonObject.element("totalCount", pagination.getTotalResults());
 		} catch (Exception e) {
 			e.printStackTrace();
@@ -274,9 +366,9 @@ public class BackController {
 	 */
 	@RequestMapping("/makeLoans.do")
 	public ModelAndView makeLoans(LoanSource ls, HttpServletRequest request,
-			@RequestParam("signId") int signId){
+			@RequestParam("sourceId") int sourceId){
 		JSONObject jsonObject = new JSONObject();
-		if(signId <= 0){
+		if(sourceId <= 0){
 			jsonObject.element("failure", true);
 			jsonObject.element("msg", "提交异常!");
 			return MvcUtil.jsonObjectModelAndView(jsonObject);
@@ -291,7 +383,7 @@ public class BackController {
 				sb.addField("interestType", ls.getInterestType());
 				sb.addField("serviceFee", ls.getServiceFee());
 				sb.addField("status", 1);//0未通过，1放款
-				sb.addWhere("id", ls.getId());
+				sb.addWhere("id", sourceId);
 				dao.updateByHQL(sb.getSql(), sb.getParams());
 				jsonObject.element("success", true);
 				jsonObject.element("msg", "放款成功！");
@@ -353,7 +445,7 @@ public class BackController {
 		}
 		try {
 			sb.append(" and ls.source = ").append(sourceId);
-			data = slDao.findAll(hql, pagination);
+			data = slDao.findAll(hql+sb, pagination);
 			String[] date = null;
 			for(SourceLog sl : data){
 				date = sl.getLogDate().split(":");

@@ -25,7 +25,7 @@ public class LoanSource {
 	private String loanYear;
 	private String loanInterest;
 	private String serviceFee;
-	private String interestType;
+	private Integer interestType;
 	private int signClient;
 	private String sourceName;
 	private String loanAmount;
@@ -91,10 +91,10 @@ public class LoanSource {
 	}
 	
 	@Column(name = "interestType")
-	public String getInterestType() {
+	public Integer getInterestType() {
 		return interestType;
 	}
-	public void setInterestType(String interestType) {
+	public void setInterestType(Integer interestType) {
 		this.interestType = interestType;
 	}
 	

@@ -343,45 +343,28 @@
 	    function signEvent(btn){
 	    	if(!btn.hasListener('click')){
 	    		btn.addListener('click', function(){
-	    			if (myGrid.getSelectionModel().hasSelection()) {
-           	    	var record = myGrid.getSelectionModel().getSelected();
-           	 		if(record != null){
-                         var s_id = record.id;
-               			 var s_remark = Ext.getCmp('signRemark').getValue();
-               			 var s_qdoppType = signOppType.getValue();
-               		     var s_loanAmount11 = Ext.getCmp('loanAmount11').getValue();
-               			 if(s_qdoppType =='房贷'){
-           			     	s_qdoppType=1;
-       			   		 }
-           			     if(s_qdoppType == '信贷'){
-            			    s_qdoppType=2;
-               			 }
-               			 if(s_qdoppType == '短借'){
-               			 	s_qdoppType=3;
-               			 }
-               			 if(s_qdoppType == '企贷'){
-	               	     	s_qdoppType=4;
-              			 }
-                         signForm.getForm().submit({
-	                            url: '<%=path%>/ResourcesTrack/updateStatus.do',
-	                            params: {
-	                                s_id: s_id,
-	                                s_remark : s_remark,
-	                                s_qdoppType:s_qdoppType,
-	                                s_loanAmount11:s_loanAmount11
-	                            },
-	                            success: function(aResponse, aOptions){
-	                            	signWindow.hide();
-								    masterStore.reload({callback: myGridUpdateAction1});
-	                                Ext.MessageBox.alert('提示', aOptions.result.msg); 
-	                            },
-	                            failure: function(aResponse, aOptions){
-	                                Ext.MessageBox.alert('提示', aOptions.result.msg); 
-	                            }
-	                        })
-                        }
-	            	}
-	    		});
+		            if(signForm.getForm().isValid()){
+		            	var record = myGrid.getSelectionModel().getSelected();
+	           			signForm.getForm().submit({
+	                    	url: path+'/sign_client/saveOrUpdateSign.do',
+		                    params: {
+		                        cid: record.id
+		                    },
+		                    waitTitle: '请等待',
+		                    waitMsg: '正在努力的保存数据...',
+		                    timeout: 20,
+		                    success: function(aForm, aAction){
+		                    	signWindow.hide();
+		                    	masterStore.reload({callback: myGridUpdateAction1});
+	                    		Ext.MessageBox.alert('提示', aAction.result.msg); 
+		                    },
+		                    failure: function(aForm, aAction) {
+		                    	var result = aAction.result;
+		                        Ext.MessageBox.alert('提示', result.msg);                           
+		                    }
+	               		});
+		            }
+	   			});
 	    	}
 	   }
        //-------------签单------------------
@@ -393,21 +376,14 @@
 	        disabled: true,
        		handler: function(){
 	         	var record = myGrid.getSelectionModel().getSelected();
-	            if(record != null){
-	            	judgeJs('sign_clientJs', 'resources/client/signClient.js');
-	            	var btn = Ext.getCmp('signAction');
-	            	signEvent(btn);
-	            	var s_status = record.get('clientStatus');
-	            	var s_oppType = record.get('oppType');
-	            	var s_loanAmount = record.get('loanAmount');
-		            if(s_status == '1'){
-		            	Ext.MessageBox.alert('提示', "该条记录状态为已签单！");
-		            }else{
-		            	Ext.getCmp('signRemark').setValue('');
-		            	signOppType.setValue(s_oppType);
-		            	Ext.getCmp('loanAmount11').setValue(s_loanAmount);
-	           			signWindow.show();
-        			}
+	            if(record){
+	            	judgeJs('sign_client', 'resources/back/edit_sign.js');
+	            	var btn = Ext.getCmp('saveSign');
+		        	signEvent(btn);
+		            signForm.getForm().reset();
+		            signWindow.show();
+		            statusCombox.setValue('');
+		            signWindow.setTitle('签单');
             	}
 	        }
 	    });

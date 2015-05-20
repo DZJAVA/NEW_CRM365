@@ -26,11 +26,11 @@ public class SignClientEntity {
 	private String loanType;
 	private String loanBank;
 	private String loanSource;
-	private int follower;
+	private Integer follower;
 	private int client;
 	private String followDate;
 	private String followInfo;
-	private int status;
+	private Integer status;
 	private String backDate;
 	private String loanAmount;//贷款金额
 	
@@ -85,10 +85,10 @@ public class SignClientEntity {
 	}
 	
 	@Column(name = "follower")
-	public int getFollower() {
+	public Integer getFollower() {
 		return follower;
 	}
-	public void setFollower(int follower) {
+	public void setFollower(Integer follower) {
 		this.follower = follower;
 	}
 	
@@ -109,10 +109,10 @@ public class SignClientEntity {
 	}
 	
 	@Column(name = "status")
-	public int getStatus() {
+	public Integer getStatus() {
 		return status;
 	}
-	public void setStatus(int status) {
+	public void setStatus(Integer status) {
 		this.status = status;
 	}
 	

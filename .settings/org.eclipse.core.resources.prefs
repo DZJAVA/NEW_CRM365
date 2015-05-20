@@ -1,9 +1,11 @@
-#Tue May 19 19:27:34 CST 2015
+#Wed May 20 12:55:38 CST 2015
 eclipse.preferences.version=1
 encoding//WebRoot/resources/back/addLog.js=UTF-8
 encoding//WebRoot/resources/back/addSource.js=UTF-8
+encoding//WebRoot/resources/back/assignSign.js=UTF-8
 encoding//WebRoot/resources/back/backstage.js=UTF-8
 encoding//WebRoot/resources/back/edit_sign.js=UTF-8
+encoding//WebRoot/resources/back/make_loan.js=UTF-8
 encoding//WebRoot/resources/client/addClient.js=UTF-8
 encoding//WebRoot/resources/client/addTrack.js=UTF-8
 encoding//WebRoot/resources/client/assignClient.js=UTF-8

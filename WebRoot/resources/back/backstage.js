@@ -88,6 +88,114 @@ var initSignGrid = function(){
             }
         }
     });
+    var delAction = new Ext.Action({
+        text: '删除签单',
+        iconCls: 'vcard_delete',
+        disabled: true,
+        handler: function(){
+            if (SIGN.sign.grid.getSelectionModel().hasSelection()) {
+                Ext.Msg.confirm('删除确认', '是否删除选择的记录?', function(aButton){
+                    if (aButton == 'yes'){
+                        var record = SIGN.sign.grid.getSelectionModel().getSelected();
+                       	Ext.Ajax.request({
+                            url: path+'/sign_client/deleteSignClient.do',
+                            params: {
+                                id: record.id
+                            },
+                            success: function(aResponse, aOptions){
+                            	SIGN.sign.store.reload();
+                            	SIGN.source.store.removeAll();
+                            	SIGN.log.store.removeAll();
+                                var result = Ext.decode(aResponse.responseText);
+			                    Ext.MessageBox.alert('提示', result.msg);
+                            },
+                            failure: function(aResponse, aOptions){
+                                var result = Ext.decode(aOptions.response.responseText);
+                                Ext.MessageBox.alert('提示', result.msg);
+                            }
+                        });
+                    }
+                });
+            }
+        }
+   	});
+   	function assignEvent(btn){
+    	if(!btn.hasListener('click')){
+    		btn.addListener('click', function(){
+    			var _emp = employeeComboBOx.getValue();
+    			var records = SIGN.sign.grid.getSelectionModel().getSelections();
+    			var ids = [];
+    			if(records && records.length){
+                    for(var i = 0, len = records.length; i < len; i++) {
+	    				ids.push(records[i].id);
+                    }
+    			}
+    			if(_emp){
+    				Ext.Ajax.request({
+                        url: path+'/sign_client/assignClient.do',
+                        params: {
+                            _emp: _emp,
+                            ids: ids.length?ids.join(','):''
+                        },
+                        success: function(aResponse, aOptions){
+                        	assignWindow.hide();
+                        	SIGN.sign.store.reload();
+                            var result = Ext.decode(aResponse.responseText);
+                   			Ext.MessageBox.alert('提示', result.msg);
+                        },
+                        failure: function(aResponse, aOptions){
+                        	assignWindow.hide();
+                            Ext.MessageBox.alert('提示', result.msg);
+                        }
+                    });
+    			}
+    		});
+    	}
+    }
+    //------------手动分配客户信息--------------
+    var assignAction = new Ext.Action({
+        text: '手动分配',
+        iconCls: 'shoudong',
+        disabled: true,
+        handler: function(){
+        	judgeJs('assign_sign', 'resources/back/assignSign.js');
+        	var btn = Ext.getCmp('assignAction');
+        	assignEvent(btn);
+        	employeeComboBOx.reset();
+        	departComboBox.reset();
+            assignWindow.show();
+        }
+    });
+    //------------手动分配客户信息--------------
+    var exitAction = new Ext.Action({
+        text: '退单',
+        iconCls: 'drop-no',
+        disabled: true,
+        handler: function(){
+        	if (SIGN.sign.grid.getSelectionModel().hasSelection()) {
+                Ext.Msg.confirm('删除确认', '是否退单?', function(aButton){
+                    if (aButton == 'yes'){
+                        var record = SIGN.sign.grid.getSelectionModel().getSelected();
+                       	Ext.Ajax.request({
+                            url: path+'/sign_client/exitClient.do',
+                            params: {
+                                sid: record.id
+                            },
+                            success: function(aResponse, aOptions){
+                            	SIGN.sign.store.reload();
+                                var result = Ext.decode(aResponse.responseText);
+			                    Ext.MessageBox.alert('提示', result.msg);
+                            },
+                            failure: function(aResponse, aOptions){
+                                var result = Ext.decode(aOptions.response.responseText);
+                                Ext.MessageBox.alert('提示', result.msg);
+                            }
+                        });
+                    }
+                });
+            }
+        }
+    });
    	// --------------- grid  资料列表 --------------------
     SIGN.sign.grid = new Ext.grid.GridPanel({
         store: SIGN.sign.store,
@@ -128,7 +236,7 @@ var initSignGrid = function(){
             {header: '退单时间', width:90,dataIndex: 'backDate'}
         ],
         tbar: [
-        	editAction
+        	editAction, delAction, assignAction, exitAction
         ],
         listeners: {
         	'rowdblclick': function(grid){
@@ -158,7 +266,13 @@ var initSignGrid = function(){
        			params: {start:0, limit:20}
          	});
          	SIGN.source.add.enable();
+         	delAction.enable();
+         	assignAction.enable();
+         	exitAction.enable();
         }else{
+         	delAction.disable();
+         	exitAction.disable();
+         	assignAction.disable();
         	SIGN.source.add.disable();
         	SIGN.source.store.removeAll();
         }
@@ -277,6 +391,51 @@ var initSourceGrid = function(){
             }
         }
    	});
+   	var makeloanEvents = function(btn){
+    	if(!btn.hasListener('click')){
+    		btn.addListener('click', function(){
+    			var record = SIGN.source.grid.getSelectionModel().getSelected();
+    			var sourceId = record.get('id');
+	            if(makeloanForm.getForm().isValid()){
+           			makeloanForm.getForm().submit({
+                    	url: path+'/sign_client/makeLoans.do',
+	                    params: {
+	                        sourceId: sourceId
+	                    },
+	                    waitTitle: '请等待',
+	                    waitMsg: '正在努力的保存数据...',
+	                    timeout: 20,
+	                    success: function(aForm, aAction){
+	                    	makeloanWindow.hide();
+	                    	SIGN.source.store.reload();
+                    		Ext.MessageBox.alert('提示', aAction.result.msg); 
+	                        SIGN.source.store.reload();
+	                    },
+	                    failure: function(aForm, aAction) {
+	                    	var result = aAction.result;
+	                        Ext.MessageBox.alert('提示', result.msg);                           
+	                    }
+               		});
+	            }
+   			});
+    	}
+    };
+   	var makeloanAction = new Ext.Action({
+        text: '放款',
+        iconCls: 'drop-yes',
+        disabled: true,
+        handler: function(){
+        	var record = SIGN.source.grid.getSelectionModel().getSelected();
+        	if(record){
+	        	judgeJs('make_loan', 'resources/back/make_loan.js');
+	        	var btn = Ext.getCmp('makeloanBtn');
+	        	makeloanEvents(btn);
+	            makeloanForm.getForm().reset();
+	            makeloanWindow.show();
+	            makeloanForm.getForm().loadRecord(record);
+        	}
+        }
+    });
     //-----------------资料追踪-----------------
 	SIGN.source.grid = new Ext.grid.GridPanel({
         store: SIGN.source.store,
@@ -291,7 +450,7 @@ var initSourceGrid = function(){
             {header: '渠道名称', width:80, dataIndex: 'sourceName'},
             {header: '渠道金额', width:150, dataIndex: 'sourceAmount'},
             {header: '服务费用', width:150, dataIndex: 'serviceFee'},
-            {header: '状态', width:150, dataIndex: 'status', renderer: function(val){
+            {header: '状态', width:150, dataIndex: 'status', renderer: function(val, meda, record){
              	switch(val){
              		case 0: return '未通过';
              		case 1: return '放款';
@@ -302,11 +461,20 @@ var initSourceGrid = function(){
             {header: '放款金额', width:150, dataIndex: 'loanAmount'},
             {header: '放款年限', width:150, dataIndex: 'loanYear'},
             {header: '放款利息', width:150, dataIndex: 'loanInterest'},
-            {header: '利息类型', width:150, dataIndex: 'interestType'},
+            {header: '利息类型', width:150, dataIndex: 'interestType', renderer: function(val, meda, record){
+            	if(val === 0){
+            		record.data.interestType = null;
+            	}
+             	switch(val){
+             		case 1: return '等额本息';
+             		case 2: return '先息后本';
+             		default: return '';
+             	}
+            }},
             {header:'收款金额', width:130,dataIndex: 'receiveAmount'}
         ],
         tbar: [
-        	SIGN.source.add, editAction, delAction
+        	SIGN.source.add, editAction, delAction, makeloanAction
         ],
         listeners : {
 		},
@@ -324,6 +492,7 @@ var initSourceGrid = function(){
        		editAction.enable();
        		delAction.enable();
        		SIGN.log.add.enable();
+       		makeloanAction.enable();
        		SIGN.log.store.setBaseParam('sourceId', record.get('id'));
         	SIGN.log.store.load({
              	params: {start:0, limit:20}
@@ -331,6 +500,7 @@ var initSourceGrid = function(){
        	}else{
        		editAction.disable();
        		delAction.disable();
+       		makeloanAction.disable();
        		SIGN.log.add.disable();
        		SIGN.source.store.removeAll();
        	}
