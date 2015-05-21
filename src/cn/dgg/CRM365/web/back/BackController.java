@@ -188,7 +188,7 @@ public class BackController {
 		try{
 			SqlBuilder sb = new SqlBuilder("SignClientEntity", SqlBuilder.TYPE_UPDATE);
 			sb.addField("backDate", StaticValues.sdf.format(new Date()));
-			sb.addField("status", 2);
+			sb.addField("status", 3);
 			sb.addWhere("id", sid);
 			scDao.updateByHQL(sb.getSql(), sb.getParams());
 			jsonObject.element("success", true);

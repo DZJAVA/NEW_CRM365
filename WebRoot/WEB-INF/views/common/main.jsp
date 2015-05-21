@@ -1074,6 +1074,8 @@ Ext.onReady(function() {
 	}else{
 		if(roleCode == '201204'){
 			Ext.getCmp('btnAlert').html = '<iframe name="centerF" scrolling="auto" frameborder="0" width="100%" height="100%" src="<%=path%>/to_welcome"/>';
+		}else if(right){
+			
 		}else{
 			Ext.getCmp('btnAlert').add(mainPanels);
 			Ext.getCmp('btnAlert').doLayout();
@@ -1115,7 +1117,7 @@ Ext.onReady(function() {
 	  	interval: 200000 //1 second
 	}
 	var runner = new Ext.util.TaskRunner();
-	if(roleCode == '201202' | roleCode == '201203'){
+	if(right == 2 || right == 3){
 		runner.start(task);
 	}
 });

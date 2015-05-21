@@ -221,7 +221,7 @@ var initSignGrid = function(){
             {header: '联系电话', width:90, dataIndex: 'contactTel'},
             {header: '贷款金额', width:80, dataIndex: 'loanAmount'},
             {header: '贷款品种', width:100, dataIndex: 'loanType'},
-            {header: '保单银行', width:150, dataIndex: 'loanBank',renderer: function(value, metadata){
+            {header: '报单银行', width:150, dataIndex: 'loanBank',renderer: function(value, metadata){
                	metadata.attr = 'ext:qtip="' + value +'"';  
                	return value;
              }},
@@ -232,11 +232,12 @@ var initSignGrid = function(){
             {header: '状态', width:90, dataIndex: 'status', renderer: function(val){
              	switch(val){
              		case 0: return '资料未齐';
-             		case 1: return '进件';
-             		case 2: return '退单';
+             		case 1: return '资料已齐';
+             		case 2: return '进件';
+             		case 3: return '退单';
              		default: return '资料未齐';
              	}
-              	}},
+           	}},
             {header: '退单时间', width:90,dataIndex: 'backDate'}
         ],
         tbar: [

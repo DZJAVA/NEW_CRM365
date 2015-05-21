@@ -2,8 +2,9 @@
       	fields:['key', 'value'],
       	data:[
       		[ 0, '资料未齐'],
-		    [ 1, '进件'],
-		    [ 2, '退单']
+      		[ 1, '资料已齐'],
+		    [ 2, '进件'],
+		    [ 3, '退单']
       	]
 	});
 	var statusCombox = new Ext.form.ComboBox({
@@ -83,7 +84,7 @@
         },
         {
            	xtype: 'textarea',
-            fieldLabel: '保单银行',
+            fieldLabel: '报单银行',
             anchor: '98%',
             name:'loanBank'
        	},

@@ -377,7 +377,7 @@
        		handler: function(){
 	         	var record = myGrid.getSelectionModel().getSelected();
 	            if(record){
-	            	judgeJs('sign_client', 'resources/back/edit_sign.js');
+	            	judgeJs('sign_client', 'resources/client/add_sign.js');
 	            	var btn = Ext.getCmp('saveSign');
 		        	signEvent(btn);
 		            signForm.getForm().reset();
