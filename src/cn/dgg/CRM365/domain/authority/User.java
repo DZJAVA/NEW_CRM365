@@ -27,7 +27,6 @@ public class User {
 	private int isOrNotEnable;// 用户是否停用 1 停用 2 启用
 	private String remark;
 	private Role role;// 角色对象
-	private int userDelState;//删除状态,0未删除,1已删除
 	private Department department;
 	private int counts;
 	private int signStatus;
@@ -161,14 +160,4 @@ public class User {
 	public void setTelPhone(String telPhone) {
 		this.telPhone = telPhone;
 	}
-
-	@Column(name = "userDelState")
-	public int getUserDelState() {
-		return userDelState;
-	}
-
-	public void setUserDelState(int userDelState) {
-		this.userDelState = userDelState;
-	}
-
 }

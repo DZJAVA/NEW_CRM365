@@ -1164,7 +1164,7 @@ public class ClientController {
 		JSONObject jObject = new JSONObject();
 		int flag = Integer.parseInt(req.getParameter("flag"));
 		StringBuffer sb = new StringBuffer();
-		String hql = "select u.id, u.userName from User u where u.userDelState = 0 and u.isOrNotEnable = 2";
+		String hql = "select u.id, u.userName from User u where u.isOrNotEnable = 2";
 		JSONArray data = new JSONArray();
 		User user = null;
 		try {
@@ -1210,7 +1210,7 @@ public class ClientController {
 	public ModelAndView loadEmployees(HttpServletRequest request){
 		JSONObject jObject = new JSONObject();
 		String eid = request.getParameter("eid");
-		String hql = "from User u where u.userDelState = 0 and u.isOrNotEnable = 2 and u.department.id= " + Long.parseLong(eid);
+		String hql = "from User u where u.isOrNotEnable = 2 and u.department.id= " + Long.parseLong(eid);
 		JSONArray data = new JSONArray();
 		User user = null;
 		StringBuffer sb = new StringBuffer();
@@ -1353,7 +1353,7 @@ public class ClientController {
 		Connection conn = null;
 		boolean autoFlag = true;
 		PreparedStatement ps = null;
-		String userHql = "select u.id, u.counts from User u where u.signStatus = 1 and u.userDelState = 0 and u.isOrNotEnable = 2 and " +
+		String userHql = "select u.id, u.counts from User u where u.signStatus = 1 and u.isOrNotEnable = 2 and " +
 			"u.department.orderStatus = '1' and u.department.isFront = 1";
 		int flag = 0;
 		try {
@@ -1372,7 +1372,7 @@ public class ClientController {
 				StringBuilder sb = new StringBuilder("select c.id from Client c where 1=1");
 				if("201208".equals(role)){
 					sb.append(" and c.follower.id = ").append(user.getId());
-					userHql = "select u.id, u.counts from User u where u.signStatus = 1 and u.userDelState = 0 and u.isOrNotEnable = 2 and " +
+					userHql = "select u.id, u.counts from User u where u.signStatus = 1 and u.isOrNotEnable = 2 and " +
 						"u.department.orderStatus = '1' and u.department.superId = "+user.getDepartment().getSuperId();
 					difHql = "from ClientDifRecord cdr where flag = "+user.getDepartment().getSuperId();
 					flag = user.getDepartment().getSuperId();

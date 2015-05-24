@@ -1,2 +1,3 @@
 部门表加前后台字段：isFront int
 设置用户、客户级联外键
+删除用户userDelState字段

@@ -359,7 +359,7 @@ public class EmployeController {
 		SqlBuilder sb = null;
 		try {
 			for (String i : ids) {
-				List<Object> userId = objDao.findAll("select e.id from User e where e.employee.id="+Long.parseLong(i)+" and e.userDelState='0'");
+				List<Object> userId = objDao.findAll("select e.id from User e where e.employee.id="+Long.parseLong(i));
 				List<Object> cuser = new ArrayList<Object>();
 				if(userId.size() > 0){
 					Long uid = Long.parseLong(userId.get(0).toString());
@@ -370,7 +370,6 @@ public class EmployeController {
 						sb.addWhere("id", Long.parseLong(i));
 						dao.updateByHQL(sb.getSql(), sb.getParams());
 						sb = new SqlBuilder("User", SqlBuilder.TYPE_UPDATE);
-						sb.addField("userDelState", "1");
 						sb.addField("employee.id", null);
 						sb.addWhere("id", uid);
 						dao.updateByHQL(sb.getSql(), sb.getParams());

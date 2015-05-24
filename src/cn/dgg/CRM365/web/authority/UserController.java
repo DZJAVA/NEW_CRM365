@@ -92,7 +92,7 @@ public class UserController {
 			@RequestParam("_userName")
 			String user_name) {
 		List list = new ArrayList();
-		String hql = "from User u where 1=1 and u.userDelState=0";
+		String hql = "from User u where 1=1";
 		JSONObject jsonObject = new JSONObject();
 		Pagination pagination = new Pagination();
 		StringBuffer wherehql = new StringBuffer();
