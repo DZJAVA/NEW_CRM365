@@ -232,46 +232,6 @@
 	        	}
        	 	}
     	});
-	    function exitEvent(btn){
-	    	if(!btn.hasListener('click')){
-	    		btn.addListener('click', function(){
-            		var record = clientStore.getAt(0);
-            	    var tuid_id = record.id;
-                    var eremark = Ext.getCmp('exitRemark').getValue();
-                    Ext.Ajax.request({
-                        url: path+'/loan/exitSure.do',
-                        params: {
-                            tuid_id: tuid_id,
-                            eremark: eremark
-                        },
-                        success: function(aResponse, aOptions){
-                        	exitWindow.hide();
-			    			clientStore.reload();
-                            var result = Ext.decode(aResponse.responseText);
-                   			Ext.MessageBox.alert('提示', result.msg);
-                        },
-                        failure: function(aResponse, aOptions){
-                            var result = Ext.decode(aResponse.responseText);
-                   			Ext.MessageBox.alert('提示', result.msg);
-                        }
-                    });
-	    		});
-	    	}
-	    }
-	    var exitAction = new Ext.Action({
-	        text: '退单',
-	        iconCls: 'drop-no',
-	        handler: function(){
-	        	if(clientStore.getAt(0) != null){
-	       	 		judgeJs('exit_clientJs', 'resources/client/exitClient.js');
-	       	 		var btn = Ext.getCmp('exitClient');
-	       	 		exitEvent(btn);
-	       			exitWindow.show();
-	        	}else{
-	        		Ext.MessageBox.alert('提示', '没有相应的客户信息!');
-	        	}
-	        }
-	    });
         //----------首页双击进入对淘汰资源的直接认领--------------
 	    var renlingAction = new Ext.Action({
 	        text: '认领资源',
@@ -406,7 +366,7 @@
 	        iconCls: 'drop-yes',
        		handler: function(){
             	if(clientStore.getAt(0) != null){
-        			judgeJs('sign_client', 'resources/back/edit_sign.js');
+        			judgeJs('sign_client', 'resources/client/add_sign.js');
 	            	var btn = Ext.getCmp('saveSign');
 		        	signEvent(btn);
 		            signForm.getForm().reset();
@@ -791,7 +751,7 @@
 	            {header:'计划时间',sortable:true,width:130,dataIndex:'plantime'}
 	        ],
 	        tbar: [
-		        _gridStoreNewAction, _gridStoreEditAction, updateStatusAction, exitAction
+		        _gridStoreNewAction, _gridStoreEditAction, updateStatusAction
 	        ],
 	        bbar: new Ext.PagingToolbar({
 	            pageSize: 20,

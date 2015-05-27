@@ -214,50 +214,6 @@
            	 	}
        	 	}
     	});
-	    function exitEvent(btn){
-	    	if(!btn.hasListener('click')){
-	    		btn.addListener('click', function(){
-	    			if (myGrid.getSelectionModel().hasSelection()) {
-	            		var record = myGrid.getSelectionModel().getSelected();
-	            	    var tuid_id = record.id;
-                        var eremark = Ext.getCmp('exitRemark').getValue();
-                        Ext.Ajax.request({
-                            url: '<%=path%>/loan/exitSure.do',
-                            params: {
-                                tuid_id: tuid_id,
-                                eremark: eremark
-                            },
-                            success: function(aResponse, aOptions){
-                            	exitWindow.hide();
-							    masterStore.reload({callback: myGridUpdateAction1});
-                                var result = Ext.decode(aResponse.responseText);
-			                    Ext.MessageBox.alert('提示', result.msg);
-                            },
-                            failure: function(aResponse, aOptions){
-                                var result = Ext.decode(aResponse.responseText);
-			                    Ext.MessageBox.alert('提示', result.msg);
-                            }
-                        });
-	            	}
-	    		});
-	    	}
-	    }
-	    var exitAction = new Ext.Action({
-	        text: '退单',
-	        iconCls: 'drop-no',
-	        disabled: true,
-	        handler: function(){
-	        	if (myGrid.getSelectionModel().hasSelection()) {
-           	    	var record = myGrid.getSelectionModel().getSelected();
-            	 	if(record != null){
-            	 		judgeJs('exit_clientJs', 'resources/client/exitClient.js');
-            	 		var btn = Ext.getCmp('exitClient');
-            	 		exitEvent(btn);
-             			exitWindow.show();
-            	 	}
-           	 	}
-	        }
-	    });
         //----------首页双击进入对淘汰资源的直接认领--------------
 	    function setAllowBlank(val){
 	    	if(val == '1'){
@@ -348,7 +304,8 @@
 	           			signForm.getForm().submit({
 	                    	url: path+'/sign_client/saveOrUpdateSign.do',
 		                    params: {
-		                        cid: record.id
+		                        cid: record.id,
+		                        data: ''
 		                    },
 		                    waitTitle: '请等待',
 		                    waitMsg: '正在努力的保存数据...',
@@ -721,11 +678,6 @@
       	function myGridUpdateAction1 (){
             var record = myGrid.getSelectionModel().getSelected(); 
             if(record != null){
-	            if(record.get('clientStatus') == 1){
-	 		    	exitAction.enable();
-	       	    }else{
-		            exitAction.disable();
-	       	    }
 	      	    if( record.get('clientStatus') == 3){
 	           	    clientEditAction.disable();
 	           	    myGridFailureResourceAction.disable();
@@ -1395,7 +1347,7 @@
 	            {header:'计划时间',sortable:true,width:130,dataIndex:'plantime'}
 	        ],
 	        tbar: [
-		        _gridStoreNewAction, _gridStoreEditAction, updateStatusAction, exitAction
+		        _gridStoreNewAction, _gridStoreEditAction, updateStatusAction
 	        ],
 	        bbar: new Ext.PagingToolbar({
 	            pageSize: 20,

@@ -136,12 +136,13 @@ public class BackController {
 	 */
 	@RequestMapping("/saveOrUpdateSign.do")
 	public ModelAndView saveOrUpdateSign(SignClientEntity sc, HttpServletRequest request,
-			@RequestParam("cid") int cid){
+			@RequestParam("cid") int cid, @RequestParam("data") String data){
 		JSONObject jsonObject = new JSONObject();
 		try{
 			if(request.getSession() != null){
 				if(sc.getId() == null){
 					sc.setClient(cid);
+					sc.setStatus(0);
 					scDao.save(sc);
 					SqlBuilder sb = new SqlBuilder("Client", SqlBuilder.TYPE_UPDATE);
 					sb.addField("clientStatus", "1");
@@ -157,6 +158,9 @@ public class BackController {
 					sb.addField("loanAmount", sc.getLoanAmount());
 					sb.addField("followInfo", sc.getFollowInfo());
 					sb.addField("status", sc.getStatus());
+					sb.addField("dataList", data);
+					sb.addField("dataField", sc.getDataField());
+					sb.addField("unCommitData", sc.getUnCommitData());
 					sb.addWhere("id", sc.getId());
 					scDao.updateByHQL(sb.getSql(), sb.getParams());
 				}

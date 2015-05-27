@@ -43,7 +43,33 @@ public class SignClientView {
 	private String clientName;//客户名称
 	private String contactTel;//客户联系方式
 	private String loanAmount;//贷款金额
+	private String dataList;
+	private String dataField;
+	private String unCommitData;
 	
+	@Column(name = "dataList")
+	public String getDataList() {
+		return dataList;
+	}
+	public void setDataList(String dataList) {
+		this.dataList = dataList;
+	}
+	
+	@Column(name = "dataField")
+	public String getDataField() {
+		return dataField;
+	}
+	public void setDataField(String dataField) {
+		this.dataField = dataField;
+	}
+	
+	@Column(name = "unCommitData")
+	public String getUnCommitData() {
+		return unCommitData;
+	}
+	public void setUnCommitData(String unCommitData) {
+		this.unCommitData = unCommitData;
+	}
 	@Id
 	@Column(name = "id")
 	@GeneratedValue

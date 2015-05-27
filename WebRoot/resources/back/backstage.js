@@ -46,17 +46,22 @@ var initSignGrid = function(){
             { name: 'userName' },
             { name: 'deptName' },
             { name: 'followInfo' },
-            { name: 'followDate' }
+            { name: 'followDate' },
+            { name: 'dataList' },
+            { name: 'dataField' },
+            { name: 'unCommitData' }
         ]
     });
     var saveSignEvents = function(btn){
     	if(!btn.hasListener('click')){
     		btn.addListener('click', function(){
 	            if(signForm.getForm().isValid()){
+	            	var data = signForm.find('name', 'dataList')[0].getValue();
            			signForm.getForm().submit({
                     	url: path+'/sign_client/saveOrUpdateSign.do',
 	                    params: {
-	                        cid: 0
+	                        cid: 0,
+	                        data: data
 	                    },
 	                    waitTitle: '请等待',
 	                    waitMsg: '正在努力的保存数据...',
@@ -722,7 +727,6 @@ var hideBtn = function(){
 		SIGN.sign.edit.hide();
 		SIGN.sign.assign.hide();
 		SIGN.sign.del.hide();
-		SIGN.sign.exit.hide();
 	}
 	if(right === 8){
 		SIGN.sign.assign.hide();

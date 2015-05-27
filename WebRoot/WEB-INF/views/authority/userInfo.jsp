@@ -96,7 +96,6 @@
 		      valueField : 'key', 
 		      mode : 'local', 
 		      triggerAction : 'all', 
-		      emptyText : '请选择...', // 默认值   selectOnFocus : true,
 		      hiddenName : 'signStatus'  
 	    });
 	    
@@ -110,8 +109,8 @@
 	        	Ext.getCmp('formWindow').setTitle('新增用户信息');
 	        	departComboBox.setRawValue('');
 	        	find_role.setRawValue('');
-	        	signStatusCombox.setRawValue('');
 	            form1.getForm().reset();
+	        	signStatusCombox.setRawValue('');
 	            form1Window.show();
 	        }
 	    });
@@ -393,7 +392,11 @@
 	        handler: function(){
 	        	var _find_role=Ext.getCmp('find_role').getValue();
 	        	var dept = departComboBox.getValue();
-	        	  if(form1.getForm().isValid()){
+        	  	if(form1.getForm().isValid()){
+        	  		var sign = signStatusCombox.getValue();
+        	  		if(sign === ''){
+        	  			signStatusCombox.setValue(0);
+        	  		}
 	                form1.getForm().submit({
 	                    url: '<%=path%>/user/saveOrUpdateUser.do',
 	                    params: {

@@ -1074,8 +1074,6 @@ Ext.onReady(function() {
 	}else{
 		if(roleCode == '201204'){
 			Ext.getCmp('btnAlert').html = '<iframe name="centerF" scrolling="auto" frameborder="0" width="100%" height="100%" src="<%=path%>/to_welcome"/>';
-		}else if(right){
-			
 		}else{
 			Ext.getCmp('btnAlert').add(mainPanels);
 			Ext.getCmp('btnAlert').doLayout();
