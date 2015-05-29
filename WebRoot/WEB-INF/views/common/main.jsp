@@ -30,11 +30,9 @@
 			btn.addListener('click', function(){
 				seeFlag = 0;
 				clientPanel.hide();
-				if(jump_from_flag == 1 | jump_from_flag == 2 | jump_from_flag == 6){
-	            	todayWorkPlanStore.reload();
-	            	todayAddStore.reload();
-	            	signedStore.reload();
-				}
+            	todayWorkPlanStore.reload();
+            	todayAddStore.reload();
+            	signedStore.reload();
 				if(jump_from_flag != 6){
 					for(var i = 0; i < 5; i++){
 						var obj = searchTbar.getComponent(0);
@@ -1074,7 +1072,7 @@ Ext.onReady(function() {
 	}else{
 		if(roleCode == '201204'){
 			Ext.getCmp('btnAlert').html = '<iframe name="centerF" scrolling="auto" frameborder="0" width="100%" height="100%" src="<%=path%>/to_welcome"/>';
-		}else{
+		}else if(right < 4 || right > 7){
 			Ext.getCmp('btnAlert').add(mainPanels);
 			Ext.getCmp('btnAlert').doLayout();
 		}

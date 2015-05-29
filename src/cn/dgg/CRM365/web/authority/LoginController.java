@@ -202,10 +202,10 @@ public class LoginController<V> {
 		if("201203".equals(role) && isFront == 2){//后台员工
 			user.setCounts(6);
 		}
-		if("201201".equals(role)){
+		if("201207".equals(role)){
 			user.setCounts(7);
 		}
-		if("201207".equals(role)){
+		if("201201".equals(role)){
 			user.setCounts(8);
 		}
 	}

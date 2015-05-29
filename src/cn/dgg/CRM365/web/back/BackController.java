@@ -401,6 +401,7 @@ public class BackController {
 				sb.addField("loanInterest", ls.getLoanInterest());
 				sb.addField("interestType", ls.getInterestType());
 				sb.addField("serviceFee", ls.getServiceFee());
+				sb.addField("receiveAmount", ls.getReceiveAmount());
 				sb.addField("status", 1);//0未通过，1放款
 				sb.addWhere("id", sourceId);
 				dao.updateByHQL(sb.getSql(), sb.getParams());
@@ -497,6 +498,7 @@ public class BackController {
 				}else{
 					SqlBuilder sb = new SqlBuilder("SourceLog", SqlBuilder.TYPE_UPDATE);
 					sb.addField("logInfo", sl.getLogInfo());
+					sb.addField("logDate", sl.getLogDate());
 					sb.addWhere("id", sl.getId());
 					dao.updateByHQL(sb.getSql(), sb.getParams());
 				}

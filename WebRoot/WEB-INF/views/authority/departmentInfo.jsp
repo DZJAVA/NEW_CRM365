@@ -22,6 +22,7 @@
 	            { name: 'superId'},
 	            { name: 'superName'},
 	            { name: 'isFront'},
+	            { name: 'super_id'},
 	            { name: 'remark'}
 	        ]
 	    });
@@ -34,9 +35,10 @@
 	            form1.getForm().reset();
 	            Ext.getCmp('formWindow').setTitle('新增部门信息');
 	            form1Window.show();
+	            SUPERID = 0;
 	        }
 	    });
-	      
+	    var SUPERID = 0;
 	    var myGridEditAction = new Ext.Action({
 	        text: '编辑部门信息',
 	        iconCls: 'smt-deparmentEdit',
@@ -55,6 +57,8 @@
 	                	departSelComboBox.setValue("");
 	                	departSelComboBox.setRawValue("");
 	                }
+	                SUPERID = record.get("super_id");
+	                console.log(SUPERID);
 	            }
 	        }
 	    });
@@ -308,6 +312,8 @@
 	        		}else{
 	        			superId = 0;
 	        		}
+	        		if(SUPERID) super_id = SUPERID;
+	        		console.log(SUPERID);
 	                form1.getForm().submit({
 	                    url: '<%=path%>/tt/qq.do',
 	                    params: {

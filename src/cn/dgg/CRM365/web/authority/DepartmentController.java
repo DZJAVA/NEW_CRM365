@@ -111,6 +111,7 @@ public class DepartmentController {
 						item.element("superName", MvcUtil.toJsonString(field.getDepa().getDepaName()));
 					}
 					item.element("remark", MvcUtil.toJsonString(field.getRemark()));
+					item.element("super_id", MvcUtil.toJsonString(field.getSuperId()));
 					item.element("isFront", field.getIsFront());
 					data.add(item);
 				}
@@ -185,6 +186,9 @@ public class DepartmentController {
 				}else{
 					if(ds.size()>0){
 						if(department.getId().equals(ds.get(0).getId())){
+							if(superId > 0){
+								department.setSuperId(superId);
+							}
 							dao.update(department);
 							jsonObject.element("success", true);
 							jsonObject.element("msg", " 修改部门信息成功！");

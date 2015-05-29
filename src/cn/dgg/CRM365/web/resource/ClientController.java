@@ -2042,7 +2042,7 @@ public class ClientController {
 						rdao.deleteAll(counts);
 					}
 					lddao.updateByHQL("delete from LoanDetail ld where ld.client.id = ?", new Object[] {cid});
-					seeDao.updateByHQL("delete SeeClient s where s.c_id=?",new Object[]{String.valueOf(cid)});
+					seeDao.updateByHQL("delete SeeClient s where s.c_id=?",new Object[]{cid.intValue()});
 					dao.deleteById(cid, Client.class);//删除客户
 					num++;
 				}

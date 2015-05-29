@@ -690,7 +690,7 @@ var initLogGrid = function(){
 //布局
 var initLayout = function(){
 	var viewport = null;
-	if(right === 8){
+	if(right === 7){
 	    viewport = new Ext.Viewport({
 		      layout:'fit',
 		      border: false,
@@ -728,7 +728,7 @@ var hideBtn = function(){
 		SIGN.sign.assign.hide();
 		SIGN.sign.del.hide();
 	}
-	if(right === 8){
+	if(right === 7){
 		SIGN.sign.assign.hide();
 		SIGN.sign.del.hide();
 		SIGN.sign.exit.hide();
